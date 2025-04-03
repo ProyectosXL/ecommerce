@@ -1,0 +1,152 @@
+
+table.table-fh {
+    width: 100%;
+	
+}
+
+/* table.table-fh.table-15c > thead > tr >th, table.table-fh.table-15c > tbody > tr > td {
+    width: calc(100% / 15);
+}
+
+table.table-fh.table-19c > thead > tr >th, table.table-fh.table-19c > tbody > tr > td {
+    width: calc(100% / 19);
+} */
+/* 
+table.table-fh, table.table-fh > tbody > tr > td {
+    border-collapse: collapse;
+    border: 1px solid #000;
+} */
+table.table-fh > thead {
+    display: table;
+    /* width: calc(100% - 17px); */
+}
+table.table-fh > tbody {
+    display: block;
+    max-height: 70vh;
+    overflow-y: scroll;
+}
+
+/* table.table-fh > tbody > tr {
+    display: table;
+    width: 100%;
+} */
+table.table-fh > tbody > tr > td {
+    border: none;
+}
+
+/* td{
+	font-size:11px;
+    justify-content: center;
+} */
+
+#columnita{
+	font-size:9px;
+	padding: 0px;
+	margin-top: 2px;
+}
+
+#botones{
+	padding-left: 2%;
+	
+}
+#formulario{
+	padding:0px;
+	margin-left:1%;
+}
+
+td{
+	font-size:11px;
+}
+
+#botones{
+	padding-left: 3%;
+	
+}
+#formulario{
+	padding:0px;
+	margin-left:1%;
+}
+
+#buttonIncompletos{
+    color: #f7f7f7;
+    background-color: #dc3545;
+    border-color: #dc3545;
+    border-radius: 5px;
+    height: 40px;
+    width: 10vh;
+    font-size: 12px;
+}
+#buttonExportar{
+    color: #f7f7f7;
+    background-color: #28a745 ;
+    border-color: #28a745 ;
+    border-radius: 5px;
+    height: 40px;
+    width: 100px;
+}
+
+#buttonCancelados{
+    color: #f7f7f7;
+    background-color: #007bff;
+    border-color: #263544;
+    border-radius: 5px;
+    height: 40px;
+    width: 10vh;
+    font-size: 12px;
+}
+
+#buttonPendientes{
+    color: #f7f7f7;
+    background-color: #ffc107;
+    border-color: #ffc107;
+    border-radius: 5px;
+    height: 40px;
+    width: 10vh;
+    font-size: 12px;
+}
+
+#buttonIncompletos:focus{
+    outline: none;
+}
+
+#buttonCancelados:focus{
+    outline: none;
+}
+
+#buttonPendientes:focus{
+    outline: none;
+}
+
+.headerTitle
+{
+    font-size: 11px;
+    color: white;
+}
+
+.loading {
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    background: url('../css/images/spinnervlll.gif') 50% 50% no-repeat  rgb(246,247,248);
+    opacity: .8;
+  }
+
+  	
+#menu {
+    position: sticky;
+    top: 0;
+	bottom: 1.5rem;
+    z-index: 1000;
+}
+
+
+#tablaPedidosH {
+    position: sticky;
+    top:7rem; /* Ajusta la distancia vertical según sea necesario */
+    background-color: #343a40;
+    padding: 10px; /* Ajusta el relleno según sea necesario */
+    z-index: 1000; /* Asegura que esté por encima del contenido */
+}

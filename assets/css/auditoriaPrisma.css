@@ -1,0 +1,31 @@
+
+/*Fijar encabezado de tabla*/ 
+
+thead tr th { 
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#title{
+    position: absolute;
+    margin-left: 5%;
+    margin-top: 2%;
+}
+
+.table{
+    position: absolute;
+    margin-top: 5%;
+    margin-left: 5%;
+}
+
+.table th{
+    background-color: white;
+}
+
+#btnExport
+{
+    position: absolute;
+    margin-left: 75%;
+    margin-top: 1.5%;
+}
