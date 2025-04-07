@@ -339,8 +339,6 @@ selectSucursal?.addEventListener('change', async function () {
                 }
             });
 
-            // disable 
-            
 
             seccionArticulo.style.display = 'block';
 
