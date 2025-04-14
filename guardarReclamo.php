@@ -42,7 +42,7 @@ $resultado = $pedido->guardarHistorialReclamo($data);
 
 
     if (!$resultado) {
-        $sqlError = sqlsrv_errors(); // Captura errores específicos de SQL Server
+        $sqlError = sqlsrv_errors();
         echo json_encode([
             'success' => false,
             'error' => 'Error al ejecutar la consulta SQL.',

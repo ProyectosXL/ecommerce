@@ -1,0 +1,423 @@
+
+:root {
+    --primary-color: #000;
+    --secondary-color: #373535;
+    --light-color: #fff;
+    --border-color: #E5E5E5;
+    --link-color: #2c5577;
+    --completed-color: #000;
+    --pending-color: #ccc;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: #1e1e1e !important;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    color: var(--secondary-color);
+}
+
+.email-container {
+    max-width: 40rem;
+    margin: 2rem auto;
+    background-color: var(--light-color);
+}
+
+.email-header {
+    padding: 25px 0;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.email-header img {
+    max-height: 47.63px;
+}
+
+.email-title {
+    padding: 0.5rem 2rem;
+    font-weight: 600;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.email-subtitle {
+    padding: 0 2rem 2rem;
+    font-size: 0.75rem;
+    line-height: 1.25;
+}
+
+.order-number {
+    font-weight: 600;
+}
+
+.email-banner {
+    text-align: center;
+    padding: 0 1rem 2rem;
+    width: 100%;
+}
+
+.status-steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+    padding: 15px 5px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin: 0 auto;
+}
+
+.status-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    width: 20%;
+    background-color: transparent;
+    padding: 0 2px;
+}
+
+.step-label {
+    font-size: 11px;
+    text-align: center;
+    color: #333;
+    font-weight: 400;
+    width: 100%;
+    margin-top: 8px;
+    line-height: 1.2;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: normal;
+}
+
+.step-icon-circle {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    border-radius: 50%;
+    background-color: var(--pending-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.step-icon-circle.completed {
+    background-color: var(--completed-color);
+}
+
+.step-icon-circle i {
+    color: white;
+    font-size: 22px;
+}
+
+.email-content {
+    padding: 1rem 2rem;
+    font-size: 0.75rem;
+}
+
+.section-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 1rem 0;
+    color: var(--primary-color);
+}
+
+/* Layout de productos */
+.product-item {
+    display: flex;
+    padding: 1.5rem 0;
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.product-image {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.product-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Estructura para alineación vertical */
+.product-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 120px; /* Misma altura que la imagen */
+}
+
+/* COMPLETAMENTE MODIFICADO: Alineación de número de orden */
+.order-id-tag {
+    display: block;
+    text-align: right;
+    margin-bottom: 5px;
+    font-family: 'Avenir LT Std', sans-serif;
+    font-weight: 350;
+    font-size: 12px;
+    color: #5f5f5f;
+}
+
+.order-id-value {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #000;
+}
+
+/* Nombre del producto */
+.product-name {
+    font-weight: 600;
+    font-size: 12px;
+    color: #060410;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+/* Contenedor central para datos de cantidad */
+.product-info-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Estructura para cantidad y precio */
+.product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #4c4a5e;
+    width: 100%;
+    margin: 8px 0;
+}
+
+.product-quantity {
+    font-weight: normal;
+}
+
+/* COMPLETAMENTE MODIFICADO: Precio alineado a la derecha */
+.product-price {
+    font-weight: 600;
+    font-size: 14px;
+    color: #060410;
+    text-align: right;
+    min-width: 70px;
+}
+
+/* Ajuste para color */
+.product-color {
+    font-family: Avenir, sans-serif; 
+    font-size: 12px; 
+    font-weight: 700;
+    line-height: 16px;
+    display: flex;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.product-color span {
+    font-family: Avenir, sans-serif; 
+    font-size: 12px; 
+    font-weight: 400; 
+    line-height: 16px;
+    margin-left: 5px;
+}
+
+.order-info {
+    font-family: 'Avenir', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    color: #5F5F5F;
+    margin-top: 10px;
+}
+
+.payment-section {
+    padding: 22px 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.payment-row {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.shipping-section {
+    padding: 22px 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.shipping-row {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.divider {
+    border-top: 1px solid var(--border-color);
+    margin: 1rem 0;
+}
+
+.alert-section {
+    margin-bottom: 40px;
+}
+
+.alert-title {
+    text-align: center;
+    font-size: 14px;
+    color: var(--secondary-color);
+}
+
+.email-footer {
+    background-color: var(--primary-color);
+    padding: 17px 0;
+    text-align: center;
+}
+
+.social-links a {
+    text-decoration: none;
+    padding-right: 16px;
+}
+
+.social-links a:last-child {
+    padding-right: 0;
+}
+
+@media (max-width: 600px) {
+    .email-banner {
+        padding: 0 0.5rem 1.5rem;
+    }
+    
+    .status-steps {
+        padding: 10px 2px;
+    }
+    
+    .step-icon-circle {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+    }
+    
+    .step-icon-circle i {
+        font-size: 18px;
+    }
+    
+    .step-label {
+        font-size: 10px;
+        height: 28px;
+    }
+}
+
+/* COMPLETAMENTE REESCRITO: CSS para dispositivos móviles */
+@media (max-width: 425px) {
+    .db-mob {
+        display: block !important;
+    }
+    
+    .mb2-mob {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .shipping-row, .payment-row {
+        flex-direction: column;
+    }
+    
+    .shipping-row span:last-child, .payment-row span:last-child {
+        margin-top: 5px;
+    }
+    
+    /* Estructura vertical para móviles */
+    .product-item {
+        flex-direction: column;
+    }
+    
+    .product-image {
+        width: 100%;
+        height: auto;
+        margin-bottom: 15px;
+        margin-right: 0;
+    }
+    
+    .product-image img {
+        max-width: 180px;
+        margin: 0 auto;
+    }
+    
+    /* Estructura completamente diferente para móviles */
+    .product-details {
+        height: auto;
+        width: 100%;
+    }
+    
+    /* IMPORTANTE: Esto elimina flex para móviles y usa block */
+    .order-id-tag {
+        display: block;
+        width: 100%;
+        text-align: right;
+    }
+    
+    /* Ajustes específicos para la meta info en móviles */
+    .product-meta {
+        display: flex;
+        width: 100%;
+    }
+    
+    /* Fijar el ancho máximo de cantidad para dejar espacio para el precio */
+    .product-quantity {
+        flex: 1;
+        max-width: 60%;
+        text-align: left;
+    }
+    
+    /* IMPORTANTE: Forzar precio a la derecha */
+    .product-price {
+        min-width: 80px;
+        text-align: right;
+    }
+    
+    .product-info-container {
+        margin: 10px 0;
+    }
+}
+
+/* Para dispositivos muy pequeños, como iPhone SE */
+@media (max-width: 350px) {
+    .product-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .product-quantity, .product-price {
+        width: 100%;
+        margin-bottom: 4px;
+    }
+    
+    .product-price {
+        text-align: left;
+    }
+}

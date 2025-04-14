@@ -2,40 +2,93 @@
 require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/Class/Conexion.php';
 
 class Control {
-    private function getDatos($sql) {
-        $cid = new Conexion();
-        $cid_central = $cid->conectarSql('central');
-        
-        ini_set('max_execution_time', 300);
-        $result = sqlsrv_query($cid_central, $sql);
-        
-        if ($result === false) {
-            $errors = sqlsrv_errors();
-            throw new Exception("Error en la consulta: " . $errors[0]['message']);
+
+    public function conectarSql($nameServer = null) {
+        try {
+            $serverDB = $this->servidor($nameServer);
+            $pass = ($nameServer == 'locales') ? $this->pass_locales : $this->pass;
+    
+            $params = array( 
+                "Database" => $serverDB[1], 
+                "UID" => $this->user, 
+                "PWD" => $pass, 
+                "CharacterSet" => $this->character
+            );
+    
+            $cid = sqlsrv_connect($serverDB[0], $params);
+            
+            if ($cid === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error de conexión: " . $errors[0]['message']);
+            }
+    
+            return $cid;
+            
+        } catch (Exception $e) {
+            throw new Exception("Error en la conexión: " . $e->getMessage());
         }
-        
-        $row = sqlsrv_fetch_object($result);
-        return $row ? $row : null;
     }
 
-    private function getDatosMultiples($sql) {
-        $cid = new Conexion();
-        $cid_central = $cid->conectarSql('central');
-        
-        ini_set('max_execution_time', 300);
-        $result = sqlsrv_query($cid_central, $sql);
-        
-        if ($result === false) {
-            $errors = sqlsrv_errors();
-            throw new Exception("Error en la consulta: " . $errors[0]['message']);
+    private function getDatos($sql) {
+        try {
+            $cid = new Conexion();
+            $cid_central = $cid->conectarSql('central');
+            
+            if ($cid_central === false) {
+                throw new Exception("Error de conexión a la base de datos");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_central, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $row = sqlsrv_fetch_object($result);
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_central);
+            
+            return $row ? $row : null;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
         }
-        
-        $rows = array();
-        while ($row = sqlsrv_fetch_object($result)) {
-            $rows[] = $row;
-        }
-        return $rows;
     }
+    
+    private function getDatosMultiples($sql) {
+        try {
+            $cid = new Conexion();
+            $cid_central = $cid->conectarSql('central');
+            
+            if ($cid_central === false) {
+                throw new Exception("Error de conexión a la base de datos");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_central, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $rows = array();
+            while ($row = sqlsrv_fetch_object($result)) {
+                $rows[] = $row;
+            }
+            
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_central);
+            
+            return $rows;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
 
     public function traerNcPendPromociones() {
         $sql = "SELECT MIN(CAST(FECHA AS DATE)) FECHA, COUNT(*) CANT_NC_PROMO, SUM(NC) IMPORTE_NC FROM SJ_NC_ECOMMERCE_PEND WHERE NUM_NC = 'NO'";
@@ -55,7 +108,8 @@ class Control {
                 LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1 AND B.NCR IS NULL AND C.N_COMP IS NOT NULL
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1 
+                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND REINTEGRADO IS NULL
                 ) A";
         return $this->getDatos($sql);
     }
@@ -67,7 +121,8 @@ class Control {
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
                 LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1 AND B.NCR IS NULL AND C.N_COMP IS NOT NULL";
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1 
+                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND REINTEGRADO IS NULL";
         return $this->getDatosMultiples($sql);
     }
 
@@ -91,7 +146,7 @@ class Control {
                 (
                 SELECT A.FECHA_ULTIMA_SINCRONIZACION FECHA_ORDEN, A.ORDER_NRO_TIENDA, A.TOTAL_ORDEN, A.ESTADO_ORDEN FROM NEXO_PEDIDOS_ORDEN A
                 LEFT JOIN GVA21 B ON A.ORDER_ID_TIENDA = B.ORDER_ID_TIENDA
-                WHERE B.NRO_PEDIDO IS NULL AND A.FECHA_ORDEN >= GETDATE()-90 AND A.ESTADO_ORDEN NOT LIKE 'CANCELADA%'
+                WHERE B.NRO_PEDIDO IS NULL AND A.FECHA_ORDEN >= GETDATE()-60 AND A.ESTADO_ORDEN NOT LIKE 'CANCELADA%'
                 ) A";
         return $this->getDatos($sql);
     }
@@ -99,7 +154,7 @@ class Control {
     public function traerDetalleOrdenesSinIntegrar() {
         $sql = "SELECT A.FECHA_ULTIMA_SINCRONIZACION FECHA_ORDEN, A.TIENDA, A.ORDER_NRO_TIENDA, A.TOTAL_ORDEN FROM NEXO_PEDIDOS_ORDEN A
                 LEFT JOIN GVA21 B ON A.ORDER_ID_TIENDA = B.ORDER_ID_TIENDA
-                WHERE B.NRO_PEDIDO IS NULL AND A.FECHA_ORDEN >= GETDATE()-90 AND A.ESTADO_ORDEN NOT LIKE 'CANCELADA%'
+                WHERE B.NRO_PEDIDO IS NULL AND A.FECHA_ORDEN >= GETDATE()-60 AND A.ESTADO_ORDEN NOT LIKE 'CANCELADA%'
                 ORDER BY FECHA_ULTIMA_SINCRONIZACION";
         return $this->getDatosMultiples($sql);
     }
@@ -213,7 +268,7 @@ class Control {
 				LEFT JOIN
 				(
 					SELECT A.COD_CLIENT, B.NRO_SUCURSAL, MAX(A.FECHA_DESPACHO) FECHA_DESPACHO FROM RO_FECHA_DESPACHO_ACTUAL A
-					INNER JOIN (SELECT * FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'FRANQUICIAS' AND HABILITADO = 1 AND NRO_SUC_MADRE IS NULL) B ON A.COD_CLIENT = B.COD_CLIENT
+					INNER JOIN (SELECT * FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL IN ('FRANQUICIAS','PROPIOS') AND HABILITADO = 1 AND NRO_SUC_MADRE IS NULL) B ON A.COD_CLIENT = B.COD_CLIENT
 					GROUP BY A.COD_CLIENT, B.NRO_SUCURSAL
 				) F
 				ON E.NRO_SUCURSAL = F.NRO_SUCURSAL
@@ -221,6 +276,28 @@ class Control {
                 TRY_CAST(A.HORA_INGRESO AS INT) <= 140000) OR A.FECHA_PEDI < CAST(GETDATE() AS DATE)) AND C.DESPACHADO IS NULL AND C.ENTREGADO IS NULL
                 AND C.CANCELADO IS NULL AND C.INCOMPLETO IS NULL AND A.COD_SUCURS = '01' AND A.ESTADO != '5'
                 ORDER BY C.FECHA_SINCRONIZADO DESC";
+        return $this->getDatosMultiples($sql);
+    }
+
+    // Función para obtener el resumen de productos sin stock en ML Full
+    public function traerResumenProductosMlFull() {
+        $sql = "SELECT COUNT(*) AS CANTIDAD_PRODUCTOS, 
+                    AVG(C.STOCK_DISPONIBLE) AS PROMEDIO_STOCK 
+                FROM [192.168.0.143].emsys_XLEXTRALARGE.DBO.RO_V_ML_PUBLICACIONES_PAUSADAS A
+                INNER JOIN STA11 B ON A.CODIGO = B.COD_ARTICU COLLATE Latin1_General_BIN
+                INNER JOIN (SELECT COD_ARTICU, STOCK_DISPONIBLE FROM STOCK_CENTRAL WHERE COD_DEPOSI = '01' AND STOCK_DISPONIBLE > 0) C 
+                    ON A.CODIGO = C.COD_ARTICU";
+        return $this->getDatos($sql);
+    }
+
+    // Función para obtener el detalle de los productos
+    public function traerDetalleProductosMlFull() {
+        $sql = "SELECT A.CODIGO, B.DESCRIPCIO, C.STOCK_DISPONIBLE STOCK_CENTRAL, 
+                    A.ESTADO_FULL, A.URL_FULL, A.URL_CENTRAL 
+                FROM [192.168.0.143].emsys_XLEXTRALARGE.DBO.RO_V_ML_PUBLICACIONES_PAUSADAS A
+                INNER JOIN STA11 B ON A.CODIGO = B.COD_ARTICU COLLATE Latin1_General_BIN
+                INNER JOIN (SELECT COD_ARTICU, STOCK_DISPONIBLE FROM STOCK_CENTRAL WHERE COD_DEPOSI = '01' AND STOCK_DISPONIBLE > 0) C 
+                    ON A.CODIGO = C.COD_ARTICU";
         return $this->getDatosMultiples($sql);
     }
 

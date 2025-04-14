@@ -403,6 +403,8 @@ $articulos = $pedidos->buscarStockArticulo($sucursal);
                                             </div>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
+                                        <?php $historial = $pedidos->traerHistorialReclamo(trim($pedido->NRO_PEDIDO));
+                                        ?>
 
                                         <!-- Estado del Reclamo -->
                                         <div class="status-bar p-3 border-bottom">
@@ -417,24 +419,26 @@ $articulos = $pedidos->buscarStockArticulo($sucursal);
                                             </div>
                                             
                                             <!-- Sección de Resolución (inicialmente oculta) -->
-                                            <div id="seccionResolucion" class="mt-3" style="display: none;">
+                                            <div id="seccionResolucion" class="mt-3" style="display:none">
                                                 <div class="row">
                                                     <div class="col-md-4">
                                                         <label class="form-label">Resolución</label>
                                                         <select class="form-select" id="tipoResolucion">
                                                             <option value="">Seleccione...</option>
-                                                            <option value="cambio">Cambio</option>
-                                                            <option value="cancelado">Cancelado</option>
-                                                            <option value="completado">Completado</option>
+                                                            <option value="cambio" <?= (isset($historial[0]) && $historial[0]['RESOLUCION'] == 'cambio') ? 'selected' : '' ?>>Cambio</option>
+                                                            <option value="cancelado" <?= (isset($historial[0]) && $historial[0]['RESOLUCION'] == 'cancelado') ? 'selected' : '' ?>>Cancelado</option>
+                                                            <option value="completado" <?= (isset($historial[0]) && $historial[0]['RESOLUCION'] == 'completado') ? 'selected' : '' ?>>Completado</option>
                                                         </select>
                                                     </div>
                                                     <div class="col-md-4" id="seccionSucursal" style="display: none;">
+                                                        <div id="sucursalSeleccionada" hidden> <?= (isset($historial[0])) ? $historial[0]['SUC_DESPACHO'] : '' ?></div>
                                                         <label class="form-label">Sucursal</label>
                                                         <select class="form-select" id="selectSucursal"></select>
                                                     </div>
                                                 </div class="row">
                                                     <div class="col-12" id="seccionArticulo" style="display: none;">
                                                         <label class="form-label">Artículo</label>
+                                                        <div id="articuloCambioCod" hidden><?= (isset($historial[0])) ? $historial[0]['COD_ARTICULO_CAMBIO'] : '' ?></div>
                                                         <select id="selectArticulo" class="form-select"></select>
                                                     </div>
                                                 <div>

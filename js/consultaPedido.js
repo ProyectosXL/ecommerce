@@ -279,6 +279,7 @@ selectSucursal?.addEventListener('change', async function () {
         try {
             showSpinner();
 
+
             if(resolucionSeleccionada != 'completado') {
                 $('#selectArticulo').prop('disabled', false);
                 // limpiar 
@@ -327,6 +328,7 @@ selectSucursal?.addEventListener('change', async function () {
                 document.getElementById('modalCantidad').textContent = articuloReclamado.cantidad;
             }
 
+
             $('#selectArticulo').select2({
                 width: '100%',
                 placeholder: 'Buscar artículo...',
@@ -340,7 +342,9 @@ selectSucursal?.addEventListener('change', async function () {
             });
 
 
+
             seccionArticulo.style.display = 'block';
+
 
         } catch (error) {
             console.error('Error al cargar artículos:', error);
@@ -495,4 +499,6 @@ function guardarReclamo(estado = 'abierto') {
 
 $('#finalizarReclamo').on('click', function() {
     guardarReclamo('resuelto');
+
 });
+
