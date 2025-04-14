@@ -1,0 +1,194 @@
+
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 1rem;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08); /* Sombra permanente sutil */
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1); /* Sombra más pronunciada en hover */
+}
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border-bottom: none;
+    padding: 1.25rem 1.5rem;
+}
+
+/* Estilos para NC Promociones */
+.card-promociones .card-header {
+    background-color: #ebf5ff;
+    border: 1px solid rgba(33, 150, 243, 0.1); /* Borde sutil */
+}
+.card-promociones .card-icon {
+    color: #2196f3;
+    font-size: 1.8rem;
+}
+
+/* Estilos para NC Devoluciones */
+.card-devoluciones .card-header {
+    background-color: #fff0f3;
+    border: 1px solid rgba(233, 30, 99, 0.1);
+}
+.card-devoluciones .card-icon {
+    color: #e91e63;
+    font-size: 1.8rem;
+}
+
+/* Estilos para Órdenes sin Integrar */
+.card-ordenes .card-header {
+    background-color: #fff3e0;
+    border: 1px solid rgba(255, 152, 0, 0.1);
+}
+.card-ordenes .card-icon {
+    color: #ff9800;
+    font-size: 1.8rem;
+}
+
+/* Estilos para Pedidos sin Facturar */
+.card-pedidos .card-header {
+    background-color: #e8f5e9;
+    border: 1px solid rgba(76, 175, 80, 0.1);
+}
+.card-pedidos .card-icon {
+    color: #4caf50;
+    font-size: 1.8rem;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.info-icon {
+    color: #757575;
+    font-size: 1rem;
+    margin-left: 0.5rem;
+    cursor: help;
+    transition: color 0.2s;
+}
+.info-icon:hover {
+    color: #424242;
+}
+
+.no-data {
+    color: #757575;
+    font-style: italic;
+    font-size: 1.1rem;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.date-info {
+    font-size: 0.875rem;
+    color: #757575;
+    margin-top: 0.5rem;
+}
+
+.alert-info {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    color: #495057;
+}
+
+.card-body {
+    padding: 1.5rem;
+    border: 1px solid rgba(0,0,0,0.05); /* Borde sutil para el body */
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+}
+.card-flex .card-header {
+    background-color: #f3e5f5;
+    border: 1px solid rgba(156, 39, 176, 0.1);
+}
+.card-flex .card-icon {
+    color: #9c27b0;
+    font-size: 1.8rem;
+}
+
+/* Estilo para el timestamp */
+.text-muted {
+    color: #6c757d !important;
+}
+.text-muted i {
+    margin-right: 0.5rem;
+}
+
+.card-facturas .card-icon {
+    font-size: 1.8rem;
+}
+
+.modal-xl {
+max-width: 70%;
+}
+
+.table {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    white-space: nowrap;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+#ncrChart {
+    height: 400px !important;
+}
+
+.card-facturas .card-header {
+background-color: #fff8e1;
+border: 1px solid rgba(255, 193, 7, 0.1);
+}
+
+.card-facturas .card-icon {
+    color: #ffc107;
+}
+
+/* Estilos para Ordenes Pendientes de Cierre (tonos morados) */
+.card-pending-close .card-header {
+    background-color: #f3e5f5; /* Fondo morado suave */
+    border: 1px solid rgba(156, 39, 176, 0.1);
+}
+
+.card-pending-close .card-icon {
+    color: #9c27b0; /* Morado más oscuro para el ícono */
+    font-size: 1.8rem;
+}
+
+.btn-outline-purple {
+    color: #9c27b0;
+    border-color: #9c27b0;
+}
+
+.btn-outline-purple:hover {
+    color: #fff;
+    background-color: #9c27b0;
+    border-color: #9c27b0;
+}
+
+/* Estilos para Pedidos Pendientes de Despacho (tonos cyan) */
+.card-pending-dispatch .card-header {
+    background-color: #e0f7fa; /* Fondo cyan suave */
+    border: 1px solid rgba(0, 188, 212, 0.1);
+}
+.card-pending-dispatch .card-icon {
+    color: #00bcd4; /* Cyan más oscuro para el ícono */
+    font-size: 1.8rem;
+}
+
+.btn-outline-cyan {
+    color: #00bcd4;
+    border-color: #00bcd4;
+}
+.btn-outline-cyan:hover {
+    color: #fff;
+    background-color: #00bcd4;
+    border-color: #00bcd4;
+}
