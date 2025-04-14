@@ -265,7 +265,6 @@ tipoResolucion?.addEventListener('change', async function () {
             hideSpinner();
         }
     } else {
-        
         seccionSucursal.style.display = 'none';
         seccionArticulo.style.display = 'none';
     }
@@ -280,29 +279,56 @@ selectSucursal?.addEventListener('change', async function () {
         try {
             showSpinner();
 
-            // Petición al servidor para cargar artículos según la sucursal seleccionada
-            const response = await fetch(`Controller/buscarStock.php?sucursal=${sucursalSeleccionada}`);
-            const articulos = await response.json();
 
-            // Limpiar y poblar selectArticulo
-            const selectArticulo = document.getElementById('selectArticulo');
-            selectArticulo.innerHTML = '<option value="">Seleccione artículo...</option>';
-            articulos.forEach(art => {
-                if (art[0]?.ARTICULO) {
-                    const option = document.createElement('option');
-                    option.value = art[0].ARTICULO;
-                    option.textContent = `${art[0].ARTICULO} - ${art[0].DESC_CTA_ARTICULO}`;
-                    option.dataset.codigo = art[0].ARTICULO;
-                    option.dataset.descripcion = art[0].DESC_CTA_ARTICULO;
-                    option.dataset.stock = art[0].CANT_STOCK || '0';
-                    selectArticulo.appendChild(option);
-                }
-            });
+            if(resolucionSeleccionada != 'completado') {
+                $('#selectArticulo').prop('disabled', false);
+                // limpiar 
+                $('#selectArticulo').val('').trigger('change');
 
-            // Mostrar la sección de artículos
-            seccionArticulo.style.display = 'block';
+                // Petición al servidor para cargar artículos según la sucursal seleccionada
+                const response = await fetch(`Controller/buscarStock.php?sucursal=${sucursalSeleccionada}`);
+                const articulos = await response.json();
 
-            // Inicializar Select2 en selectArticulo
+                // Limpiar y poblar selectArticulo
+                const selectArticulo = document.getElementById('selectArticulo');
+                selectArticulo.innerHTML = '<option value="">Seleccione artículo...</option>';
+                articulos.forEach(art => {
+                    if (art[0]?.ARTICULO) {
+                        const option = document.createElement('option');
+                        option.value = art[0].ARTICULO;
+                        option.textContent = `${art[0].ARTICULO} - ${art[0].DESC_CTA_ARTICULO}`;
+                        option.dataset.codigo = art[0].ARTICULO;
+                        option.dataset.descripcion = art[0].DESC_CTA_ARTICULO;
+                        option.dataset.stock = art[0].CANT_STOCK || '0';
+                        selectArticulo.appendChild(option);
+                    }
+                });
+            } else if (resolucionSeleccionada === 'completado' && articuloReclamado.codigo) {
+                $('#selectArticulo').prop('disabled', true);
+                $('#selectArticulo').val('').trigger('change');
+
+                const option = document.createElement('option');
+                option.value = articuloReclamado.codigo;
+                option.textContent = `${articuloReclamado.codigo} - ${articuloReclamado.descripcion}`;
+                option.dataset.codigo = articuloReclamado.codigo;
+                option.dataset.descripcion = articuloReclamado.descripcion;
+                option.dataset.stock = articuloReclamado.stock || '1';
+                selectArticulo.appendChild(option);
+                selectArticulo.value = articuloReclamado.codigo;
+                $('#selectArticulo').trigger('change');
+
+                // Mostrar el artículo reclamado en el modal
+                document.getElementById('modalArticulo').textContent = articuloReclamado.descripcion;
+                document.getElementById('modalCodigo').textContent = `Código: ${articuloReclamado.codigo}`;
+                document.getElementById('modalPrecio').textContent = `$ ${parseFloat(articuloReclamado.precio).toLocaleString('es-AR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })}`;
+
+                document.getElementById('modalCantidad').textContent = articuloReclamado.cantidad;
+            }
+
+
             $('#selectArticulo').select2({
                 width: '100%',
                 placeholder: 'Buscar artículo...',
@@ -315,18 +341,10 @@ selectSucursal?.addEventListener('change', async function () {
                 }
             });
 
-            if (resolucionSeleccionada === 'completado' && articuloReclamado.codigo) {
-                const articuloEncontrado = Array.from(selectArticulo.options).find(
-                    option => option.dataset.codigo === articuloReclamado.codigo
-                );
-                
-                if (articuloEncontrado) {
-                    articuloEncontrado.selected = true;
-                    $('#selectArticulo').trigger('change');
-                } else {
-                    console.log('El artículo reclamado no está disponible en esta sucursal');
-                }
-            }
+
+
+            seccionArticulo.style.display = 'block';
+
 
         } catch (error) {
             console.error('Error al cargar artículos:', error);
@@ -481,4 +499,6 @@ function guardarReclamo(estado = 'abierto') {
 
 $('#finalizarReclamo').on('click', function() {
     guardarReclamo('resuelto');
+
 });
+
