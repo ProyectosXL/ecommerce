@@ -50,9 +50,10 @@
                 
             $sql = "SELECT WAREHOUSE FROM
                     (
-                    SELECT REPLACE(NOMBRE_SUC, 'RT - SUC - ', '') WAREHOUSE FROM STA22
-                    WHERE NOMBRE_SUC LIKE 'RT%'
-                        UNION ALL
+                    SELECT REPLACE(A.NOMBRE_SUC, 'RT - SUC - ', '') WAREHOUSE FROM STA22 A
+                    INNER JOIN (SELECT NRO_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1) B ON A.SUCURSAL_DESTINO = B.NRO_SUCURSAL
+                    WHERE A.NOMBRE_SUC LIKE 'RT%'
+                    UNION ALL
                     SELECT 'CENTRAL'
                     ) A
                     ORDER BY 1
