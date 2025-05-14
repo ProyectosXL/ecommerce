@@ -34,7 +34,7 @@
                                                     <td><?php echo $detalle->FECHA_ORDEN->format('d/m/Y H:i'); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->TIENDA); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->ORDER_NRO_TIENDA); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->TOTAL_ORDEN, 2); ?></td>
+                                                    <td class="text-end">$<?php echo number_format($detalle->TOTAL_ORDEN, 0); ?></td>
                                                 </tr>
                                             <?php endforeach;
                                         else: ?>

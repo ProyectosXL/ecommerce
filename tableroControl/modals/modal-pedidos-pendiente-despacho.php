@@ -42,7 +42,7 @@
                                             <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
                                             <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA); ?></td>
                                             <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                            <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 2); ?></td>
+                                            <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 0); ?></td>
                                         </tr>
                                     <?php endforeach;
                                 else: ?>

@@ -301,4 +301,48 @@ class Control {
         return $this->getDatosMultiples($sql);
     }
 
+    // Función para obtener el resumen de pedidos pendientes de marcar como recibido en tiendas//
+    public function traerPedidosDespachados() {
+        $sql = "SET DATEFORMAT YMD
+                SELECT MIN(CAST(FECHA_DESPACHADO AS DATE)) AS FECHA_DESPACHADO, COUNT(*) AS CANT_PED_PEND, SUM(ROUND(A.TOTAL_PEDI * 1.21, 0)) AS TOTAL_PEDIDOS 
+                FROM (
+                    SELECT A.FECHA_SINCRONIZADO FECHA_PEDIDO, A.NRO_PEDIDO, B.SUCURSAL_ENTREGA, CAST(A.FECHA_DESPACHADO AS DATE) FECHA_DESPACHADO, C.TOTAL_PEDI 
+                    FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                    INNER JOIN
+                    (
+                        SELECT NRO_PEDIDO, SUCURSAL_ENTREGA FROM GVA21 A
+                        INNER JOIN RO_V_WAREHOUSE_METODO_ENVIO_VTEX B ON A.COD_TRANSP = B.COD_TRANSP
+                        LEFT JOIN RO_V_SUCURSAL_ENTREGA_VTEX C ON A.LEYENDA_3 = C.ID_SUCURSAL_ENTREGA_VTEX COLLATE Latin1_General_BIN
+                        WHERE COD_CLIENT = '000000' AND METODO_ENVIO = 'TIENDA'
+                    ) B ON A.NRO_PEDIDO = B.NRO_PEDIDO
+                    LEFT JOIN GVA21 C ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
+                    WHERE FECHA_DESPACHADO >= '2025-05-06' AND A.TALON_PED = '99'
+                    AND A.FECHA_RECIBIDO_TIENDA IS NULL
+                    AND A.FECHA_ENTREGADO IS NULL
+                ) A";
+        return $this->getDatos($sql);
+    }
+
+    // Función para obtener el detalle de pedidos pendientes de marcar como recibido en tiendas//
+    public function traerDetallePedidosDespachados() {
+        $sql = "SET DATEFORMAT YMD
+                SELECT A.FECHA_SINCRONIZADO FECHA_PEDIDO, A.NRO_PEDIDO, A.ORDER_ID, B.SUCURSAL_ENTREGA, 
+                CAST(A.FECHA_DESPACHADO AS DATE) FECHA_DESPACHADO, DATEDIFF(DAY, A.FECHA_DESPACHADO, GETDATE()) DIAS_PENDIENTE, 
+                ROUND(C.TOTAL_PEDI * 1.21, 0) TOTAL_PEDI
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN
+                (
+                    SELECT NRO_PEDIDO, ORDER_ID_TIENDA, SUCURSAL_ENTREGA FROM GVA21 A
+                    INNER JOIN RO_V_WAREHOUSE_METODO_ENVIO_VTEX B ON A.COD_TRANSP = B.COD_TRANSP
+                    LEFT JOIN RO_V_SUCURSAL_ENTREGA_VTEX C ON A.LEYENDA_3 = C.ID_SUCURSAL_ENTREGA_VTEX COLLATE Latin1_General_BIN
+                    WHERE COD_CLIENT = '000000' AND METODO_ENVIO = 'TIENDA'
+                ) B ON A.NRO_PEDIDO = B.NRO_PEDIDO AND A.ORDER_ID = B.ORDER_ID_TIENDA
+                LEFT JOIN GVA21 C ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
+                WHERE FECHA_DESPACHADO >= '2025-05-06' AND A.TALON_PED = '99'
+                AND A.FECHA_RECIBIDO_TIENDA IS NULL
+                AND A.FECHA_ENTREGADO IS NULL
+                ORDER BY A.FECHA_DESPACHADO";
+        return $this->getDatosMultiples($sql);
+    }
+
 }

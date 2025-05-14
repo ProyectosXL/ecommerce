@@ -127,6 +127,13 @@ function exportToExcelPendingDispatch() {
     });
 }
 
+function exportToExcelPedidosDespachados() {
+    // En la tabla de Pedidos Despachados, la columna "Order ID" es la columna 2 (índice 2, 0-based)
+    exportTableToExcel('#modalPedidosDespachados table', "Pedidos Despachados", "pedidos_despachados_pendientes", true, {
+        textColumns: [2] // El índice 2 corresponde a la columna "Order ID"
+    });
+}
+
 function exportToExcelMlFull() {
     // Obtener la tabla
     const table = document.querySelector('#tablaProductosMlFull');

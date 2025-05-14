@@ -38,7 +38,7 @@
                                                     <td><?php echo htmlspecialchars($detalle->DESC_PROMOCION_TARJETA); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->PORC_REINTEGRO); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->COD_ARTICU); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->NC, 2); ?></td>
+                                                    <td class="text-end">$<?php echo number_format($detalle->NC, 0); ?></td>
                                                 </tr>
                                             <?php endforeach;
                                         else: ?>

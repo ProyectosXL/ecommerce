@@ -125,7 +125,7 @@ max-width: 70%;
 }
 
 .table {
-    font-size: 0.9rem;
+    font-size: 12px;
     margin-bottom: 0;
 }
 
@@ -136,6 +136,7 @@ max-width: 70%;
 
 .table td {
     vertical-align: middle;
+    font-size: 12px;
 }
 
 #ncrChart {
@@ -230,4 +231,28 @@ max-width: 70%;
     color: #fff;
     background-color: #009688;
     border-color: #009688;
+}
+
+/* Estilos para Pedidos Despachados (tonos naranja) */
+.card-dispatched .card-header {
+    background-color: #fff8e1; /* Fondo naranja suave */
+    border: 1px solid rgba(255, 152, 0, 0.1);
+}
+.card-dispatched .card-icon {
+    color: #ff9800; /* Naranja para el ícono */
+    font-size: 1.8rem;
+}
+
+.btn-outline-orange {
+    color: #ff9800;
+    border-color: #ff9800;
+}
+.btn-outline-orange:hover {
+    color: #fff;
+    background-color: #ff9800;
+    border-color: #ff9800;
+}
+
+.card-title{
+    margin-top: 0.8rem;
 }

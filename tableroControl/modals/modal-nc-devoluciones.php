@@ -57,7 +57,7 @@
                                                     <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->COD_SUCURS); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->N_COMP); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->IMPORTE, 2); ?></td>
+                                                    <td class="text-end">$<?php echo number_format($detalle->IMPORTE, 0); ?></td>
                                                 </tr>
                                             <?php endforeach;
                                         else: ?>
