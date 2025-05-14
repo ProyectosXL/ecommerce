@@ -4,7 +4,6 @@ let articuloReclamado = {
     precio: '',
     cantidad: ''
 };
-
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
@@ -75,7 +74,7 @@ const checkFinalizar = () => {
         alert('Debe seleccionar una opción válida de resolución.');
         return false;
     }
-    
+
     document.getElementById('agregarSeccion').style.display = 'none';
 
     
@@ -125,6 +124,7 @@ function actualizarBadgeEstado() {
     }
 }
 
+// Spinner
 function showSpinner() {
     document.getElementById('spinner').classList.remove('spinner-hidden');
 }
@@ -138,7 +138,7 @@ window.abrirHistorial = function(codigo, descripcion, precio, cantidad) {
     articuloReclamado.descripcion = descripcion;
     articuloReclamado.precio = precio;
     articuloReclamado.cantidad = cantidad;
-    
+
     document.getElementById('modalArticulo').textContent = descripcion;
     document.getElementById('modalCodigo').textContent = `Código: ${codigo}`;
     document.getElementById('modalPrecio').textContent = `$ ${parseFloat(precio).toLocaleString('es-AR', {
@@ -148,16 +148,71 @@ window.abrirHistorial = function(codigo, descripcion, precio, cantidad) {
     document.getElementById('modalCantidad').textContent = cantidad;
 
     estadoActual = 'abierto';
-    actualizarBadgeEstado();
-    document.getElementById('seccionesHistorial').innerHTML = '';
-    document.getElementById('agregarSeccion').style.display = 'block';
-    document.getElementById('seccionResolucion').style.display = 'none';
-    document.getElementById('btnResolucion').style.display = 'block';
+    const nroOrden = document.getElementById('nroOrden').textContent;
 
-    const modal = new bootstrap.Modal(document.getElementById('historialModal'));
-    modal.show();
+    $.ajax({
+        url: 'Controller/consultarEstado.php',
+        method: 'POST',
+        data: {
+            nroOrder: nroOrden
+        },
+        success: function(response) {
+        
+            response = JSON.parse(response);
+            
+            if (response) {
+                estadoActual = response;
+            } 
+            actualizarBadgeEstado();
+
+            document.getElementById('seccionesHistorial').innerHTML = '';
+            // document.getElementById('seccionResolucion').style.display = '';
+            document.getElementById('agregarSeccion').style.display = 'block';
+            document.getElementById('btnResolucion').style.display = 'block';
+
+            if(estadoActual == 'resuelto') {
+                document.getElementById('seccionResolucion').style.display = ''
+                const sucursalSeleccionada = document.getElementById('sucursalSeleccionada')?.textContent;
+                const articuloCambioCod = document.getElementById('articuloCambioCod')?.textContent;
+
+                const seccionSucursal = document.getElementById('seccionSucursal');
+                seccionSucursal.style.display = 'block';
+                selectSucursal.disabled = true;
+                selectSucursal.innerHTML = `<option value="${sucursalSeleccionada}">${sucursalSeleccionada}</option>`;
+
+                const seccionArticulo = document.getElementById('seccionArticulo');
+                seccionArticulo.style.display = 'block';
+                seccionArticulo.disabled = true;
+
+                if ($('#selectArticulo').hasClass('select2-hidden-accessible')) {
+                    $('#selectArticulo').select2('destroy');
+                }  
+                
+                const selectArticulo = document.getElementById('selectArticulo');
+                selectArticulo.innerHTML = `<option value="${articuloCambioCod}">${articuloCambioCod}</option>`;
+                selectArticulo.disabled = true;
+                
+
+                document.getElementById('tipoResolucion').disabled = true;
+                document.getElementById('agregarSeccion').style.display = 'none';
+                document.getElementById('btnResolucion').style.display = 'none';
+    
+    
+            }
+    
+            const modal = new bootstrap.Modal(document.getElementById('historialModal'));
+            modal.show();
+
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.error('Error en la solicitud AJAX:', textStatus, errorThrown);
+        }
+    });
+    
+    
 }
 
+// Guardar sección
 function guardarSeccion(seccionElement) {
     const comentario = seccionElement.querySelector('.comentario').value;
     if (!comentario.trim()) {
@@ -178,6 +233,7 @@ function guardarSeccion(seccionElement) {
     if (fechaCreacion) fechaCreacion.textContent = new Date().toLocaleString();
 }
 
+// Crear nueva sección
 function crearNuevaSeccion() {
     const seccionesContainer = document.getElementById('seccionesHistorial');
     const nuevaSeccionHTML = `
@@ -215,12 +271,15 @@ function crearNuevaSeccion() {
     document.getElementById('agregarSeccion').style.display = 'none';
 }
 
+// Inicialización del botón Agregar Seguimiento
 const agregarSeccion = document.getElementById('agregarSeccion');
 
+// Evento para crear una nueva sección
 agregarSeccion?.addEventListener('click', function () {
     crearNuevaSeccion();
 });
 
+// Funcionalidad botones
 const btnResolucion = document.getElementById('btnResolucion');
 const seccionResolucion = document.getElementById('seccionResolucion');
 if (btnResolucion) {
@@ -232,6 +291,7 @@ if (btnResolucion) {
     });
 }
 
+    // Evento tipoResolucion
 const tipoResolucion = document.getElementById('tipoResolucion');
 const seccionSucursal = document.getElementById('seccionSucursal');
 const seccionArticulo = document.getElementById('seccionArticulo');
@@ -240,6 +300,7 @@ const selectSucursal = document.getElementById('selectSucursal');
 tipoResolucion?.addEventListener('change', async function () {
     const resolucion = this.value;
 
+    // Mostrar Sucursal y ocultar Artículo por defecto
     if (['cambio', 'completado'].includes(resolucion)) {
         seccionSucursal.style.display = 'block';
         seccionArticulo.style.display = 'none';
@@ -264,13 +325,13 @@ tipoResolucion?.addEventListener('change', async function () {
         } finally {
             hideSpinner();
         }
-    } else {
+    } else { 
         seccionSucursal.style.display = 'none';
         seccionArticulo.style.display = 'none';
     }
 
 });
-
+    // Evento para cambio en selectSucursal
 selectSucursal?.addEventListener('change', async function () {
     const sucursalSeleccionada = this.value;
     const resolucionSeleccionada = document.getElementById('tipoResolucion').value;
@@ -410,7 +471,7 @@ const guardarComentario = (div) => {
     })
 }
 
-window.guardarComentario = guardarComentario;
+
 
 function guardarReclamo(estado = 'abierto') {
     const resolucion = $('#tipoResolucion').val();
@@ -484,6 +545,7 @@ function guardarReclamo(estado = 'abierto') {
                 if (estado === 'resuelto') {
                     $('#finalizarReclamo').hide();
                 }
+                // redirigir
                 window.location.href = 'consultaPedido.php';
             } else {
                 alert('Error: ' + (response.error || 'No se pudo guardar el reclamo.'));
