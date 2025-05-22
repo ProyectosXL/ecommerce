@@ -17,6 +17,14 @@ $stringParaSql = substr($stringParaSql, 0, -1);
 
 $result = $pedido->guardarReclamoDetalle($stringParaSql);
 
+// Solo actualizar estado si no existe un registro principal
+// (evitamos crear duplicados - el estado se maneja desde el reclamo principal)
+$historial = $pedido->traerHistorialReclamo($nro_pedido);
+if (!$historial) {
+    // Solo crear registro básico si no existe ninguno
+    $pedido->actualizarEstadoReclamo($nro_pedido, 'proceso');
+}
+
 echo json_encode([
     'success' => true,
     'message' => 'Comentario guardado exitosamente.'

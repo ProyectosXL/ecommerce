@@ -72,6 +72,18 @@ function guardarReclamo(estado = 'abierto') {
     const prepara = $('#prepara').text().trim();
     const modalCantidad = $('#modalCantidad').text().trim();
     const modalCodigo = $('#modalCodigo').text().trim().replace('Código:', '').trim();
+    const warehouse = $('#prepara').text().trim(); // WAREHOUSE viene del campo "Prepara"
+
+    // Debug temporal - mostrar qué datos se están obteniendo
+    console.log('Datos obtenidos del DOM:', {
+        nroPedido: nroPedido,
+        nroOrden: nroOrden,
+        cliente: cliente,
+        warehouse: warehouse, // Este es el campo "Prepara"
+        modalCodigo: modalCodigo,
+        modalCantidad: modalCantidad,
+        sucursal: sucursal // Esta es la sucursal seleccionada en el modal
+    });
 
     let res = checkFinalizar();
 
@@ -79,9 +91,17 @@ function guardarReclamo(estado = 'abierto') {
         return;
     }
 
-    if (!resolucion || !sucursal || !articulo) {
-        alert('Debe completar Resolución, Sucursal y Artículo.');
-        return;
+    // Solo validar sucursal y artículo para resoluciones que lo requieran
+    if (['cambio', 'completado'].includes(resolucion)) {
+        if (!resolucion || !sucursal || !articulo) {
+            alert('Debe completar Resolución, Sucursal y Artículo.');
+            return;
+        }
+    } else if (resolucion === 'cancelado') {
+        if (!resolucion) {
+            alert('Debe seleccionar una resolución.');
+            return;
+        }
     }
 
     $.ajax({
@@ -89,9 +109,9 @@ function guardarReclamo(estado = 'abierto') {
         method: 'POST',
         data: {
             resolucion: resolucion,
-            sucursal: sucursal,
-            articulo: articulo,
-            descripcion: textAfterDash,
+            sucursal: sucursal || '',
+            articulo: articulo || '',
+            descripcion: textAfterDash || '',
             dataSecciones: dataSecciones,
             estado: estado,
             nroPedido: nroPedido,
@@ -100,28 +120,40 @@ function guardarReclamo(estado = 'abierto') {
             cliente: cliente,
             prepara: prepara,
             modalCantidad: modalCantidad,
-            estado: estado,
-            modalCodigo: modalCodigo
+            modalCodigo: modalCodigo,
+            warehouse: warehouse
         },
         success: function(response) {
-            response = JSON.parse(response);
-        
-            if (response.success) {
-                Swal.fire({
-                    icon: "success",
-                    title: "Reclamo guardado exitosamente.",
-                    showConfirmButton: true,
-                }).then(function () {
-                    // Redireccionar después de guardar
-                    window.location.href = 'index.php';
-                });
-                    
-                if (estado === 'resuelto') {
-                    $('#finalizarReclamo').hide();
+            try {
+                // Verificar si la respuesta ya es un objeto (algunas veces jQuery lo parsea automáticamente)
+                let parsedResponse;
+                if (typeof response === 'string') {
+                    parsedResponse = JSON.parse(response);
+                } else {
+                    parsedResponse = response;
                 }
-            } else {
-                alert('Error: ' + (response.error || 'No se pudo guardar el reclamo.'));
-                console.error(response.sqlsrv_error); 
+            
+                if (parsedResponse.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Reclamo guardado exitosamente.",
+                        showConfirmButton: true,
+                    }).then(function () {
+                        // Redireccionar después de guardar
+                        window.location.href = 'index.php';
+                    });
+                        
+                    if (estado === 'resuelto') {
+                        $('#finalizarReclamo').hide();
+                    }
+                } else {
+                    alert('Error: ' + (parsedResponse.error || 'No se pudo guardar el reclamo.'));
+                    console.error('Server error:', parsedResponse); 
+                }
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError);
+                console.error('Raw response:', response);
+                alert('Error: La respuesta del servidor no es válida. Revisa la consola para más detalles.');
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {

@@ -17,12 +17,55 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                         <span class="me-2">Estado del Reclamo:</span>
-                        <span class="badge estado-actual" id="estado"></span>
+                        <span class="badge estado-actual" id="estado">
+                            <?php 
+                            // Prioridad 1: Si existe historial y está resuelto -> Finalizado
+                            if (isset($historial[0]) && $historial[0]['ESTADO'] == 'resuelto') {
+                                echo '<span class="badge bg-success">Finalizado</span>';
+                            }
+                            // Prioridad 2: Si tiene comentarios pero no está resuelto -> En Curso  
+                            elseif (count($detalleReclamo) > 0) {
+                                echo '<span class="badge bg-warning">En Curso</span>';
+                            }
+                            // Prioridad 3: Sin comentarios ni resolución -> Abierto
+                            else {
+                                echo '<span class="badge bg-danger">Abierto</span>';
+                            }
+                            ?>
+                        </span>
                     </div>
+                    <?php if (!isset($historial[0]) || $historial[0]['ESTADO'] != 'resuelto'): ?>
                     <button class="btn btn-outline-success btn-sm" id="btnResolucion">
                         <i class="fas fa-check me-1"></i>Marcar como Resuelto
                     </button>
+                    <?php endif; ?>
                 </div>
+                
+                <!-- Mostrar datos del reclamo completado -->
+                <?php if (isset($historial[0]) && $historial[0]['ESTADO'] == 'resuelto'): ?>
+                <div class="mt-3 p-3 bg-light border-start border-4 border-success">
+                    <h6 class="mb-3"><i class="fas fa-check-circle text-success me-2"></i>Reclamo Finalizado</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Resolución:</strong><br>
+                            <span class="text-capitalize"><?php echo $historial[0]['RESOLUCION'] ?? 'N/A'; ?></span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Sucursal:</strong><br>
+                            <?php echo $historial[0]['SUC_DESPACHO'] ?? 'N/A'; ?>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Artículo:</strong><br>
+                            <div class="fw-bold">
+                                <?php echo $historial[0]['DESCRIPCION'] ?? 'N/A'; ?>
+                            </div>
+                            <small class="text-muted">
+                                Código: <?php echo $historial[0]['COD_ARTICULO_CAMBIO'] ?? 'N/A'; ?>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 
                 <!-- Sección de Resolución (inicialmente oculta) -->
                 <div id="seccionResolucion" class="mt-3" style="display:none">
@@ -78,19 +121,19 @@
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-6">
                                         <label class="form-label"><i class="fas fa-comments me-2"></i>Tipo de Contacto</label>
-                                        <select class="form-select tipo-contacto">
-                                            <option value="mail">'.$comentario[0]->TIPO_CONTACTO.'</option>
+                                        <select class="form-select tipo-contacto" disabled>
+                                            <option value="'.$comentario[0]->TIPO_CONTACTO.'" selected>'.$comentario[0]->TIPO_CONTACTO.'</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label"><i class="fas fa-user me-2"></i>Agente</label>
-                                        <select class="form-select agente">
-                                            <option value="at">'.$comentario[0]->AGENTE.'</option>
+                                        <select class="form-select agente" disabled>
+                                            <option value="'.$comentario[0]->AGENTE.'" selected>'.$comentario[0]->AGENTE.'</option>
                                         </select>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label"><i class="fas fa-comment me-2"></i>Comentario</label>
-                                        <textarea class="form-control comentario" rows="4">'.$comentario[0]->COMENTARIOS.'</textarea>
+                                        <textarea class="form-control comentario" rows="4" disabled>'.$comentario[0]->COMENTARIOS.'</textarea>
                                     </div>
                                 </div>
                             </div>';
@@ -99,51 +142,12 @@
                 ?>
                 
                 <div id="seccionesHistorial">
-                    <div class="seccion-historial">
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">
-                                    <i class="fas fa-comments me-2"></i>Tipo de Contacto
-                                </label>
-                                <select class="form-select tipo-contacto">
-                                    <option value="mail">Mail</option>
-                                    <option value="whatsapp">WhatsApp</option>
-                                    <option value="facebook">Facebook</option>
-                                    <option value="instagram">Instagram</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">
-                                    <i class="fas fa-user me-2"></i>Agente
-                                </label>
-                                <select class="form-select agente">
-                                    <option value="at">Agustina Taboada</option>
-                                    <option value="fc">Florencia Consoli</option>
-                                    <option value="jd">Julieta Dalmeida</option>
-                                    <option value="ls">Leonel Segovia</option>
-                                </select>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">
-                                    <i class="fas fa-comment me-2"></i>Comentario
-                                </label>
-                                <textarea class="form-control comentario" rows="4" placeholder="Ingrese su comentario aquí..."></textarea>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <small class="text-muted">
-                                <i class="far fa-clock me-1"></i>Creado: <span class="fecha-creacion"></span>
-                            </small>
-                            <button type="button" class="btn btn-primary btn-guardar-seccion" onclick="guardarComentario(this)">
-                                <i class="fas fa-save me-1"></i>Guardar Sección
-                            </button>
-                        </div>
-                    </div>
+                    <!-- Las secciones se agregarán dinámicamente aquí con JavaScript -->
                 </div>
             </div>
 
             <div class="modal-footer">
+                <?php if (!isset($historial[0]) || $historial[0]['ESTADO'] != 'resuelto'): ?>
                 <div id="botonesNormales" class="d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     <button type="button" class="btn btn-primary" id="agregarSeccion">
@@ -155,6 +159,11 @@
                         <i class="fas fa-check-circle me-1"></i>Finalizar Reclamo
                     </button>
                 </div>
+                <?php else: ?>
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

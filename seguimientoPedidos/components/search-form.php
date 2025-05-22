@@ -47,6 +47,7 @@
                 <div></div>
                 <div></div>
             </div>
+            <div class="spinner-text">Buscando pedido...</div>
         </div>
     </div>
 </form>

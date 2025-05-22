@@ -1,30 +1,4 @@
 
-// Función para abrir el modal de historial
-window.abrirHistorial = function(codigo, descripcion, precio, cantidad) {
-    articuloReclamado.codigo = codigo;
-    articuloReclamado.descripcion = descripcion;
-    articuloReclamado.precio = precio;
-    articuloReclamado.cantidad = cantidad;
-    
-    document.getElementById('modalArticulo').textContent = descripcion;
-    document.getElementById('modalCodigo').textContent = `Código: ${codigo}`;
-    document.getElementById('modalPrecio').textContent = `$ ${parseFloat(precio).toLocaleString('es-AR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })}`;
-    document.getElementById('modalCantidad').textContent = cantidad;
-
-    estadoActual = 'abierto';
-    actualizarBadgeEstado();
-    document.getElementById('seccionesHistorial').innerHTML = '';
-    document.getElementById('agregarSeccion').style.display = 'block';
-    document.getElementById('seccionResolucion').style.display = 'none';
-    document.getElementById('btnResolucion').style.display = 'block';
-
-    const modal = new bootstrap.Modal(document.getElementById('historialModal'));
-    modal.show();
-};
-
 // Función para guardar una sección
 function guardarSeccion(seccionElement) {
     const comentario = seccionElement.querySelector('.comentario').value;
@@ -35,7 +9,12 @@ function guardarSeccion(seccionElement) {
     seccionElement.classList.add('seccion-guardada');
     seccionElement.querySelectorAll('select, textarea').forEach(elem => elem.disabled = true);
     seccionElement.querySelector('.btn-guardar-seccion').style.display = 'none';
-    document.getElementById('agregarSeccion').style.display = 'block';
+    
+    // Mostrar el botón "Agregar seguimiento" después de guardar
+    const agregarBtn = document.getElementById('agregarSeccion');
+    if (agregarBtn) {
+        agregarBtn.style.display = 'block';
+    }
 
     if (estadoActual === 'abierto') {
         estadoActual = 'proceso';
@@ -64,10 +43,11 @@ function crearNuevaSeccion() {
                 <div class="col-md-6">
                     <label class="form-label"><i class="fas fa-user me-2"></i>Agente</label>
                     <select class="form-select agente">
-                        <option value="at">Agustina Taboada</option>
-                        <option value="fc">Florencia Consoli</option>
-                        <option value="jd">Julieta Dalmeida</option>
-                        <option value="ls">Leonel Segovia</option>
+                        <option value="Agustina Taboada">Agustina Taboada</option>
+                        <option value="Carolina Reyens">Carolina Reyens</option>
+                        <option value="Carolina Gauna">Carolina Gauna</option>
+                        <option value="Jessica Farias">Jessica Farias</option>
+                        <option value="Julieta Dalmeida">Julieta Dalmeida</option>
                     </select>
                 </div>
                 <div class="col-12">
@@ -122,6 +102,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 showSpinner();
                 
                 const response = await fetch('Controller/traerWarehouse.php');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Response is not JSON:', text);
+                    throw new Error('La respuesta del servidor no es JSON válido');
+                }
+                
                 const sucursales = await response.json();
 
                 // Poblar selectSucursal
@@ -133,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } catch (error) {
                 console.error('Error al cargar sucursales:', error);
-                alert('Error al cargar sucursales.');
+                alert('Error al cargar sucursales: ' + error.message);
             } finally {
                 hideSpinner();
             }
@@ -157,7 +149,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     $('#selectArticulo').val('').trigger('change');
 
                     // Petición al servidor para cargar artículos según la sucursal seleccionada
-                    const response = await fetch(`Controller/buscarStock.php?sucursal=${sucursalSeleccionada}`);
+                    const response = await fetch(`Controller/buscarStock.php?sucursal=${encodeURIComponent(sucursalSeleccionada)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        console.error('Response is not JSON:', text);
+                        throw new Error('La respuesta del servidor no es JSON válido');
+                    }
+                    
                     const articulos = await response.json();
 
                     // Limpiar y poblar selectArticulo
@@ -215,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } catch (error) {
                 console.error('Error al cargar artículos:', error);
-                alert('Error al cargar los artículos.');
+                alert('Error al cargar los artículos: ' + error.message);
             } finally {
                 hideSpinner();
             }
@@ -234,6 +238,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listener para finalizar reclamo
     $('#finalizarReclamo').on('click', function() {
-        guardarReclamo('resuelto');
+        guardarReclamo('resuelto'); // Esto se guardará como 'resuelto' en BD pero se mostrará como 'Finalizado'
     });
 });

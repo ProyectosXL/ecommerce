@@ -67,7 +67,7 @@
             </div>
             <div class="col-md-4">
                 <div class="info-label">Sucursal Entrega</div>
-                <div class="info-value"><?php echo $pedido->SUCURSAL_ENTREGA; ?></div>
+                <div class="info-value" id="warehouse"><?php echo $pedido->SUCURSAL_ENTREGA; ?></div>
             </div>
         </div>
     </div>

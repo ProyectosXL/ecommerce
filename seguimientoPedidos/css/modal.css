@@ -1,4 +1,21 @@
 
+/* Estilo para reclamo completado */
+.border-success {
+    border-color: #28a745 !important;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-capitalize {
+    text-transform: capitalize;
+}
+
 /* Estilos para los estados del modal */
 .estado-reclamo-header {
     background-color: #f8f9fa;

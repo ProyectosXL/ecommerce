@@ -78,5 +78,21 @@ require_once 'config.php';
     <script src="js/main.js"></script>
     <script src="js/modal-handler.js"></script>
     <script src="js/ajax-requests.js"></script>
+    
+    <script>
+        // Ocultar spinner cuando la página termine de cargar completamente
+        window.addEventListener('load', function() {
+            hideSpinner();
+        });
+        
+        // También ocultar si hay resultados mostrados
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($_SERVER["REQUEST_METHOD"] == "POST"): ?>
+                setTimeout(function() {
+                    hideSpinner();
+                }, 500);
+            <?php endif; ?>
+        });
+    </script>
 </body>
 </html>

@@ -1,21 +1,48 @@
 
 <?php
-
-header('Content-Type: application/json');
-require_once '../Class/Pedido.php';
-
-try {
-    if (!isset($_GET['sucursal'])) {
-        throw new Exception('Sucursal no especificada');
-    }
-
-    $pedidos = new Pedido();
-    $sucursal = $_GET['sucursal'];
-    $articulos = $pedidos->buscarStockArticulo($sucursal);
-    echo json_encode($articulos);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+// Verificar que sea una petición GET
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Método no permitido.'
+    ]);
+    exit;
 }
 
+// Incluir archivos necesarios
+require_once '../../Class/Conexion.php';
+require_once '../../Class/Pedido.php';
+
+try {
+    // Obtener parámetro de sucursal
+    $sucursal = isset($_GET['sucursal']) ? trim($_GET['sucursal']) : '';
+
+    // Validar que se proporcione la sucursal
+    if (empty($sucursal)) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error' => 'Sucursal no especificada.'
+        ]);
+        exit;
+    }
+
+    // Crear instancia y buscar stock
+    $pedido = new Pedido();
+    $articulos = $pedido->buscarStockArticulo($sucursal);
+
+    // Devolver resultado como JSON
+    header('Content-Type: application/json');
+    echo json_encode($articulos);
+
+} catch (Exception $e) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Error del servidor: ' . $e->getMessage()
+    ]);
+}
+exit;
 ?>

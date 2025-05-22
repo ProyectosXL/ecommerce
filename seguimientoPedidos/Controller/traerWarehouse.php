@@ -1,19 +1,35 @@
 
 <?php
-header('Content-Type: application/json');
+// Verificar que sea una petición GET
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Método no permitido.'
+    ]);
+    exit;
+}
+
+// Incluir archivos necesarios
+require_once '../../Class/Conexion.php';
 require_once '../../Class/Pedido.php';
 
 try {
-    $pedidos = new Pedido();
-    $sucursales = $pedidos->traerWarehouse();
-    
-    // Debug
-    error_log('Sucursales: ' . print_r($sucursales, true));
-    
-    echo json_encode($sucursales, JSON_UNESCAPED_UNICODE);
+    // Crear instancia y traer warehouses
+    $pedido = new Pedido();
+    $sucursales = $pedido->traerWarehouse();
+
+    // Devolver resultado como JSON
+    header('Content-Type: application/json');
+    echo json_encode($sucursales);
+
 } catch (Exception $e) {
-    error_log('Error en traerWarehouse: ' . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Error del servidor: ' . $e->getMessage()
+    ]);
 }
+exit;
 ?>

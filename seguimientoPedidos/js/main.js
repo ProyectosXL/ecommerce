@@ -10,6 +10,64 @@ let articuloReclamado = {
 let seccionCounter = 1;
 let estadoActual = 'abierto';
 
+// Función para abrir el modal de historial - Definida globalmente
+function abrirHistorial(codigo, descripcion, precio, cantidad) {
+    articuloReclamado.codigo = codigo;
+    articuloReclamado.descripcion = descripcion;
+    articuloReclamado.precio = precio;
+    articuloReclamado.cantidad = cantidad;
+    
+    document.getElementById('modalArticulo').textContent = descripcion;
+    document.getElementById('modalCodigo').textContent = `Código: ${codigo}`;
+    document.getElementById('modalPrecio').textContent = `$ ${parseFloat(precio).toLocaleString('es-AR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })}`;
+    document.getElementById('modalCantidad').textContent = cantidad;
+
+    // Limpiar secciones dinámicas
+    document.getElementById('seccionesHistorial').innerHTML = '';
+
+    // Verificar el estado actual basado en el badge que viene del servidor
+    const estadoBadge = document.querySelector('#estado .badge');
+    let currentState = 'abierto'; // default
+    
+    if (estadoBadge) {
+        const badgeText = estadoBadge.textContent.trim().toLowerCase();
+        if (badgeText === 'finalizado') {
+            currentState = 'resuelto'; // Internamente seguimos usando 'resuelto'
+        } else if (badgeText === 'en curso') {
+            currentState = 'proceso';
+        } else {
+            currentState = 'abierto';
+        }
+    }
+    
+    estadoActual = currentState;
+    
+    // Configurar elementos según el estado
+    const agregarBtn = document.getElementById('agregarSeccion');
+    const btnResolucion = document.getElementById('btnResolucion');
+    const seccionResolucion = document.getElementById('seccionResolucion');
+    
+    if (currentState === 'resuelto') {
+        // Reclamo completado - ocultar botones
+        if (agregarBtn) agregarBtn.style.display = 'none';
+        if (btnResolucion) btnResolucion.style.display = 'none';
+    } else {
+        // Reclamo abierto o en proceso - mostrar botones
+        if (agregarBtn) agregarBtn.style.display = 'block';
+        if (btnResolucion) btnResolucion.style.display = 'block';
+        if (seccionResolucion) seccionResolucion.style.display = 'none';
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('historialModal'));
+    modal.show();
+}
+
+// Hacer disponible globalmente
+window.abrirHistorial = abrirHistorial;
+
 // Inicialización cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar tooltips
@@ -20,6 +78,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inicializar Select2
     initializeSelect2();
+    
+    // Agregar event listener al formulario de búsqueda para mostrar spinner
+    const searchForm = document.querySelector('form[method="POST"]');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            // Validar que los campos requeridos estén llenos
+            const desde = document.querySelector('input[name="desde"]');
+            const hasta = document.querySelector('input[name="hasta"]');
+            const numero = document.querySelector('input[name="numero"]');
+            
+            if (desde.value && hasta.value && numero.value.trim()) {
+                showSpinner();
+            }
+        });
+    }
 });
 
 // Funciones para formatear los resultados de Select2
@@ -69,11 +142,12 @@ function actualizarBadgeEstado() {
             break;
         case 'proceso':
             badge.classList.add('bg-warning');
-            badge.textContent = 'En Proceso';
+            badge.textContent = 'En Curso';
             break;
         case 'resuelto':
+        case 'finalizado':
             badge.classList.add('bg-success');
-            badge.textContent = 'Resuelto';
+            badge.textContent = 'Finalizado';
             break;
     }
 }
@@ -93,25 +167,33 @@ const checkFinalizar = () => {
     const sucursal = document.getElementById('selectSucursal')?.value;
     const articulo = document.getElementById('selectArticulo')?.value;
 
-    if (['cambio', 'completado'].includes(resolucion)) {
-        if (!resolucion || !sucursal || !articulo) {
-            alert('Debe completar los campos de Resolución, Sucursal y Artículo.');
-            return false;
-        }
-    } else if (resolucion === 'cancelado') {
-        if (!resolucion) {
-            alert('Debe seleccionar una resolución.');
-            return false;
-        }
-    } else {
-        alert('Debe seleccionar una opción válida de resolución.');
+    if (!resolucion) {
+        alert('Debe seleccionar una resolución.');
         return false;
     }
+
+    // Solo validar sucursal y artículo para "cambio" y "completado"
+    if (['cambio', 'completado'].includes(resolucion)) {
+        if (!sucursal || !articulo) {
+            alert('Debe completar los campos de Sucursal y Artículo.');
+            return false;
+        }
+    }
     
+    // Deshabilitar controles
     document.getElementById('agregarSeccion').style.display = 'none';
     document.getElementById('tipoResolucion').disabled = true;
-    document.getElementById('selectSucursal').disabled = true;
-    document.getElementById('selectArticulo').disabled = true;
+    
+    // Solo deshabilitar sucursal y artículo si existen y están visibles
+    const selectSucursal = document.getElementById('selectSucursal');
+    const selectArticulo = document.getElementById('selectArticulo');
+    
+    if (selectSucursal && selectSucursal.style.display !== 'none') {
+        selectSucursal.disabled = true;
+    }
+    if (selectArticulo && selectArticulo.style.display !== 'none') {
+        selectArticulo.disabled = true;
+    }
 
     return true;
 };

@@ -182,6 +182,91 @@
         };
         return $data;
         }
-        
-        
+
+        public function actualizarEstadoReclamo($nro_pedido, $estado) {
+            $cid = new Conexion();
+            $cid_central = $cid->conectarSql('central');
+            
+            // Verificar si existe un registro en la tabla de historial
+            $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
+            $resultCheck = sqlsrv_query($cid_central, $sqlCheck);
+            $row = sqlsrv_fetch_array($resultCheck, SQLSRV_FETCH_ASSOC);
+            
+            if ($row['count'] > 0) {
+                // Actualizar registro existente - solo estado y fecha de última modificación
+                $sql = "UPDATE RO_T_ENC_ECOMMERCE_HISTORIAL_FALT 
+                        SET ESTADO = '$estado', FECHA_ULT_MODIF = GETDATE() 
+                        WHERE NRO_PEDIDO = '$nro_pedido'";
+            } else {
+                // Crear registro básico si no existe - con fecha de alta
+                $sql = "INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, ESTADO, FECHA_PEDIDO, FECHA_ALTA, FECHA_ULT_MODIF) 
+                        VALUES ('$nro_pedido', '$estado', GETDATE(), GETDATE(), GETDATE())";
+            }
+            
+            $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query"));
+            return $result;
+        }
+
+        // Método corregido con el mapping correcto de campos:
+
+        public function guardarHistorialReclamoConUpsert($data) {
+            $cid = new Conexion();
+            $cid_central = $cid->conectarSql('central');
+
+            // Verificar si ya existe un registro para este pedido
+            $nro_pedido = $data['nro_pedido'];
+            $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
+            $resultCheck = sqlsrv_query($cid_central, $sqlCheck);
+            $row = sqlsrv_fetch_array($resultCheck, SQLSRV_FETCH_ASSOC);
+            
+            // Mapping correcto de campos:
+            $nroOrden = !empty($data['nroOrden']) ? $data['nroOrden'] : '';
+            $cliente = !empty($data['cliente']) ? $data['cliente'] : '';
+            $warehouse = !empty($data['prepara']) ? $data['prepara'] : ''; // Viene del campo "Prepara"
+            $modalCodigo = !empty($data['modalCodigo']) ? $data['modalCodigo'] : '';
+            $modalCantidad = !empty($data['modalCantidad']) ? $data['modalCantidad'] : '1';
+            $sucDespacho = !empty($data['sucursal']) ? $data['sucursal'] : ''; // Sucursal seleccionada en modal
+            
+            if ($row['count'] > 0) {
+                // UPDATE - Actualizar registro existente
+                $sql = "UPDATE RO_T_ENC_ECOMMERCE_HISTORIAL_FALT SET 
+                        NRO_ORDEN = '$nroOrden',
+                        CLIENTE = '$cliente',
+                        WAREHOUSE = '$warehouse',
+                        COD_ARTICULO = '$modalCodigo',
+                        CANTIDAD = '$modalCantidad',
+                        SUC_DESPACHO = '$sucDespacho',
+                        ESTADO = '" . ($data['estado'] ?? '') . "',
+                        RESOLUCION = '" . ($data['resolucion'] ?? '') . "',
+                        COD_ARTICULO_CAMBIO = '" . ($data['articulo'] ?? '') . "',
+                        DESCRIPCION = '" . ($data['descripcion'] ?? '') . "',
+                        FECHA_ULT_MODIF = GETDATE()
+                        WHERE NRO_PEDIDO = '$nro_pedido'";
+            } else {
+                // INSERT - Crear nuevo registro
+                $sql = "INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (
+                        FECHA_PEDIDO, NRO_ORDEN, NRO_PEDIDO, CLIENTE, WAREHOUSE, 
+                        COD_ARTICULO_CAMBIO, DESCRIPCION, CANTIDAD, ESTADO, RESOLUCION, 
+                        SUC_DESPACHO, COD_ARTICULO, FECHA_ALTA, FECHA_ULT_MODIF
+                        ) VALUES (
+                        '" . ($data['fechaHora'] ?? '') . "', 
+                        '$nroOrden', 
+                        '$nro_pedido', 
+                        '$cliente', 
+                        '$warehouse', 
+                        '" . ($data['articulo'] ?? '') . "', 
+                        '" . ($data['descripcion'] ?? '') . "', 
+                        '$modalCantidad', 
+                        '" . ($data['estado'] ?? '') . "', 
+                        '" . ($data['resolucion'] ?? '') . "', 
+                        '$sucDespacho', 
+                        '$modalCodigo',
+                        GETDATE(),
+                        GETDATE()
+                        )";
+            }
+            
+            $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query: " . print_r(sqlsrv_errors(), true)));
+            return $result;
+        }
     }
