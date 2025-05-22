@@ -1,6 +1,6 @@
 <?php 
 
-require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/Class/Pedido.php';
+require_once $_SERVER['DOCUMENT_ROOT']. '/../ecommerce/Class/Pedido.php';
 
 $nroOrder = $_POST['nroOrder'];
 

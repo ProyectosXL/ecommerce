@@ -9,6 +9,7 @@
     text-align: center;
     position: relative;
     z-index: 2;
+    flex: 1;
 }
 
 .timeline-icon {
@@ -38,24 +39,44 @@
 
 .timeline-row {
     position: relative;
+    display: flex;
+    justify-content: space-between;
 }
 
 .timeline-row::before {
     content: '';
     position: absolute;
     top: 25px;
-    left: 0;
-    right: 0;
+    left: 50px;
+    right: 50px;
     height: 2px;
     background: #dee2e6;
     z-index: 1;
 }
 
-/* Ajuste para el primer y último step */
-.timeline-step:first-child .timeline-row::before {
-    left: 50%;
-}
-
-.timeline-step:last-child .timeline-row::before {
-    right: 50%;
+/* Ajustes responsive para el timeline */
+@media (max-width: 768px) {
+    .timeline-step {
+        margin-bottom: 2rem;
+    }
+    
+    .timeline-row {
+        flex-direction: column;
+    }
+    
+    .timeline-row::before {
+        display: none;
+    }
+    
+    /* Línea vertical para móviles */
+    .timeline-step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 70px;
+        left: 50%;
+        width: 2px;
+        height: 30px;
+        background: #dee2e6;
+        transform: translateX(-50%);
+    }
 }

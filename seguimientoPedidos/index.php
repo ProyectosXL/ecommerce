@@ -8,7 +8,7 @@ require_once 'config.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seguimiento de Pedidos E-commerce</title>
-    <link rel="shortcut icon" href="assets/icono.ico" />
+    <link rel="shortcut icon" href="../assets/icono.ico" />
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

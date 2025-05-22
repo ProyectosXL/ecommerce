@@ -15,7 +15,7 @@ const guardarComentario = (div) => {
     dataSecciones = JSON.stringify(dataSecciones);
 
     $.ajax({
-        url: 'guardarComentario.php', 
+        url: 'Controller/guardarComentario.php', 
         method: 'POST',
         data: {
             dataSecciones: dataSecciones,
@@ -85,7 +85,7 @@ function guardarReclamo(estado = 'abierto') {
     }
 
     $.ajax({
-        url: 'guardarReclamo.php', 
+        url: 'Controller/guardarReclamo.php', 
         method: 'POST',
         data: {
             resolucion: resolucion,
@@ -113,7 +113,7 @@ function guardarReclamo(estado = 'abierto') {
                     showConfirmButton: true,
                 }).then(function () {
                     // Redireccionar después de guardar
-                    window.location.href = 'consultaPedido.php';
+                    window.location.href = 'index.php';
                 });
                     
                 if (estado === 'resuelto') {

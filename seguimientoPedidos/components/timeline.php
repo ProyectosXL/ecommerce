@@ -65,6 +65,23 @@
                         ?>
                     </div>
                 </div>
+                <?php if ($pedido->RET_TIENDA_CENT == 1): ?>
+                <div class="col timeline-step">
+                    <div class="timeline-icon <?php echo $pedido->RECIBIDO_TIENDA ? 'active' : ''; ?>">
+                        <i class="fas fa-store icon"></i>
+                    </div>
+                    <div>Recibido Tienda</div>
+                    <div class="timeline-date">
+                        <?php 
+                        echo $pedido->FECHA_RECIBIDO_TIENDA ? 
+                            ($pedido->FECHA_RECIBIDO_TIENDA instanceof DateTime ? 
+                                $pedido->FECHA_RECIBIDO_TIENDA->format('d/m/Y H:i') : 
+                                date('d/m/Y H:i', strtotime($pedido->FECHA_RECIBIDO_TIENDA))) : 
+                            'Pendiente'; 
+                        ?>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="col timeline-step">
                     <div class="timeline-icon <?php echo $pedido->ENTREGADO ? 'active' : ''; ?>">
                         <i class="fas fa-check icon"></i>

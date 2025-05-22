@@ -1,7 +1,7 @@
 
 <?php
 header('Content-Type: application/json');
-require_once '../Class/Pedido.php';
+require_once '../../Class/Pedido.php';
 
 try {
     $pedidos = new Pedido();
