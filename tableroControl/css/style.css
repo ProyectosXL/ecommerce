@@ -130,7 +130,7 @@ max-width: 70%;
 }
 
 .table th {
-    background-color: #f8f9fa;
+    /* background-color: #f8f9fa; */
     white-space: nowrap;
 }
 
@@ -305,4 +305,69 @@ max-width: 70%;
 .btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Fix para modales - Prevenir problemas de backdrop */
+.modal {
+    z-index: 1055;
+}
+
+.modal-backdrop {
+    z-index: 1050;
+}
+
+.modal.show {
+    display: block !important;
+}
+
+/* Fix para tooltips en modales */
+.tooltip {
+    z-index: 1070;
+}
+
+/* Prevenir scroll horizontal en tablas de modales */
+.modal .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Fix para prevenir múltiples backdrops */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Asegurar que los botones de modales sean clicables */
+.modal-header .btn,
+.modal-footer .btn {
+    position: relative;
+    z-index: 1;
+}
+
+/* Estilos específicos para el grid de botones en las cards */
+.d-grid.gap-2 .btn {
+    margin-bottom: 0.5rem;
+}
+
+.d-grid.gap-2 .btn:last-child {
+    margin-bottom: 0;
+}
+
+/* Ajustes adicionales para móviles en el ranking */
+@media (max-width: 768px) {
+    .progress {
+        height: 20px !important;
+    }
+    
+    .progress-bar {
+        line-height: 20px;
+        font-size: 0.7rem;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-xl {
+        max-width: calc(100% - 1rem);
+    }
 }

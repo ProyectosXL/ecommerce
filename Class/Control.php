@@ -303,8 +303,7 @@ class Control {
 
     // Función para obtener el resumen de pedidos pendientes de marcar como recibido en tiendas//
     public function traerPedidosDespachados() {
-        $sql = "SET DATEFORMAT YMD
-                SELECT MIN(CAST(FECHA_DESPACHADO AS DATE)) AS FECHA_DESPACHADO, COUNT(*) AS CANT_PED_PEND, SUM(ROUND(A.TOTAL_PEDI * 1.21, 0)) AS TOTAL_PEDIDOS 
+        $sql = "SELECT MIN(CAST(FECHA_DESPACHADO AS DATE)) AS FECHA_DESPACHADO, COUNT(*) AS CANT_PED_PEND, SUM(ROUND(A.TOTAL_PEDI * 1.21, 0)) AS TOTAL_PEDIDOS 
                 FROM (
                     SELECT A.FECHA_SINCRONIZADO FECHA_PEDIDO, A.NRO_PEDIDO, B.SUCURSAL_ENTREGA, CAST(A.FECHA_DESPACHADO AS DATE) FECHA_DESPACHADO, C.TOTAL_PEDI 
                     FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
@@ -325,8 +324,7 @@ class Control {
 
     // Función para obtener el detalle de pedidos pendientes de marcar como recibido en tiendas//
     public function traerDetallePedidosDespachados() {
-        $sql = "SET DATEFORMAT YMD
-                SELECT A.FECHA_SINCRONIZADO FECHA_PEDIDO, A.NRO_PEDIDO, A.ORDER_ID, B.SUCURSAL_ENTREGA, 
+        $sql = "SELECT A.FECHA_SINCRONIZADO FECHA_PEDIDO, A.NRO_PEDIDO, A.ORDER_ID, B.SUCURSAL_ENTREGA, 
                 CAST(A.FECHA_DESPACHADO AS DATE) FECHA_DESPACHADO, DATEDIFF(DAY, A.FECHA_DESPACHADO, GETDATE()) DIAS_PENDIENTE, 
                 ROUND(C.TOTAL_PEDI * 1.21, 0) TOTAL_PEDI
                 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
@@ -351,7 +349,7 @@ class Control {
                     MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA
                 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
                 INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
-                WHERE CONTROLADO IS NULL AND A.CANCELADO IS NULL AND A.FECHA_PEDI >= GETDATE()-14";
+                WHERE CONTROLADO IS NULL AND A.CANCELADO IS NULL AND A.FECHA_PEDI >= GETDATE()-14 AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)";
         return $this->getDatos($sql);
     }
 
@@ -368,7 +366,10 @@ class Control {
                 INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
                 LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
                 LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
-                WHERE A.CONTROLADO IS NULL AND A.FECHA_PEDI >= GETDATE()-14 AND A.CANCELADO IS NULL
+                WHERE A.CONTROLADO IS NULL 
+                AND A.FECHA_PEDI >= GETDATE()-14 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.CANCELADO IS NULL
                 ORDER BY FECHA_SINCRONIZADO";
         return $this->getDatosMultiples($sql);
     }
@@ -384,6 +385,7 @@ class Control {
                     LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
                     WHERE A.CONTROLADO IS NULL 
                     AND A.FECHA_PEDI >= GETDATE()-14
+                    AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                     AND A.CANCELADO IS NULL
                     GROUP BY ISNULL(C.SUCURSAL_ENTREGA, 'CENTRAL')
                 ),
