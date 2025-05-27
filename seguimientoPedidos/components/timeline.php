@@ -20,6 +20,23 @@
                         ?>
                     </div>
                 </div>
+                <?php if ($pedido->PREPARA == 'CENTRAL'): ?>
+                <div class="col timeline-step">
+                    <div class="timeline-icon <?php echo $pedido->PREPARADO ? 'active' : ''; ?>">
+                        <i class="bi bi-cart-check-fill icon"></i>
+                    </div>
+                    <div>Preparado</div>
+                    <div class="timeline-date">
+                        <?php 
+                        echo $pedido->FECHA_PREPARADO ? 
+                            ($pedido->FECHA_PREPARADO instanceof DateTime ? 
+                                $pedido->FECHA_PREPARADO->format('d/m/Y H:i') : 
+                                date('d/m/Y H:i', strtotime($pedido->FECHA_PREPARADO))) : 
+                            'Pendiente'; 
+                        ?>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="col timeline-step">
                     <div class="timeline-icon <?php echo $pedido->FACTURADO ? 'active' : ''; ?>">
                         <i class="fas fa-file-invoice icon"></i>

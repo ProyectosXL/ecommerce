@@ -134,6 +134,10 @@ function exportToExcelPedidosDespachados() {
     });
 }
 
+function exportToExcelPedidosControl() {
+    exportTableToExcel('#tablaPedidosControl', "Pedidos Pendientes Control", "pedidos_pendientes_control");
+}
+
 function exportToExcelMlFull() {
     // Obtener la tabla
     const table = document.querySelector('#tablaProductosMlFull');
@@ -206,4 +210,75 @@ function exportToExcelMlFull() {
     // Generar nombre de archivo con fecha actual
     const today = new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb, `productos_ml_full_${today}.xlsx`);
+}
+
+
+function exportToExcelRankingControl() {
+    // Función especializada para exportar el ranking de pedidos control
+    const table = document.querySelector('#tablaRankingControl');
+    if (!table) return;
+    
+    const tableClone = table.cloneNode(true);
+    const rows = tableClone.querySelectorAll('tr');
+    const wb = XLSX.utils.book_new();
+    const data = [];
+    
+    rows.forEach((row, rowIndex) => {
+        const rowData = [];
+        row.querySelectorAll('th, td').forEach((cell, colIndex) => {
+            let value = cell.textContent.trim();
+            
+            // Manejar la columna de posición (puede contener íconos)
+            if (colIndex === 0 && rowIndex > 0) {
+                // Si contiene íconos, extraer solo el número o convertir íconos a texto
+                if (value.includes('👑') || cell.querySelector('.fa-crown')) {
+                    value = '1';
+                } else if (value.includes('🥈') || cell.querySelector('.fa-medal')) {
+                    value = '2';
+                } else if (value.includes('🥉') || cell.querySelector('.fa-award')) {
+                    value = '3';
+                } else {
+                    // Extraer solo números
+                    value = value.replace(/[^0-9]/g, '') || value;
+                }
+            }
+            
+            // Manejar la columna de cantidad (quitar badges)
+            if (colIndex === 2 && rowIndex > 0) {
+                value = value.replace(/[^0-9,]/g, '');
+                if (value.match(/^[\d,]+$/)) {
+                    value = parseFloat(value.replace(/,/g, ''));
+                }
+            }
+            
+            // Manejar la columna de porcentaje
+            if (colIndex === 3 && rowIndex > 0) {
+                if (value.includes('%')) {
+                    value = parseFloat(value.replace('%', ''));
+                }
+            }
+            
+            // Omitir la columna de progreso (índice 4)
+            if (colIndex !== 4) {
+                rowData.push(value);
+            }
+        });
+        data.push(rowData);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Configurar anchos de columna
+    ws['!cols'] = [
+        { width: 10 },  // Posición
+        { width: 25 },  // Sucursal
+        { width: 12 },  // Cantidad
+        { width: 12 }   // Porcentaje
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Ranking Pedidos Control");
+    
+    // Generar nombre de archivo con fecha actual
+    const today = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `ranking_pedidos_control_${today}.xlsx`);
 }

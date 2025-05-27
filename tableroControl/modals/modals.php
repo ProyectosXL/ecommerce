@@ -11,3 +11,5 @@
 <?php include 'modal-pedidos-pendiente-despacho.php'; ?>
 <?php include 'modal-productos-ml-full.php'; ?>
 <?php include 'modal-pedidos-despachados.php'; ?>
+<?php include 'modal-pedidos-pendiente-control.php'; ?>
+<?php include 'modal-ranking-pedidos-control.php'; ?>

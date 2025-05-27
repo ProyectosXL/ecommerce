@@ -256,3 +256,53 @@ max-width: 70%;
 .card-title{
     margin-top: 0.8rem;
 }
+
+/* Estilos para Pedidos Pendientes de Control (verde oscuro) */
+.card-pending-control .card-header {
+    background-color: #e8f6f3;
+}
+.card-pending-control .card-icon {
+    color: #00695c;
+    font-size: 1.8rem;
+}
+
+/* Botón verde */
+.btn-outline-success {
+    color: #00695c;
+    border-color: #00695c;
+}
+.btn-outline-success:hover {
+    color: #fff;
+    background-color: #00695c;
+    border-color: #00695c;
+}
+
+/* Ajustes adicionales para responsividad */
+@media (max-width: 768px) {
+    .dashboard-card {
+        height: auto;
+        min-height: 300px;
+    }
+}
+
+/* Mejoras para las tarjetas existentes */
+.card-title {
+    font-size: 1.2rem;
+    line-height: 1.2;
+}
+
+.card-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+/* Animaciones suaves para los botones */
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}

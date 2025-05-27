@@ -345,4 +345,58 @@ class Control {
         return $this->getDatosMultiples($sql);
     }
 
+    // Función para obtener el resumen de pedidos pendientes de control
+    public function traerResumenPedidosPendientesControl() {
+        $sql = "SELECT COUNT(*) AS CANTIDAD_PEDIDOS, 
+                    MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                WHERE CONTROLADO IS NULL AND A.CANCELADO IS NULL AND A.FECHA_PEDI >= GETDATE()-14";
+        return $this->getDatos($sql);
+    }
+
+    // Función para obtener el detalle de pedidos pendientes de control
+    public function traerDetallePedidosPendientesControl() {
+        $sql = "SELECT FECHA_SINCRONIZADO, 
+                    CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
+                            WHEN A.TALON_PED = '99' THEN 'VTEX' 
+                            WHEN A.TALON_PED = '80' THEN 'ICBC' 
+                    END CANAL,
+                    A.NRO_PEDIDO, ORDER_ID, UPPER(D.RAZON_SOCI) CLIENTE, 
+                    ISNULL(C.SUCURSAL_ENTREGA, 'CENTRAL') SUCURSAL_PREPARA
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
+                LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
+                WHERE A.CONTROLADO IS NULL AND A.FECHA_PEDI >= GETDATE()-14 AND A.CANCELADO IS NULL
+                ORDER BY FECHA_SINCRONIZADO";
+        return $this->getDatosMultiples($sql);
+    }
+
+    // Función para obtener el ranking de pedidos pendientes de control por sucursal
+    public function traerRankingPedidosPendientesControlPorSucursal() {
+        $sql = "WITH PedidosPorSucursal AS (
+                    SELECT 
+                        ISNULL(C.SUCURSAL_ENTREGA, 'CENTRAL') AS SUCURSAL,
+                        COUNT(*) AS CANTIDAD_PEDIDOS
+                    FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                    INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                    LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
+                    WHERE A.CONTROLADO IS NULL 
+                    AND A.FECHA_PEDI >= GETDATE()-14
+                    AND A.CANCELADO IS NULL
+                    GROUP BY ISNULL(C.SUCURSAL_ENTREGA, 'CENTRAL')
+                ),
+                TotalPedidos AS (
+                    SELECT SUM(CANTIDAD_PEDIDOS) AS TOTAL FROM PedidosPorSucursal
+                )
+                SELECT 
+                    P.SUCURSAL,
+                    P.CANTIDAD_PEDIDOS,
+                    CAST(ROUND((P.CANTIDAD_PEDIDOS * 100.0 / T.TOTAL), 1) AS DECIMAL(5,1)) AS PORCENTAJE
+                FROM PedidosPorSucursal P
+                CROSS JOIN TotalPedidos T
+                ORDER BY P.CANTIDAD_PEDIDOS DESC, P.SUCURSAL";
+        return $this->getDatosMultiples($sql);
+    }
 }

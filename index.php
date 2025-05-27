@@ -203,11 +203,13 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 					<th style="width: 5%;" class="headerTitle">DEPOSITO</th>
 					<th style="width: 5%;" class="headerTitle">METODO<BR>ENVIO</th>
 					<th style="width: 5%;" class="headerTitle">TIENDA</th>
-					<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="fa fa-cart-plus" data-toggle="tooltip" data-placement="top" title="Preparación" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
+					<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="bi-cart-check-fill" data-toggle="tooltip" data-placement="top" title="Preparación" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
 					<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="bi bi-file-earmark-text-fill" data-toggle="tooltip" data-placement="top" title="Facturación" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
 					<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="bi bi-clipboard2-check-fill" data-toggle="tooltip" data-placement="top" title="Control" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
 					<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="fas fa-truck" data-toggle="tooltip" data-placement="top" title="Despacho" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
+					<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="fas fa-store" data-toggle="tooltip" data-placement="top" title="Recibido" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
 					<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="bi bi-box-seam-fill" data-toggle="tooltip" data-placement="top" title="Entrega" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
+					<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="bi bi-cart-dash-fill" data-toggle="tooltip" data-placement="top" title="Incompleto" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
 				</tr>
 			</thead>
 			<tbody id="table">
@@ -263,9 +265,9 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 					<td  style="text-align: center;"><small><?= $value[0]->DESC_SUCURSAL?></small></td>
 
 					<td  id="incompleto" class="noExl">
-						<?php if(isset($value[0]->FALTANTE) && $value[0]->FALTANTE== 1){ ?>
-							<i title="Pedido incompleto" data-toggle="tooltip" data-placement="left" class="bi bi-cart-dash-fill incompleto" style="color: orange; font-size: 20px;"></i>	
-							<?php }else if(isset($value[0]->FALTANTE) && $value[0]->FALTANTE== 0){?>
+						<?php if($value[0]->PREPARADO == 1){ ?>
+							<i title="Preparado <?= $value[0]->FECHA_PREPARADO->format("Y-m-d h:i")?>" data-toggle="tooltip" data-placement="left" class="bi bi-cart-check-fill" style="color: #20c997; font-size: 20px;"></i>	
+							<?php }else{?>
 								<i class="fas fa-square" style="color: white; font-size: 20px;">
 								<?php } ?>
 					</td>
@@ -283,7 +285,7 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 							<i class="bi bi-cart-x-fill" data-toggle="tooltip" data-placement="left" title="Cancelado" style="color: red; font-size: 20px; padding: 0;"></i>
 						<?php
 						}else if($value[0]->FACTURADO == 1){ ?>
-						<i class="bi bi-file-earmark-text-fill" data-toggle="tooltip" data-placement="left"  title="Facturado" style="color: #6c757d; font-size: 20px;"></i>
+						<i class="bi bi-file-earmark-text-fill" data-toggle="tooltip" data-placement="left"  title="Facturado <?= $value[0]->FECHA_FACTURADO->format("Y-m-d h:i")?>" style="color: #6c757d; font-size: 20px;"></i>
 							<?php }else if($value[0]->FACTURADO == 0){?>
 								<i class="fas fa-square pendiente" style="color: white; font-size: 20px;">
 							<?php } ?>	
@@ -307,9 +309,25 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 					</td>
 
 					<td class="noExl">
+						<?php if($value[0]->RECIBIDO_TIENDA== 1){ ?>
+							<i class="fas fa-store"  data-toggle="tooltip" data-placement="left" title="Recibido Tienda <?= $value[0]->FECHA_RECIBIDO_TIENDA->format("Y-m-d")?>" style="color: #17a2b8; font-size: 18px; padding-top: 0.4rem;"></i>
+								<?php }else if($value[0]->RECIBIDO_TIENDA== 0){?>
+									<i class="fas fa-square" style="color: white; font-size: 20px;">
+									<?php } ?>
+					</td>
+
+					<td class="noExl">
 						<?php if($value[0]->ENTREGADO == 1){ ?>
 							<i class="bi bi-box-seam-fill" data-toggle="tooltip" data-placement="left" title="Entregado <?= $value[0]->FECHA_ENTREGADO->format("Y-m-d")?>" style="color: #007bff; font-size: 18px; padding-top: 0.4rem;"></i>
 								<?php }else if($value[0]->ENTREGADO == 0){?>
+								<i class="fas fa-square" style="color: white; font-size: 20px;">
+								<?php } ?>
+					</td>
+
+					<td  id="incompleto" class="noExl">
+						<?php if(isset($value[0]->FALTANTE) && $value[0]->FALTANTE== 1){ ?>
+							<i title="Pedido incompleto" data-toggle="tooltip" data-placement="left" class="bi bi-cart-dash-fill incompleto" style="color: orange; font-size: 20px;"></i>	
+							<?php }else if(isset($value[0]->FALTANTE) && $value[0]->FALTANTE== 0){?>
 								<i class="fas fa-square" style="color: white; font-size: 20px;">
 								<?php } ?>
 					</td>
