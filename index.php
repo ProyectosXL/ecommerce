@@ -44,6 +44,57 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
 <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
 
+<style>
+#buttonAyuda {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#buttonAyuda:hover {
+    background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+#buttonAyuda:active {
+    transform: translateY(0);
+}
+
+/* Mejorar la apariencia de los otros botones para mantener consistencia */
+#buttonPendientes, #buttonCancelados, #buttonIncompletos {
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#buttonPendientes:hover, #buttonCancelados:hover, #buttonIncompletos:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+#buttonExportar {
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: none;
+}
+
+#buttonExportar:hover {
+    background-color: #218838 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+</style>
+
 </head>
 
 <body>
@@ -165,8 +216,13 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
 			</svg>
 		</div>
 		<div class="ml-1 mt-4">
-			<button onclick="exportar()" id="buttonExportar" style="background-color:#28a745" >Exportar <i class="bi bi-filetype-xls"></i></button>
+			<button onclick="exportar()" id="buttonExportar" style="background-color:#28a745" >Exportar</i></button>
 			</svg>
+		</div>
+		<div class="ml-1 mt-4">
+			<button onclick="$('#modalAyuda').modal('show')" id="buttonAyuda" class="btn btn-info btn-sm" data-toggle="tooltip" data-placement="top" title="Ayuda y guía de uso">
+				<i class="fas fa-question-circle"></i> Ayuda
+			</button>
 		</div>
 
 	</div>
@@ -280,10 +336,6 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 						}else if(isset($value[0]->NCR)){?>
 							<i class="bi bi-clipboard-check-fill" data-toggle="tooltip" data-placement="left" title="Pedido cancelado <?php if(isset($value[0]->NCR)){echo 'NCR '.$value[0]->NCR;}?>" style="color: #17a2b8; font-size: 20px; padding: 0;"></i>
 							<?php
-						}else if($value[0]->CANCELADO == 1 ){
-						?>
-							<i class="bi bi-cart-x-fill" data-toggle="tooltip" data-placement="left" title="Cancelado" style="color: red; font-size: 20px; padding: 0;"></i>
-						<?php
 						}else if($value[0]->FACTURADO == 1){ ?>
 						<i class="bi bi-file-earmark-text-fill" data-toggle="tooltip" data-placement="left"  title="Facturado <?= $value[0]->FECHA_FACTURADO->format("Y-m-d h:i")?>" style="color: #6c757d; font-size: 20px;"></i>
 							<?php }else if($value[0]->FACTURADO == 0){?>
@@ -324,15 +376,16 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 								<?php } ?>
 					</td>
 
-					<td  id="incompleto" class="noExl">
-						<?php if(isset($value[0]->FALTANTE) && $value[0]->FALTANTE== 1){ ?>
-							<i title="Pedido incompleto" data-toggle="tooltip" data-placement="left" class="bi bi-cart-dash-fill incompleto" style="color: orange; font-size: 20px;"></i>	
-							<?php }else if(isset($value[0]->FALTANTE) && $value[0]->FALTANTE== 0){?>
-								<i class="fas fa-square" style="color: white; font-size: 20px;">
-								<?php } ?>
-					</td>
-				
-
+					<td id="incompleto" class="noExl">
+						<?php if (isset($value[0]->FALTANTE) && $value[0]->FALTANTE == 1) { ?>
+							<i title="Pedido incompleto" data-toggle="tooltip" data-placement="left" class="bi bi-cart-dash-fill incompleto" style="color: orange; font-size: 20px;"></i>
+						<?php } elseif ($value[0]->CANCELADO == 1) { ?>
+							<i class="bi bi-cart-x-fill" data-toggle="tooltip" data-placement="left" title="Cancelado" style="color: red; font-size: 20px; padding: 0;"></i>
+						<?php } elseif (isset($value[0]->FALTANTE) && $value[0]->FALTANTE == 0) { ?>
+							<i class="fas fa-square" style="color: white; font-size: 20px;"></i>
+						<?php } ?>
+					</td>		
+					
 				</tr>
 			<?php
 			$id++;
@@ -387,6 +440,7 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 <script src="assets/bootstrap/popper.min.js" ></script>
 <script src="assets/bootstrap/bootstrap.min.js" ></script>
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<?php require_once 'modals/ayuda.php'; ?>
 
 </body>
 

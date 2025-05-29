@@ -108,8 +108,8 @@ class Control {
                 LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1 
-                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND REINTEGRADO IS NULL
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND (B.CANCELADO = 1 OR REINTEGRADO = 1)
+                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL
                 ) A";
         return $this->getDatos($sql);
     }
@@ -121,8 +121,9 @@ class Control {
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
                 LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1 
-                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND REINTEGRADO IS NULL";
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND (B.CANCELADO = 1 OR REINTEGRADO = 1)
+                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL
+                ORDER BY A.FECHA_PEDI ASC";
         return $this->getDatosMultiples($sql);
     }
 
@@ -160,14 +161,24 @@ class Control {
     }
 
     public function traerPedidosSinFactTiendas() {
-        $sql = "SELECT MIN(FECHA_HORA) AS FECHA_PEDI, COUNT(*) AS CANT_PED_SIN_FACT, SUM(TOTAL_PEDI) AS TOTAL_PEDIDOS FROM 
-                (SELECT TRY_CAST(CONCAT(FORMAT(A.FECHA_PEDI, 'yyyy-dd-MM'), ' ', LEFT(A.HORA_INGRESO, 2), ':', SUBSTRING(A.HORA_INGRESO, 3, 2)) AS DATETIME) AS FECHA_HORA,
-                A.TOTAL_PEDI FROM GVA21 A
-                LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
-                LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= DATEADD(DAY, -7, GETDATE()) AND C.N_COMP IS NULL 
-                AND A.COD_SUCURS NOT IN ('01', '11') AND DATEADD(MINUTE, 30, TRY_CAST(CONCAT(FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd'), 
-                ' ', LEFT(A.HORA_INGRESO, 2),':', SUBSTRING(A.HORA_INGRESO, 3, 2),':',RIGHT(A.HORA_INGRESO, 2)) AS DATETIME)) < GETDATE()) A
+        $sql = "SELECT 
+                    MIN(FECHA_HORA) AS FECHA_PEDI, 
+                    COUNT(*) AS CANT_PED_SIN_FACT, 
+                    SUM(TOTAL_PEDI) AS TOTAL_PEDIDOS 
+                FROM (
+                    SELECT 
+                        CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
+                            STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120) AS FECHA_HORA,
+                        A.TOTAL_PEDI 
+                    FROM GVA21 A
+                    LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+                    LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
+                    WHERE A.COD_CLIENT = '000000' 
+                        AND A.FECHA_PEDI >= DATEADD(DAY, -7, GETDATE()) 
+                        AND C.N_COMP IS NULL 
+                        AND A.COD_SUCURS NOT IN ('01', '11')
+                ) A 
+                WHERE DATEADD(MINUTE, 30, FECHA_HORA) < GETDATE();
                 ";
         return $this->getDatos($sql);
     }
