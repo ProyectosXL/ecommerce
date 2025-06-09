@@ -344,12 +344,24 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 
 					</td>
 
-					<td class="noExl" >
-						<?php if($value[0]->CONTROLADO== 1){ ?>
-							<i class="bi bi-clipboard2-check-fill"  data-toggle="tooltip" data-placement="left" title="Controlado <?= $value[0]->FECHA_CONTROLADO->format("Y-m-d")?>" style="color: green; font-size: 20px;"></i>
-								<?php }else if($value[0]->CONTROLADO== 0){?>
-										<i class="fas fa-square" style="color: white; font-size: 20px;">
-									<?php } ?>
+					<td class="noExl">
+						<?php if ($value[0]->CONTROLADO == 1) { ?>
+							<?php if ($value[0]->FECHA_CONTROLADO !== null) { ?>
+								<i class="bi bi-clipboard2-check-fill"  
+								data-toggle="tooltip" 
+								data-placement="left" 
+								title="Controlado <?= $value[0]->FECHA_CONTROLADO->format('Y-m-d') ?>" 
+								style="color: green; font-size: 20px;"></i>
+							<?php } else { ?>
+								<i class="bi bi-clipboard2-check-fill"  
+								data-toggle="tooltip" 
+								data-placement="left" 
+								title="Controlado (sin fecha)" 
+								style="color: green; font-size: 20px;"></i>
+							<?php } ?>
+						<?php } elseif ($value[0]->CONTROLADO == 0) { ?>
+							<i class="fas fa-square" style="color: white; font-size: 20px;"></i>
+						<?php } ?>
 					</td>
 
 					<td class="noExl">

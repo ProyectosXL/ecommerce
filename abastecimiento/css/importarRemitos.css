@@ -1,0 +1,366 @@
+
+/* Estilos para el sistema de remitos */
+.header-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 15px 15px;
+}
+
+.filters-card {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: none;
+    margin-bottom: 2rem;
+}
+
+.filters-card .card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    border-radius: 15px 15px 0 0 !important;
+    font-weight: 600;
+}
+
+/* Contenedor de tabla con ancho limitado */
+.table-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+    max-width: 1200px; /* Ancho máximo */
+    margin: 0 auto; /* Centrar la tabla */
+}
+
+.container-fluid {
+    max-width: 1400px; /* Limitar el ancho del contenedor principal */
+    margin: 0 auto;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+    color: white;
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.001);
+    transition: all 0.2s ease;
+}
+
+/* Estados con colores */
+.estado-sin-importar {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+    font-weight: 600;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 2px solid #ffeaa7;
+}
+
+.estado-ingresado {
+    background-color: #d1edff !important;
+    color: #0c5460 !important;
+    font-weight: 600;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 2px solid #74b9ff;
+}
+
+.estado-sin-ingresar {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    font-weight: 600;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 2px solid #fd79a8;
+}
+
+/* Proveedor con colores */
+.proveedor-gtweb {
+    background: linear-gradient(135deg, #00b894, #00a085);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,184,148,0.3);
+}
+
+.proveedor-gtmeli {
+    background: linear-gradient(135deg, #fdcb6e, #e17055);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(253,203,110,0.3);
+}
+
+/* Botones personalizados */
+.btn-primary-custom {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+}
+
+.btn-success-custom {
+    background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.btn-success-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,184,148,0.4);
+}
+
+.btn-warning-custom {
+    background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-warning-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(253,203,110,0.4);
+    color: white;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Toast personalizado */
+.toast-custom {
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    border: none;
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.toast-success {
+    background: linear-gradient(135deg, #00b894, #00a085);
+    color: white;
+}
+
+.toast-success .toast-header {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #e17055, #d63031);
+    color: white;
+}
+
+.toast-error .toast-header {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.toast-info {
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    color: white;
+}
+
+.toast-info .toast-header {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.toast .btn-close {
+    filter: invert(1);
+    font-size: 0.8rem;
+}
+
+/* Mejorar z-index del toast */
+.toast-container {
+    z-index: 9999 !important;
+}
+
+/* Asegurar que el toast esté por encima del modal */
+.toast {
+    z-index: 10000 !important;
+}
+
+/* Modal de confirmación */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    border-bottom: none;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1.5rem;
+}
+
+.modal-body {
+    padding: 2rem;
+    font-size: 1.1rem;
+}
+
+/* DataTables personalización */
+.dataTables_wrapper .dataTables_length select {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    padding: 0.375rem 0.75rem;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    padding: 0.375rem 0.75rem;
+    margin-left: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
+    outline: none;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 8px;
+    margin: 0 2px;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #667eea;
+    transition: all 0.2s ease;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-1px);
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+}
+
+.dataTables_wrapper .dataTables_info {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* Responsive DataTables */
+@media (max-width: 768px) {
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        text-align: center;
+        margin-top: 1rem;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+    
+    .btn-primary-custom,
+    .btn-success-custom {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .header-section {
+        padding: 1rem 0;
+    }
+}
+
+/* Animaciones */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.table tbody tr {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Formulario mejorado */
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
+}
+
+.form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
+}

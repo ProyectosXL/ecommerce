@@ -1,0 +1,644 @@
+
+class RemitoManager {
+    constructor() {
+        this.datosCompletos = [];
+        this.dataTable = null;
+        this.init();
+    }
+
+    init() {
+        console.log('Inicializando RemitoManager con DataTables...');
+        
+        // Verificar que jQuery esté disponible
+        if (typeof $ === 'undefined') {
+            console.error('jQuery no está disponible');
+            setTimeout(() => this.init(), 100);
+            return;
+        }
+        
+        // Verificar que los elementos existan
+        const fechaDesde = document.getElementById('fechaDesde');
+        const fechaHasta = document.getElementById('fechaHasta');
+        const estado = document.getElementById('estado');
+        const tabla = document.getElementById('tablaRemitos');
+        
+        if (!fechaDesde || !fechaHasta || !estado || !tabla) {
+            console.error('Elementos del DOM no encontrados');
+            setTimeout(() => this.init(), 100);
+            return;
+        }
+        
+        this.bindEvents();
+        this.inicializarDataTable();
+        
+        // Cargar datos iniciales
+        setTimeout(() => {
+            console.log('Iniciando carga de datos...');
+            this.cargarRemitos();
+        }, 200);
+    }
+
+    bindEvents() {
+        // Botón filtrar
+        document.getElementById('btnFiltrar').addEventListener('click', () => {
+            this.cargarRemitos();
+        });
+
+        // Botón limpiar filtros
+        document.getElementById('btnLimpiar').addEventListener('click', () => {
+            this.limpiarFiltros();
+        });
+
+        // Botón importar remitos
+        document.getElementById('btnImportar').addEventListener('click', () => {
+            this.importarRemitos();
+        });
+
+        // Filtrar automáticamente cuando cambian los filtros
+        document.getElementById('fechaDesde').addEventListener('change', () => {
+            this.cargarRemitos();
+        });
+
+        document.getElementById('fechaHasta').addEventListener('change', () => {
+            this.cargarRemitos();
+        });
+
+        document.getElementById('estado').addEventListener('change', () => {
+            this.cargarRemitos();
+        });
+    }
+
+    inicializarDataTable() {
+        // Configuración de DataTables
+        this.dataTable = $('#tablaRemitos').DataTable({
+            // Configuración básica
+            processing: true,
+            serverSide: false, // Usaremos datos del cliente
+            responsive: true,
+            pageLength: 50,
+            lengthMenu: [[25, 50, 100, 200, -1], [25, 50, 100, 200, "Todos"]],
+            
+            // Configuración de idioma
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            },
+            
+            // Configuración de columnas
+            columnDefs: [
+                {
+                    targets: [0], // Fecha
+                    type: 'date',
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            return window.remitoManager.formatearFecha(data);
+                        }
+                        return data;
+                    }
+                },
+                {
+                    targets: [1], // Hora
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            return window.remitoManager.formatearHora(data);
+                        }
+                        return data;
+                    }
+                },
+                {
+                    targets: [2], // Proveedor
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            return `<span class="proveedor-${data.toLowerCase()}">${data}</span>`;
+                        }
+                        return data;
+                    }
+                },
+                {
+                    targets: [3], // N° Comprobante
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            return `<strong>${data}</strong>`;
+                        }
+                        return data;
+                    }
+                },
+                {
+                    targets: [4], // Cantidad
+                    className: 'text-end',
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            return window.remitoManager.formatearNumero(data);
+                        }
+                        return data;
+                    }
+                },
+                {
+                    targets: [5], // Estado
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            return `<span class="estado-${data.toLowerCase().replace(/ /g, '-')}">${data}</span>`;
+                        }
+                        return data;
+                    }
+                }
+            ],
+            
+            // Configuración de DOM y estilo
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                 '<"row"<"col-sm-12"tr>>' +
+                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            
+            // Configuración de búsqueda
+            search: {
+                placeholder: "Buscar remitos..."
+            },
+            
+            // Eventos
+            drawCallback: function(settings) {
+                // Se ejecuta después de cada redibujado
+                window.remitoManager.actualizarContadores();
+            }
+        });
+    }
+
+    async cargarRemitos() {
+        try {
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            const estado = document.getElementById('estado').value;
+
+            console.log('Enviando datos:', { fechaDesde, fechaHasta, estado });
+
+            const formData = new FormData();
+            formData.append('action', 'obtenerRemitos');
+            formData.append('fechaDesde', fechaDesde);
+            formData.append('fechaHasta', fechaHasta);
+            formData.append('estado', estado);
+
+            const response = await fetch('/ecommerce/Abastecimiento/Controller/importarRemitos.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const responseText = await response.text();
+            console.log('Response raw:', responseText);
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError);
+                throw new Error('Respuesta del servidor no es JSON válido: ' + responseText.substring(0, 100));
+            }
+
+            console.log('Response parsed:', data);
+
+            if (data.success) {
+                this.datosCompletos = data.data;
+                this.actualizarDataTable(data.data);
+                this.actualizarContadores();
+                console.log('Datos cargados correctamente:', data.data.length, 'registros');
+            } else {
+                console.error('Error del servidor:', data.message);
+                this.mostrarToast('Error al cargar los datos: ' + (data.message || 'Error desconocido'), 'error');
+            }
+
+        } catch (error) {
+            console.error('Error completo:', error);
+            this.mostrarToast('Error de conexión: ' + error.message, 'error');
+        }
+    }
+
+    actualizarDataTable(datos) {
+        // Limpiar y agregar nuevos datos
+        this.dataTable.clear();
+        
+        if (datos && datos.length > 0) {
+            // Agregar datos fila por fila
+            datos.forEach(remito => {
+                this.dataTable.row.add([
+                    remito.FECHA_MOV,
+                    remito.HORA_INGRESO,
+                    remito.COD_PRO_CL,
+                    remito.N_COMP,
+                    remito.CANTIDAD,
+                    remito.ESTADO
+                ]);
+            });
+        }
+        
+        // Redibujar la tabla
+        this.dataTable.draw();
+    }
+
+    actualizarContadores() {
+        if (!this.datosCompletos || this.datosCompletos.length === 0) {
+            document.getElementById('totalRemitos').textContent = '0';
+            document.getElementById('sinImportar').textContent = '0';
+            document.getElementById('ingresado').textContent = '0';
+            document.getElementById('sinIngresar').textContent = '0';
+            return;
+        }
+
+        const total = this.datosCompletos.length;
+        const sinImportar = this.datosCompletos.filter(r => r.ESTADO === 'SIN IMPORTAR').length;
+        const ingresado = this.datosCompletos.filter(r => r.ESTADO === 'INGRESADO').length;
+        const sinIngresar = this.datosCompletos.filter(r => r.ESTADO === 'SIN INGRESAR').length;
+
+        document.getElementById('totalRemitos').textContent = total;
+        document.getElementById('sinImportar').textContent = sinImportar;
+        document.getElementById('ingresado').textContent = ingresado;
+        document.getElementById('sinIngresar').textContent = sinIngresar;
+    }
+
+    limpiarFiltros() {
+        document.getElementById('fechaDesde').value = '';
+        document.getElementById('fechaHasta').value = '';
+        document.getElementById('estado').value = 'TODOS';
+        this.cargarRemitos();
+    }
+
+    // Función para ampliar la búsqueda
+    ampliarBusqueda() {
+        const hoy = new Date();
+        const haceUnAno = new Date();
+        haceUnAno.setFullYear(hoy.getFullYear() - 1);
+
+        const formatoInput = (fecha) => {
+            return fecha.toISOString().split('T')[0];
+        };
+
+        document.getElementById('fechaDesde').value = formatoInput(haceUnAno);
+        document.getElementById('fechaHasta').value = formatoInput(hoy);
+        document.getElementById('estado').value = 'TODOS';
+
+        this.mostrarToast('Búsqueda ampliada al último año', 'info');
+        this.cargarRemitos();
+    }
+
+    async importarRemitos() {
+        const btnImportar = document.getElementById('btnImportar');
+        const originalText = btnImportar.innerHTML;
+
+        // Confirmar acción con un modal Bootstrap
+        const confirmacion = await this.mostrarConfirmacion(
+            'Confirmar Importación',
+            '¿Desea proceder con la importación de remitos pendientes? Esta acción procesará todos los remitos que están marcados como EXPORTADO = 0.',
+            'Sí, Importar',
+            'Cancelar'
+        );
+
+        if (!confirmacion) {
+            return;
+        }
+
+        try {
+            // Mostrar loading
+            btnImportar.innerHTML = '<span class="loading-spinner"></span> Importando...';
+            btnImportar.disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'importarRemitos');
+
+            const response = await fetch('/ecommerce/Abastecimiento/Controller/importarRemitos.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.mostrarToast(data.message, 'success');
+                // Recargar la tabla después de importar
+                setTimeout(() => {
+                    this.cargarRemitos();
+                }, 1000);
+            } else {
+                this.mostrarToast(data.message || 'Error al importar', 'error');
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            this.mostrarToast('Error al importar remitos: ' + error.message, 'error');
+        } finally {
+            // Restaurar botón
+            btnImportar.innerHTML = originalText;
+            btnImportar.disabled = false;
+        }
+    }
+
+    // Crear modal de confirmación personalizado
+    mostrarConfirmacion(titulo, mensaje, textoConfirmar, textoCancelar) {
+        return new Promise((resolve) => {
+            // Crear modal si no existe
+            let modal = document.getElementById('modalConfirmacion');
+            if (!modal) {
+                const modalHtml = `
+                    <div class="modal fade" id="modalConfirmacion" tabindex="-1" aria-labelledby="modalConfirmacionLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalConfirmacionLabel">
+                                        <i class="bi bi-question-circle text-warning me-2"></i>
+                                        <span id="modalTitulo"></span>
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p id="modalMensaje"></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" id="btnCancelar" data-bs-dismiss="modal">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        <span id="textoCancelar"></span>
+                                    </button>
+                                    <button type="button" class="btn btn-primary" id="btnConfirmar">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        <span id="textoConfirmar"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                modal = document.getElementById('modalConfirmacion');
+            }
+
+            // Actualizar contenido del modal
+            document.getElementById('modalTitulo').textContent = titulo;
+            document.getElementById('modalMensaje').textContent = mensaje;
+            document.getElementById('textoConfirmar').textContent = textoConfirmar;
+            document.getElementById('textoCancelar').textContent = textoCancelar;
+
+            // Manejar eventos
+            const btnConfirmar = document.getElementById('btnConfirmar');
+            const btnCancelar = document.getElementById('btnCancelar');
+
+            const handleConfirmar = () => {
+                resolve(true);
+                bootstrap.Modal.getInstance(modal).hide();
+                cleanup();
+            };
+
+            const handleCancelar = () => {
+                resolve(false);
+                cleanup();
+            };
+
+            const cleanup = () => {
+                btnConfirmar.removeEventListener('click', handleConfirmar);
+                btnCancelar.removeEventListener('click', handleCancelar);
+                modal.removeEventListener('hidden.bs.modal', handleCancelar);
+            };
+
+            btnConfirmar.addEventListener('click', handleConfirmar);
+            btnCancelar.addEventListener('click', handleCancelar);
+            modal.addEventListener('hidden.bs.modal', handleCancelar);
+
+            // Mostrar modal
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+        });
+    }
+
+    formatearFecha(fecha) {
+        if (!fecha) return '-';
+        
+        try {
+            let date;
+            
+            // Si es un objeto (como viene de SQL Server)
+            if (typeof fecha === 'object' && fecha.date) {
+                date = new Date(fecha.date);
+            } else if (typeof fecha === 'string') {
+                // Si la fecha viene como string
+                if (fecha.includes('T')) {
+                    date = new Date(fecha);
+                } else {
+                    // Formato YYYY-MM-DD
+                    const parts = fecha.split('-');
+                    if (parts.length === 3) {
+                        date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    } else {
+                        date = new Date(fecha);
+                    }
+                }
+            } else {
+                date = new Date(fecha);
+            }
+            
+            // Verificar si la fecha es válida
+            if (isNaN(date.getTime())) {
+                console.log('Fecha inválida:', fecha);
+                return fecha.toString();
+            }
+            
+            return date.toLocaleDateString('es-AR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            
+        } catch (error) {
+            console.error('Error al formatear fecha:', error, fecha);
+            return fecha.toString();
+        }
+    }
+
+    formatearHora(hora) {
+        if (!hora) return '-';
+        
+        // Si la hora viene como string numérica (ej: "154033")
+        const horaStr = hora.toString();
+        if (horaStr.length === 6) {
+            const hh = horaStr.substring(0, 2);
+            const mm = horaStr.substring(2, 4);
+            return `${hh}:${mm}`;
+        } else if (horaStr.length === 5) {
+            const h = horaStr.substring(0, 1);
+            const mm = horaStr.substring(1, 3);
+            return `0${h}:${mm}`;
+        } else if (horaStr.length === 4) {
+            const hh = horaStr.substring(0, 2);
+            const mm = horaStr.substring(2, 4);
+            return `${hh}:${mm}`;
+        }
+        
+        // Si ya viene formateada o en otro formato
+        return hora;
+    }
+
+    formatearNumero(numero) {
+        if (!numero) return '0';
+        return parseFloat(numero).toLocaleString('es-AR', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        });
+    }
+
+    mostrarToast(mensaje, tipo = 'info') {
+        // Crear toast container si no existe
+        let toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toastContainer';
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Crear toast único (remover anteriores del mismo tipo)
+        const toastsExistentes = toastContainer.querySelectorAll('.toast');
+        toastsExistentes.forEach(toast => {
+            if (toast.classList.contains(`toast-${tipo}`)) {
+                const instance = bootstrap.Toast.getInstance(toast);
+                if (instance) {
+                    instance.hide();
+                }
+                toast.remove();
+            }
+        });
+
+        // Definir iconos y títulos por tipo
+        const config = {
+            success: { icon: 'check-circle-fill text-success', titulo: 'Éxito' },
+            error: { icon: 'exclamation-triangle-fill text-danger', titulo: 'Error' },
+            info: { icon: 'info-circle-fill text-info', titulo: 'Información' }
+        };
+
+        const tipoConfig = config[tipo] || config.info;
+
+        // Crear toast
+        const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const toastHtml = `
+            <div id="${toastId}" class="toast toast-custom toast-${tipo}" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <i class="bi bi-${tipoConfig.icon} me-2"></i>
+                    <strong class="me-auto">${tipoConfig.titulo}</strong>
+                    <small class="text-muted">${new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'})}</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${mensaje}
+                </div>
+            </div>
+        `;
+
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+
+        // Mostrar toast
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, { 
+            delay: tipo === 'success' ? 3000 : 5000,
+            autohide: true
+        });
+        toast.show();
+
+        // Limpiar después de que se oculte
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            if (toastElement.parentNode) {
+                toastElement.remove();
+            }
+        });
+
+        // Auto-cerrar también por timeout como respaldo
+        setTimeout(() => {
+            if (toastElement && toastElement.parentNode) {
+                const instance = bootstrap.Toast.getInstance(toastElement);
+                if (instance) {
+                    instance.hide();
+                }
+                toastElement.remove();
+            }
+        }, tipo === 'success' ? 3500 : 5500);
+    }
+
+    // Método para exportar datos a XLSX usando DataTables
+    exportarExcel() {
+        if (!this.datosCompletos || this.datosCompletos.length === 0) {
+            this.mostrarToast('No hay datos para exportar', 'error');
+            return;
+        }
+
+        try {
+            // Preparar datos para exportar
+            const datos = [];
+            
+            // Headers
+            datos.push(['Fecha', 'Hora', 'Proveedor', 'N° Comprobante', 'Cantidad', 'Estado']);
+            
+            // Datos de los remitos
+            this.datosCompletos.forEach(remito => {
+                datos.push([
+                    this.formatearFecha(remito.FECHA_MOV),
+                    this.formatearHora(remito.HORA_INGRESO),
+                    remito.COD_PRO_CL,
+                    remito.N_COMP,
+                    this.formatearNumero(remito.CANTIDAD),
+                    remito.ESTADO
+                ]);
+            });
+
+            // Crear archivo XLSX usando SheetJS
+            this.crearArchivoXLSX(datos);
+            
+        } catch (error) {
+            console.error('Error al preparar datos para exportar:', error);
+            this.mostrarToast('Error al preparar datos para exportar', 'error');
+        }
+    }
+
+    crearArchivoXLSX(datos) {
+        try {
+            // Crear un nuevo workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Crear worksheet desde los datos
+            const ws = XLSX.utils.aoa_to_sheet(datos);
+            
+            // Configurar ancho de columnas
+            const colWidths = [
+                { wch: 12 }, // Fecha
+                { wch: 8 },  // Hora
+                { wch: 12 }, // Proveedor
+                { wch: 15 }, // N° Comprobante
+                { wch: 12 }, // Cantidad
+                { wch: 15 }  // Estado
+            ];
+            ws['!cols'] = colWidths;
+            
+            // Agregar worksheet al workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Remitos');
+            
+            // Generar nombre de archivo con fecha actual
+            const fecha = new Date().toISOString().split('T')[0];
+            const nombreArchivo = `remitos_${fecha}.xlsx`;
+            
+            // Descargar archivo
+            XLSX.writeFile(wb, nombreArchivo);
+            
+            this.mostrarToast('Archivo Excel descargado correctamente', 'success');
+            
+        } catch (error) {
+            console.error('Error al crear archivo Excel:', error);
+            this.mostrarToast('Error al generar archivo Excel', 'error');
+        }
+    }
+}
+
+// Inicializar cuando el DOM esté listo
+$(document).ready(function() {
+    console.log('DOM y jQuery listos, inicializando RemitoManager...');
+    window.remitoManager = new RemitoManager();
+});

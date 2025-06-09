@@ -381,6 +381,7 @@ class Control {
                 AND A.FECHA_PEDI >= GETDATE()-14 
                 AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND A.CANCELADO IS NULL
+                AND B.COD_SUCURS != '11'
                 ORDER BY FECHA_SINCRONIZADO";
         return $this->getDatosMultiples($sql);
     }
@@ -398,6 +399,7 @@ class Control {
                     AND A.FECHA_PEDI >= GETDATE()-14
                     AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                     AND A.CANCELADO IS NULL
+                    AND B.COD_SUCURS != '11'
                     GROUP BY ISNULL(C.SUCURSAL_ENTREGA, 'CENTRAL')
                 ),
                 TotalPedidos AS (
