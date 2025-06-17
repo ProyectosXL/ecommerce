@@ -31,7 +31,6 @@ class Remito {
         // Condiciones base
         $whereConditions[] = "A.COD_PRO_CL IN ('GTWEB', 'GTMELI')";
         $whereConditions[] = "A.ESTADO_MOV != 'A'";
-        $whereConditions[] = "RENGL_PADR != 0";
         
         // Filtro por fecha
         if ($fechaDesde && $fechaHasta) {
@@ -42,7 +41,7 @@ class Remito {
             $whereConditions[] = "A.FECHA_MOV <= '$fechaHasta'";
         } else {
             // Sin filtro de fecha, traer los últimos 90 días por defecto para performance
-            $whereConditions[] = "A.FECHA_MOV >= GETDATE()-360";
+            $whereConditions[] = "A.FECHA_MOV >= GETDATE()-180";
         }
         
         $sql = "SELECT 
