@@ -41,6 +41,7 @@
                                             <th>Order ID</th>
                                             <th>Cliente</th>
                                             <th>Deposito</th>
+                                            <th>Sucursal</th>
                                             <th>Comprobante</th>
                                             <th class="text-end">Importe</th>
                                         </tr>
@@ -56,6 +57,7 @@
                                                     <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->COD_SUCURS); ?></td>
+                                                    <td><?php echo htmlspecialchars($detalle->SUCURSAL); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->N_COMP); ?></td>
                                                     <td class="text-end">$<?php echo number_format($detalle->IMPORTE, 0); ?></td>
                                                 </tr>
