@@ -73,7 +73,7 @@ class Cliente{
     }
 
     public function traerClientes($desde, $hasta, $selectBanco, $selectRubro, $selectCategoria, $selectRangoEtario){
-      
+        
 
         $mongoCollection = $this->cid_mongo->selectCollection("Ventas");
 
@@ -84,12 +84,14 @@ class Cliente{
             $arrayBanco[]= $partes[0];
             $arrayBanco[]= $partes[1];
         }
+    
         
         if($arrayBanco != null){
             $numericBancoValues = array_map('intval', $arrayBanco);
             $filter["BANCO"] = ['$in' => $numericBancoValues];
         }
    
+
         
         if($selectRubro != null || $selectCategoria != null){
             $articulosFilter = [];

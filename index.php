@@ -4,16 +4,16 @@ require_once 'Class/Conexion.php';
 require_once 'Class/Pedido.php';
 require_once 'Controlador/envio_remitos_once.php';
 require_once 'Controlador/nuevo_ml.php';
-require_once 'Controlador/nc_pend.php';
+// require_once 'Controlador/nc_pend.php';
 $pedidos = new Pedido();
 
 
 remitos_buscar_once();
 new_ml();
 
-if(!isset($_GET['desde'])){
-	nc_pendientes();
-}
+// if(!isset($_GET['desde'])){
+// 	nc_pendientes();
+// }
 
 $hoy = date("Y-m-d");
 $tienda = (!isset($_GET['tienda'])) ? '%' : '%'.$_GET['tienda'].'%';
@@ -127,6 +127,7 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
 					<label style="align-self: flex-start;">Tienda:</label>
 					<select class="form-control form-control-sm" name="tienda">
 						<option selected></option>
+						<option value="FRAVEGA">FRAVEGA</option>
 						<option value="ICBC">ICBC</option>
 						<option value="VTEX">VTEX</option>
 						<option value="ML">MERCADO LIBRE</option>

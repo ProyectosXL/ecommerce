@@ -29,31 +29,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Función para manejar la apertura de modales de forma segura
     function safeModalShow(modalId) {
-        try {
+        // Esperar 300ms para asegurar que el modal esté en el DOM
+        setTimeout(() => {
             const modalElement = document.getElementById(modalId);
             if (!modalElement) {
-                console.error('Modal no encontrado:', modalId);
-                return false;
+                console.error("Modal no encontrado:", modalId);
+                return;
             }
-            
-            // Obtener o crear instancia del modal
-            let modalInstance = bootstrap.Modal.getInstance(modalElement);
-            if (!modalInstance) {
-                modalInstance = new bootstrap.Modal(modalElement, {
-                    backdrop: 'static',
-                    keyboard: false,
-                    focus: true
-                });
+
+            try {
+                const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modalInstance.show();
+            } catch (error) {
+                console.error("Error al mostrar el modal:", modalId, error);
             }
-            
-            // Mostrar el modal
-            modalInstance.show();
-            return true;
-            
-        } catch (error) {
-            console.error('Error al abrir modal:', modalId, error);
-            return false;
-        }
+        }, 300); // Podés ajustar el tiempo si es necesario
     }
     
     // Función para cerrar modales de forma segura
