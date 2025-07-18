@@ -35,7 +35,7 @@
                                 if (!empty($detallePedidos)):
                                     foreach ($detallePedidos as $detalle): ?>
                                         <tr>
-                                            <td><?php echo $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i'); ?></td>
+                                            <td><?php echo $detalle->FECHA_SINCRONIZADO ? $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i') : ''; ?></td>
                                             <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
                                             <td><?php echo htmlspecialchars($detalle->SUCURSAL_ENTREGA); ?></td>
                                             <td><?php echo $detalle->FECHA_DESPACHO ? $detalle->FECHA_DESPACHO->format('d/m/Y') : ''; ?></td>

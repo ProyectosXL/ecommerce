@@ -327,7 +327,7 @@ class Control {
                         WHERE COD_CLIENT = '000000' AND METODO_ENVIO = 'TIENDA'
                     ) B ON A.NRO_PEDIDO = B.NRO_PEDIDO
                     LEFT JOIN GVA21 C ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
-                    WHERE FECHA_DESPACHADO >= '2025-05-06' AND A.TALON_PED = '99'
+                    WHERE FECHA_DESPACHADO >= GETDATE()-30 AND A.TALON_PED = '99'
                     AND A.FECHA_RECIBIDO_TIENDA IS NULL
                     AND A.FECHA_ENTREGADO IS NULL
                 ) A";
@@ -348,7 +348,7 @@ class Control {
                     WHERE COD_CLIENT = '000000' AND METODO_ENVIO = 'TIENDA'
                 ) B ON A.NRO_PEDIDO = B.NRO_PEDIDO AND A.ORDER_ID = B.ORDER_ID_TIENDA
                 LEFT JOIN GVA21 C ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
-                WHERE FECHA_DESPACHADO >= '2025-05-06' AND A.TALON_PED = '99'
+                WHERE FECHA_DESPACHADO >= GETDATE()-30 AND A.TALON_PED = '99'
                 AND A.FECHA_RECIBIDO_TIENDA IS NULL
                 AND A.FECHA_ENTREGADO IS NULL
                 ORDER BY A.FECHA_DESPACHADO";
@@ -379,7 +379,7 @@ class Control {
                 LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
                 LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
                 WHERE A.CONTROLADO IS NULL 
-                AND A.FECHA_PEDI >= GETDATE()-14 
+                AND A.FECHA_PEDI >= GETDATE()-30 
                 AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND A.CANCELADO IS NULL
                 AND B.COD_SUCURS != '11'
@@ -397,7 +397,7 @@ class Control {
                     INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
                     LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
                     WHERE A.CONTROLADO IS NULL 
-                    AND A.FECHA_PEDI >= GETDATE()-14
+                    AND A.FECHA_PEDI >= GETDATE()-30
                     AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                     AND A.CANCELADO IS NULL
                     AND B.COD_SUCURS != '11'
