@@ -13,3 +13,4 @@
 <?php include 'modal-pedidos-despachados.php'; ?>
 <?php include 'modal-pedidos-pendiente-control.php'; ?>
 <?php include 'modal-ranking-pedidos-control.php'; ?>
+<?php include 'modal-pedidos-recibidos-no-entregados.php'; ?>

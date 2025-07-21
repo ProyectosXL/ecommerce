@@ -371,3 +371,23 @@ body.modal-open {
         max-width: calc(100% - 1rem);
     }
 }
+
+/* Estilos para Pedidos Recibidos No Entregados (tonos verde) */
+.card-received .card-header {
+    background-color: #e8f5e9; /* Fondo verde suave */
+    border: 1px solid rgba(76, 175, 80, 0.1);
+}
+.card-received .card-icon {
+    color: #4caf50; /* Verde para el ícono */
+    font-size: 1.8rem;
+}
+
+.btn-outline-success {
+    color: #4caf50;
+    border-color: #4caf50;
+}
+.btn-outline-success:hover {
+    color: #fff;
+    background-color: #4caf50;
+    border-color: #4caf50;
+}

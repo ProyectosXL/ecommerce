@@ -415,4 +415,65 @@ class Control {
                 ORDER BY P.CANTIDAD_PEDIDOS DESC, P.SUCURSAL";
         return $this->getDatosMultiples($sql);
     }
+
+
+/**
+ * Obtiene el resumen de pedidos recibidos en tienda pero no marcados como entregados
+ */
+public function traerPedidosRecibidosNoEntregados() {
+    $sql = "SELECT MIN(CAST(FECHA_RECIBIDO_TIENDA AS DATE)) AS FECHA_RECIBIDO, 
+                   COUNT(*) AS CANT_PED_PEND, 
+                   SUM(ROUND(A.TOTAL_PEDI * 1.21, 0)) AS TOTAL_PEDIDOS 
+            FROM (
+                SELECT A.FECHA_SINCRONIZADO FECHA_PEDIDO, 
+                       A.NRO_PEDIDO, 
+                       B.SUCURSAL_ENTREGA, 
+                       CAST(A.FECHA_RECIBIDO_TIENDA AS DATE) FECHA_RECIBIDO_TIENDA, 
+                       C.TOTAL_PEDI,
+                       A.ORDER_ID
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN (
+                    SELECT NRO_PEDIDO, ORDER_ID_TIENDA, SUCURSAL_ENTREGA 
+                    FROM GVA21 A
+                    INNER JOIN RO_V_WAREHOUSE_METODO_ENVIO_VTEX B ON A.COD_TRANSP = B.COD_TRANSP
+                    LEFT JOIN RO_V_SUCURSAL_ENTREGA_VTEX C ON A.LEYENDA_3 = C.ID_SUCURSAL_ENTREGA_VTEX COLLATE Latin1_General_BIN
+                    WHERE COD_CLIENT = '000000' AND METODO_ENVIO = 'TIENDA'
+                ) B ON A.NRO_PEDIDO = B.NRO_PEDIDO AND A.ORDER_ID = B.ORDER_ID_TIENDA
+                LEFT JOIN GVA21 C ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
+                WHERE A.RECIBIDO_TIENDA = 1 
+                AND A.ENTREGADO IS NULL 
+                AND A.FECHA_PEDI >= GETDATE()-45
+                AND A.TALON_PED = '99'
+            ) A";
+    
+    return $this->getDatos($sql);
+}
+
+public function traerDetallePedidosRecibidosNoEntregados() {
+    $sql = "SELECT A.FECHA_SINCRONIZADO FECHA_PEDIDO, 
+                   A.NRO_PEDIDO, 
+                   A.ORDER_ID, 
+                   B.SUCURSAL_ENTREGA, 
+                   CAST(A.FECHA_RECIBIDO_TIENDA AS DATE) FECHA_RECIBIDO_TIENDA,
+                   DATEDIFF(DAY, A.FECHA_RECIBIDO_TIENDA, GETDATE()) DIAS_PENDIENTE,
+                   ROUND(C.TOTAL_PEDI * 1.21, 0) TOTAL_PEDI,
+                   UPPER(D.RAZON_SOCI) CLIENTE
+            FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+            INNER JOIN (
+                SELECT NRO_PEDIDO, ORDER_ID_TIENDA, SUCURSAL_ENTREGA 
+                FROM GVA21 A
+                INNER JOIN RO_V_WAREHOUSE_METODO_ENVIO_VTEX B ON A.COD_TRANSP = B.COD_TRANSP
+                LEFT JOIN RO_V_SUCURSAL_ENTREGA_VTEX C ON A.LEYENDA_3 = C.ID_SUCURSAL_ENTREGA_VTEX COLLATE Latin1_General_BIN
+                WHERE COD_CLIENT = '000000' AND METODO_ENVIO = 'TIENDA'
+            ) B ON A.NRO_PEDIDO = B.NRO_PEDIDO AND A.ORDER_ID = B.ORDER_ID_TIENDA
+            LEFT JOIN GVA21 C ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
+            LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
+            WHERE A.RECIBIDO_TIENDA = 1 
+            AND A.ENTREGADO IS NULL 
+            AND A.FECHA_PEDI >= GETDATE()-45
+            AND A.TALON_PED = '99'
+            ORDER BY A.FECHA_RECIBIDO_TIENDA DESC";
+    
+    return $this->getDatosMultiples($sql);
+}
 }

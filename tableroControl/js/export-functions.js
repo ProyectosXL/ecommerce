@@ -282,3 +282,9 @@ function exportToExcelRankingControl() {
     const today = new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb, `ranking_pedidos_control_${today}.xlsx`);
 }
+// Función para exportar pedidos recibidos no entregados a Excel
+function exportToExcelPedidosRecibidosNoEntregados() {
+    exportTableToExcel('#modalPedidosRecibidosNoEntregados table', "Pedidos Recibidos No Entregados", "pedidos_recibidos_no_entregados", true, {
+        textColumns: [2]
+    });
+}
