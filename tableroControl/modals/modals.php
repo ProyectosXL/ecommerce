@@ -14,3 +14,4 @@
 <?php include 'modal-pedidos-pendiente-control.php'; ?>
 <?php include 'modal-ranking-pedidos-control.php'; ?>
 <?php include 'modal-pedidos-recibidos-no-entregados.php'; ?>
+<?php include 'modal-pedidos-retiro-tienda.php'; ?>

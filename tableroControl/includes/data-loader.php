@@ -16,6 +16,7 @@ $pedidosPendientesControl = null;
 $ordenesPendientesCierre = null;
 $pedidosPendienteDespacho = null;
 $pedidosRecibidosNoEntregados = null;
+$pedidosRetiroTienda = null;
 $error = null;
 
 try {
@@ -34,6 +35,7 @@ try {
     $pedidosDespachados = $control->traerPedidosDespachados();
     $pedidosPendientesControl = $control->traerResumenPedidosPendientesControl();
     $pedidosRecibidosNoEntregados = $control->traerPedidosRecibidosNoEntregados();
+    $pedidosRetiroTienda = $control->traerPedidosRetiroTienda();
     
 } catch (Exception $e) {
     $error = $e->getMessage();
@@ -84,6 +86,9 @@ if ($pedidosPendientesControl && !empty($pedidosPendientesControl->CANTIDAD_PEDI
 }
 if ($pedidosRecibidosNoEntregados && !empty($pedidosRecibidosNoEntregados->CANT_PED_PEND)) {
     $totalPendientesOperaciones += $pedidosRecibidosNoEntregados->CANT_PED_PEND;
+}
+if ($pedidosRetiroTienda && !empty($pedidosRetiroTienda->CANT_PED_RETIRO)) {
+    $totalPendientesOperaciones += $pedidosRetiroTienda->CANT_PED_RETIRO;
 }
 
 ?>

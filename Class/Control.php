@@ -476,4 +476,56 @@ public function traerDetallePedidosRecibidosNoEntregados() {
     
     return $this->getDatosMultiples($sql);
 }
+/**
+* Obtiene el resumen de pedidos de retiro en tienda con stock del local
+ */
+public function traerPedidosRetiroTienda() {
+    $sql = "SELECT MIN(CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
+                        STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120)) AS FECHA_PEDI,
+                   COUNT(*) AS CANT_PED_RETIRO, 
+                   SUM(CAST(A.TOTAL_PEDI AS FLOAT)) AS TOTAL_PEDIDOS 
+            FROM GVA21 A
+            LEFT JOIN RO_V_WAREHOUSE_METODO_ENVIO_VTEX B ON A.COD_TRANSP = B.COD_TRANSP
+            LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE D ON A.NRO_PEDIDO = D.NRO_PEDIDO AND A.TALON_PED = D.TALON_PED
+            LEFT JOIN RO_T_DEPOSITOS_ECOMMERCE_TIENDAS E ON A.COD_SUCURS = E.COD_DEPOSI_ECOMM COLLATE Latin1_General_BIN
+            LEFT JOIN GVA38 F ON A.TALON_PED = F.TALONARIO AND A.NRO_PEDIDO = F.N_COMP
+            WHERE A.COD_CLIENT = '000000' 
+                AND A.FECHA_PEDI >= DATEADD(DAY, -45, GETDATE()) 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.COD_SUCURS NOT IN ('01', '11')
+                AND D.ENTREGADO IS NULL 
+                AND B.METODO_ENVIO = 'TIENDA'";
+    
+    return $this->getDatos($sql);
+}
+
+/**
+ * Obtiene el detalle de pedidos de retiro en tienda con stock del local
+ */
+public function traerDetallePedidosRetiroTienda() {
+    $sql = "SELECT E.SUCURSAL,
+                    CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
+                        STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120) AS FECHA_HORA, 
+                    A.NRO_PEDIDO, 
+                    A.ORDER_ID_TIENDA,
+                    UPPER(F.RAZON_SOCI) CLIENTE, 
+                    CAST(A.TOTAL_PEDI AS FLOAT) TOTAL_PEDI,
+                    DATEDIFF(DAY, A.FECHA_PEDI, GETDATE()) AS DIAS_PENDIENTE
+            FROM GVA21 A
+            LEFT JOIN RO_V_WAREHOUSE_METODO_ENVIO_VTEX B ON A.COD_TRANSP = B.COD_TRANSP
+            LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE D ON A.NRO_PEDIDO = D.NRO_PEDIDO AND A.TALON_PED = D.TALON_PED
+            LEFT JOIN RO_T_DEPOSITOS_ECOMMERCE_TIENDAS E ON A.COD_SUCURS = E.COD_DEPOSI_ECOMM COLLATE Latin1_General_BIN
+            LEFT JOIN GVA38 F ON A.TALON_PED = F.TALONARIO AND A.NRO_PEDIDO = F.N_COMP
+            WHERE A.COD_CLIENT = '000000' 
+                AND A.FECHA_PEDI >= DATEADD(DAY, -45, GETDATE()) 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.COD_SUCURS NOT IN ('01', '11')
+                AND D.ENTREGADO IS NULL 
+                AND B.METODO_ENVIO = 'TIENDA'
+            ORDER BY A.FECHA_PEDI DESC";
+    
+    return $this->getDatosMultiples($sql);
+}
 }

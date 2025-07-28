@@ -288,3 +288,10 @@ function exportToExcelPedidosRecibidosNoEntregados() {
         textColumns: [2]
     });
 }
+// Función para exportar pedidos de retiro en tienda a Excel
+function exportToExcelPedidosRetiroTienda() {
+    // En la tabla de Pedidos de Retiro en Tienda, la columna "Order ID" es la columna 3 (índice 3, 0-based)
+    exportTableToExcel('#modalPedidosRetiroTienda table', "Pedidos Retiro en Tienda", "pedidos_retiro_tienda", true, {
+        textColumns: [3] // El índice 3 corresponde a la columna "Order ID"
+    });
+}

@@ -391,3 +391,22 @@ body.modal-open {
     background-color: #4caf50;
     border-color: #4caf50;
 }
+/* Estilos para Pedidos de Retiro en Tienda (tonos azul info) */
+.card-pickup .card-header {
+    background-color: #e3f2fd; /* Fondo azul claro */
+    border: 1px solid rgba(33, 150, 243, 0.1);
+}
+.card-pickup .card-icon {
+    color: #2196f3; /* Azul para el ícono */
+    font-size: 1.8rem;
+}
+
+.btn-outline-info {
+    color: #2196f3;
+    border-color: #2196f3;
+}
+.btn-outline-info:hover {
+    color: #fff;
+    background-color: #2196f3;
+    border-color: #2196f3;
+}

@@ -1,4 +1,3 @@
-
 // js/modal-fix.js
 // Script para solucionar problemas con modales de Bootstrap 5
 
