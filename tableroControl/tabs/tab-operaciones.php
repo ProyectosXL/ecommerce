@@ -163,7 +163,7 @@
             <div class="card-header">
                 <i class="fas fa-store card-icon"></i>
                 <h5 class="card-title">
-                    Pedidos de central Recibidos con stock de central Pend. de Entrega
+                    Pedidos de Retiro en Tienda con Stock de Central
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
