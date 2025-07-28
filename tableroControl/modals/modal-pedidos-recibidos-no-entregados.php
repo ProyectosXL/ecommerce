@@ -4,7 +4,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalPedidosRecibidosNoEntregadosLabel">
-                    <i class="fas fa-store"></i> Detalle de Pedidos Recibidos en Tienda Pendientes de Entrega
+                    <i class="fas fa-store"></i> Detalle de Pedidos Recibidos en Tienda con stock de central Pendientes de Entrega
                 </h5>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-success" onclick="exportToExcelPedidosRecibidosNoEntregados()">
