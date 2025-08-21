@@ -107,23 +107,23 @@ function exportToExcelNcPromociones() {
 }
 
 function exportToExcelOrdenes() {
-    // En caso de que la tabla tenga una columna de ID similar
+    // En la tabla de Órdenes sin Integrar, la columna "Nro. Orden" es la columna 2 (índice 2, 0-based)
     exportTableToExcel('#modalOrdenesSinIntegrar table', "Ordenes sin Integrar", "ordenes_sin_integrar", false, {
-        textColumns: [3] // Ajusta este índice según la posición de la columna Order ID
+        textColumns: [2] // El índice 2 corresponde a la columna "Nro. Orden"
     });
 }
 
 function exportToExcelOrdenesCierre() {
-    // En caso de que la tabla tenga una columna de ID similar
+    // En la tabla de Órdenes Pendientes de Cierre, la columna "Order ID" es la columna 1 (índice 1, 0-based)
     exportTableToExcel('#modalOrdenesPendientesCierre table', "Ordenes Pendientes Cierre", "ordenes_pendientes_cierre", true, {
-        textColumns: [3] // Ajusta este índice según la posición de la columna Order ID
+        textColumns: [1] // El índice 1 corresponde a la columna "Order ID"
     });
 }
 
 function exportToExcelPendingDispatch() {
-    // En la tabla de Pedidos Pendientes Despacho, suponiendo que la columna "Order ID" también es la columna 3
+    // En la tabla de Pedidos Pendientes Despacho, la columna "Order ID" es la columna 5 (índice 5, 0-based)
     exportTableToExcel('#modalPendingDispatch table', "Pedidos Pendientes Despacho", "pedidos_pendientes_despacho", false, {
-        textColumns: [3] // Ajusta este índice según la posición de la columna Order ID
+        textColumns: [5] // El índice 5 corresponde a la columna "Order ID"
     });
 }
 

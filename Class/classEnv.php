@@ -18,6 +18,7 @@ class DotEnv
              throw new \InvalidArgumentException(sprintf('%s does not exist', $path));
         }
         $this->path = $path;
+        $this->load();
     }
 
     private function load() :void
@@ -34,41 +35,47 @@ class DotEnv
                 continue;
             }
 
-            list($name, $value) = explode('=', $line, 2);
-            $name = trim($name);
-            $value = trim($value);
+            if (strpos($line, '=') !== false) {
+                list($name, $value) = explode('=', $line, 2);
+                $name = trim($name);
+                $value = trim($value);
 
-            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-                putenv(sprintf('%s=%s', $name, $value));
-                $_ENV[$name] = $value;
-                $_SERVER[$name] = $value;
+                if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+                    putenv(sprintf('%s=%s', $name, $value));
+                    $_ENV[$name] = $value;
+                    $_SERVER[$name] = $value;
+                }
             }
         }
     }
 
     public function listVars(){
-        (new DotEnv(__DIR__ . '/../.env'))->load();
-
+        // Debug: ver qué variables están disponibles
+        error_log("Variables de entorno disponibles:");
+        error_log("HOST_CENTRAL: " . (getenv('HOST_CENTRAL') ?: 'NO_DEFINIDA'));
+        error_log("DATABASE_CENTRAL: " . (getenv('DATABASE_CENTRAL') ?: 'NO_DEFINIDA'));
+        error_log("USER: " . (getenv('USER') ?: 'NO_DEFINIDA'));
+        error_log("PASS: " . (getenv('PASS') ?: 'NO_DEFINIDA'));
+        
         $vars = array(
-
-            'HOST_CENTRAL' => getenv('HOST_CENTRAL'),
-            'HOST_LOCALES' => getenv('HOST_LOCALES'),
-            'DATABASE_CENTRAL' => getenv('DATABASE_CENTRAL'),
-            'DATABASE_LOCALES' => getenv('DATABASE_LOCALES'),
-            'USER' => getenv('USER'),
-            'PASS' => getenv('PASS'),
-            'PASS_LOCALES' => getenv('PASS_LOCALES'),
-            'CHARACTER' => getenv('CHARACTER'),
-            'HOST_MONGO' => getenv('HOST_MONGO'),
-            'DATABASE_MONGO' => getenv('DATABASE_MONGO'),
-            'DATABASE_UY' => getenv('DATABASE_UY'),
-            'ENV' => getenv('ENV'),
-
+            'HOST_CENTRAL' => getenv('HOST_CENTRAL') ?: $_ENV['HOST_CENTRAL'] ?? false,
+            'HOST_LOCALES' => getenv('HOST_LOCALES') ?: $_ENV['HOST_LOCALES'] ?? false,
+            'DATABASE_CENTRAL' => getenv('DATABASE_CENTRAL') ?: $_ENV['DATABASE_CENTRAL'] ?? false,
+            'DATABASE_LOCALES' => getenv('DATABASE_LOCALES') ?: $_ENV['DATABASE_LOCALES'] ?? false,
+            'USER' => getenv('USER') ?: $_ENV['USER'] ?? false,
+            'PASS' => getenv('PASS') ?: $_ENV['PASS'] ?? false,
+            'PASS_LOCALES' => getenv('PASS_LOCALES') ?: $_ENV['PASS_LOCALES'] ?? false,
+            'CHARACTER' => getenv('CHARACTER') ?: $_ENV['CHARACTER'] ?? false,
+            'HOST_MONGO' => getenv('HOST_MONGO') ?: $_ENV['HOST_MONGO'] ?? 'mongodb://localhost:27017',
+            'DATABASE_MONGO' => getenv('DATABASE_MONGO') ?: $_ENV['DATABASE_MONGO'] ?? 'local',
+            'DATABASE_UY' => getenv('DATABASE_UY') ?: $_ENV['DATABASE_UY'] ?? false,
+            'ENV' => getenv('ENV') ?: $_ENV['ENV'] ?? false,
         );
 
+        // Debug: ver qué variables se están retornando
+        error_log("Variables retornadas: " . json_encode($vars));
+
         return $vars;
-
-
     }
 
 }

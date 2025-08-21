@@ -3,12 +3,29 @@
 
 class Conexion{
     
+    // Propiedades de la clase
+    private $envVars;
+    private $host_central;
+    private $database_central;
+    private $host_locales;
+    private $database_locales;
+    private $user;
+    private $pass;
+    private $pass_locales;
+    private $character;
+    private $host_mongo;
+    private $database_mongo;
+    private $database_uy;
+    
     function __construct(){
 
         require_once(__DIR__.'/classEnv.php');
 
         $vars = new DotEnv(__DIR__ . '/../.env');
         $this->envVars = $vars->listVars();
+        
+        // Debug: ver qué variables se cargaron
+        error_log("Constructor Conexion - Variables cargadas: " . json_encode($this->envVars));
         
         $this->host_central = $this->envVars['HOST_CENTRAL'];
         $this->database_central = $this->envVars['DATABASE_CENTRAL'];
@@ -22,7 +39,12 @@ class Conexion{
         $this->database_mongo = $this->envVars['DATABASE_MONGO'];
         $this->database_uy = $this->envVars['DATABASE_UY'];
 
-  
+        // Debug: ver qué propiedades se asignaron
+        error_log("Constructor Conexion - Propiedades asignadas:");
+        error_log("host_central: " . $this->host_central);
+        error_log("database_central: " . $this->database_central);
+        error_log("user: " . $this->user);
+        error_log("pass: " . ($this->pass ? 'DEFINIDA' : 'NO_DEFINIDA'));
 
     }
 

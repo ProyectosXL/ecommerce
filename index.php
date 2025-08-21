@@ -172,7 +172,7 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
 				</div>
 				
 				<div class="ml-2">
-					<button type="submit" class="btn btn-primary btn-buscar mt-4">Buscar <i class="bi bi-search"></i></button>
+					<button type="submit" onclick="mostrarSpinner()" class="btn btn-primary btn-buscar mt-4">Buscar <i class="bi bi-search"></i></button>
 				</div>
 				<!-- spinner -->
 				<div id="boxLoading"></div> 
@@ -441,6 +441,10 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 		$(document).ready(function () {
 			contar();
 		});
+
+		const mostrarSpinner = () => {
+	       $("#boxLoading").addClass("loading")
+		}
 
 </script>
 
