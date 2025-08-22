@@ -29,11 +29,14 @@
                 </div>
                 <div class="col-md-4 text-end">
                     <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-warning-custom" onclick="window.remitoManager && window.remitoManager.exportarExcel()" title="Exportar Excel">
-                            <i class="bi bi-file-earmark-excel"></i> Exportar
-                        </button>
                         <button type="button" class="btn btn-success-custom" id="btnImportar">
                             <i class="bi bi-cloud-download"></i> Importar Remitos
+                        </button>
+                        <button type="button" class="btn btn-info-custom" id="btnActualizarRemito" title="Forzar Remito Individual">
+                            <i class="bi bi-pencil-square"></i> Forzar Remito
+                        </button>
+                        <button type="button" class="btn btn-warning-custom" onclick="window.remitoManager && window.remitoManager.exportarExcel()" title="Exportar Excel">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar
                         </button>
                     </div>
                 </div>
@@ -159,6 +162,107 @@
                 <i class="bi bi-info-circle"></i> 
                 Sistema de Gestión de Remitos - Última actualización: <?php echo date('d/m/Y H:i'); ?>
             </small>
+        </div>
+    </div>
+
+    <!-- Agregar este modal antes del cierre del body -->
+    <!-- Modal para actualizar remito individual -->
+    <div class="modal fade" id="modalActualizarRemito" tabindex="-1" aria-labelledby="modalActualizarRemitoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalActualizarRemitoLabel">
+                        <i class="bi bi-pencil-square text-info me-2"></i>
+                        Actualizar Estado de Remito
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="inputNRemito" class="form-label">
+                                    <i class="bi bi-file-text me-1"></i>
+                                    Número de Remito:
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="inputNRemito" placeholder="Ingrese el número de remito" maxlength="20">
+                                    <button class="btn btn-outline-primary" type="button" id="btnVerificarRemito">
+                                        <i class="bi bi-search"></i> Verificar
+                                    </button>
+                                </div>
+                                <div class="form-text">Ingrese el número de remito que desea actualizar</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información del remito -->
+                    <div id="infoRemito" class="d-none">
+                        <div class="card bg-light border-0 mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="bi bi-info-circle me-1"></i> Información del Remito</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Número:</small>
+                                        <div class="fw-bold" id="detalleNumero">-</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Fecha:</small>
+                                        <div class="fw-bold" id="detalleFecha">-</div>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <small class="text-muted">Proveedor:</small>
+                                        <div class="fw-bold" id="detalleProveedor">-</div>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <small class="text-muted">Estado Actual:</small>
+                                        <div class="fw-bold" id="detalleEstado">-</div>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <small class="text-muted">Total Artículos:</small>
+                                        <div class="fw-bold" id="detalleTotalArticulos">-</div>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <small class="text-muted">Cantidad Total:</small>
+                                        <div class="fw-bold" id="detalleCantidadTotal">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alertas -->
+                    <div id="alertaRemito" class="d-none">
+                        <div class="alert alert-info mb-3" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span id="mensajeAlerta"></span>
+                        </div>
+                    </div>
+
+                    <!-- Instrucciones -->
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Importante:</strong> Esta operación ejecutará el stored procedure <code>RO_SP_ACTUALIZAR_ESTADO_Y_CANTIDAD_GTWEB</code> que:
+                        <ul class="mb-0 mt-2">
+                            <li>Cambiará el estado del remito a 'P' (Procesado)</li>
+                            <li>Actualizará la cantidad real (CANT_REAL = CANTIDAD) en los artículos</li>
+                            <li>Solo afectará remitos de los últimos 45 días</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnEjecutarActualizacion" disabled>
+                        <i class="bi bi-gear me-1"></i>
+                        Ejecutar Actualización
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

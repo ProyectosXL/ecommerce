@@ -364,3 +364,157 @@
     border-color: #667eea;
     box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
 }
+
+/* Agregar estos estilos al archivo importarRemitos.css existente */
+
+/* Botón info personalizado */
+.btn-info-custom {
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.btn-info-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(116,185,255,0.4);
+    color: white;
+}
+
+/* Modal personalizado para actualizar remito */
+.modal-lg {
+    max-width: 800px;
+}
+
+/* Información del remito */
+#infoRemito .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+#infoRemito .fw-bold {
+    color: #495057;
+    font-size: 1.1rem;
+}
+
+/* Estados del remito en el modal */
+.estado-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.estado-p {
+    background-color: #d1edff;
+    color: #0c5460;
+    border: 1px solid #74b9ff;
+}
+
+.estado-i {
+    background-color: #d1f2eb;
+    color: #0c5460;
+    border: 1px solid #00b894;
+}
+
+.estado-a {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #fd79a8;
+}
+
+/* Input group mejorado */
+.input-group .btn-outline-primary:hover {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+/* Alertas personalizadas */
+.alert-info {
+    background-color: #e8f4fd;
+    border-color: #74b9ff;
+    color: #0c5460;
+}
+
+.alert-warning {
+    background-color: #fff8e1;
+    border-color: #fdcb6e;
+    color: #856404;
+}
+
+.alert-success {
+    background-color: #d1f2eb;
+    border-color: #00b894;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #fd79a8;
+    color: #721c24;
+}
+
+/* Code styling */
+code {
+    background-color: #f8f9fa;
+    color: #e83e8c;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+/* Loading state para el botón de verificar */
+.btn-verificando {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.btn-verificando .loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 0.5rem;
+}
+
+/* Animación para mostrar/ocultar información */
+.fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .btn-info-custom {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .modal-lg {
+        max-width: 95%;
+        margin: 1rem auto;
+    }
+    
+    #infoRemito .row .col-md-6 {
+        margin-bottom: 1rem;
+    }
+}

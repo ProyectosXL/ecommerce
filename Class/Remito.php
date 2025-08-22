@@ -167,6 +167,224 @@ class Remito {
             return false;
         }
     }
+
+    /**
+ * Verifica si un remito ya está ingresado
+ */
+public function verificarRemitoIngresado($nComp) {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    try {
+        // Verificar si el remito existe y está ingresado
+        $sql = "SELECT COUNT(*) as existe 
+                FROM CTA115 
+                WHERE N_COMP = '$nComp' 
+                AND NRO_SUCURS = 1 
+                AND ESTADO = 'I' 
+                AND FECHA_MOV >= GETDATE()-45";
+        
+        $result = sqlsrv_query($cid_central, $sql);
+        
+        if ($result === false) {
+            throw new Exception('Error al verificar remito: ' . print_r(sqlsrv_errors(), true));
+        }
+        
+        $row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
+        $existe = $row['existe'] > 0;
+        
+        sqlsrv_close($cid_central);
+        
+        return [
+            'success' => true,
+            'existe' => $existe,
+            'message' => $existe ? 'Remito ya está ingresado' : 'Remito no está ingresado'
+        ];
+        
+    } catch (Exception $e) {
+        sqlsrv_close($cid_central);
+        return [
+            'success' => false,
+            'message' => 'Error al verificar remito: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Verifica si un remito existe en el sistema
+ */
+public function verificarRemitoExiste($nComp) {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    try {
+        $sql = "SELECT COUNT(*) as existe 
+                FROM CTA115 
+                WHERE N_COMP = '$nComp' 
+                AND NRO_SUCURS = 1 
+                AND FECHA_MOV >= GETDATE()-45";
+        
+        $result = sqlsrv_query($cid_central, $sql);
+        
+        if ($result === false) {
+            throw new Exception('Error al verificar remito: ' . print_r(sqlsrv_errors(), true));
+        }
+        
+        $row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
+        $existe = $row['existe'] > 0;
+        
+        sqlsrv_close($cid_central);
+        
+        return [
+            'success' => true,
+            'existe' => $existe
+        ];
+        
+    } catch (Exception $e) {
+        sqlsrv_close($cid_central);
+        return [
+            'success' => false,
+            'message' => 'Error al verificar remito: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Ejecuta el stored procedure para actualizar estado y cantidad
+ */
+public function actualizarEstadoYCantidad($nComp) {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    try {
+        // Primero verificar que el remito exista
+        $verificacion = $this->verificarRemitoExiste($nComp);
+        if (!$verificacion['success']) {
+            return $verificacion;
+        }
+        
+        if (!$verificacion['existe']) {
+            return [
+                'success' => false,
+                'message' => 'El remito no existe en el sistema o no está dentro del rango de fechas válidas (últimos 45 días)'
+            ];
+        }
+
+        // Verificar si ya está ingresado
+        $yaIngresado = $this->verificarRemitoIngresado($nComp);
+        if ($yaIngresado['success'] && $yaIngresado['existe']) {
+            return [
+                'success' => false,
+                'message' => 'El remito ya está marcado como ingresado (ESTADO = "I")'
+            ];
+        }
+
+        // Ejecutar el stored procedure
+        $sql = "EXEC RO_SP_ACTUALIZAR_ESTADO_Y_CANTIDAD_GTWEB @N_COMP = ?";
+        $params = array($nComp);
+        
+        $stmt = sqlsrv_prepare($cid_central, $sql, $params);
+        
+        if ($stmt === false) {
+            throw new Exception('Error al preparar stored procedure: ' . print_r(sqlsrv_errors(), true));
+        }
+        
+        $result = sqlsrv_execute($stmt);
+        
+        if ($result === false) {
+            throw new Exception('Error al ejecutar stored procedure: ' . print_r(sqlsrv_errors(), true));
+        }
+        
+        // Verificar si se afectaron filas
+        $rowsAffected = sqlsrv_rows_affected($stmt);
+        
+        sqlsrv_free_stmt($stmt);
+        sqlsrv_close($cid_central);
+        
+        if ($rowsAffected > 0) {
+            return [
+                'success' => true,
+                'message' => "Remito $nComp actualizado correctamente. Se actualizaron $rowsAffected registros.",
+                'rows_affected' => $rowsAffected
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'No se encontraron registros para actualizar. Verifique que el remito exista y esté en estado válido.'
+            ];
+        }
+        
+    } catch (Exception $e) {
+        if (isset($stmt)) {
+            sqlsrv_free_stmt($stmt);
+        }
+        sqlsrv_close($cid_central);
+        
+        return [
+            'success' => false,
+            'message' => 'Error al actualizar remito: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Obtiene información detallada de un remito
+ */
+public function obtenerDetalleRemito($nComp) {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    try {
+        $sql = "SELECT 
+                    c.N_COMP,
+                    c.FECHA_MOV,
+                    c.ESTADO,
+                    c.COD_PRO_CL,
+                    c.NCOMP_IN_S,
+                    COUNT(ct.COD_ARTICU) as TOTAL_ARTICULOS,
+                    SUM(ct.CANTIDAD) as CANTIDAD_TOTAL
+                FROM CTA115 c
+                LEFT JOIN CTA96 ct ON c.NCOMP_IN_S = ct.NCOMP_IN_S AND ct.TCOMP_IN_S = 'RE'
+                WHERE c.N_COMP = '$nComp' 
+                AND c.NRO_SUCURS = 1
+                GROUP BY c.N_COMP, c.FECHA_MOV, c.ESTADO, c.COD_PRO_CL, c.NCOMP_IN_S";
+        
+        $result = sqlsrv_query($cid_central, $sql);
+        
+        if ($result === false) {
+            throw new Exception('Error al obtener detalle: ' . print_r(sqlsrv_errors(), true));
+        }
+        
+        $detalle = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
+        
+        sqlsrv_close($cid_central);
+        
+        if ($detalle) {
+            // Convertir fecha si es objeto DateTime
+            if (isset($detalle['FECHA_MOV']) && is_object($detalle['FECHA_MOV'])) {
+                $detalle['FECHA_MOV'] = $detalle['FECHA_MOV']->format('Y-m-d');
+            }
+            
+            return [
+                'success' => true,
+                'data' => $detalle
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'Remito no encontrado'
+            ];
+        }
+        
+    } catch (Exception $e) {
+        sqlsrv_close($cid_central);
+        return [
+            'success' => false,
+            'message' => 'Error al obtener detalle: ' . $e->getMessage()
+        ];
+    }
+}
+
 }
 
 ?>

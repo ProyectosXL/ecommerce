@@ -66,6 +66,32 @@ class RemitoManager {
         document.getElementById('estado').addEventListener('change', () => {
             this.cargarRemitos();
         });
+
+        // Nuevo evento para el botón de actualizar remito
+        document.getElementById('btnActualizarRemito').addEventListener('click', () => {
+            this.abrirModalActualizarRemito();
+        });
+
+        // Eventos del modal de actualizar remito
+        document.getElementById('btnVerificarRemito').addEventListener('click', () => {
+            this.verificarRemito();
+        });
+
+        document.getElementById('btnEjecutarActualizacion').addEventListener('click', () => {
+            this.ejecutarActualizacionRemito();
+        });
+
+        // Evento para el input de número de remito (Enter para verificar)
+        document.getElementById('inputNRemito').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.verificarRemito();
+            }
+        });
+
+        // Limpiar modal cuando se cierra
+        document.getElementById('modalActualizarRemito').addEventListener('hidden.bs.modal', () => {
+            this.limpiarModalActualizarRemito();
+        });
     }
 
     inicializarDataTable() {
@@ -635,6 +661,230 @@ class RemitoManager {
             this.mostrarToast('Error al generar archivo Excel', 'error');
         }
     }
+
+    abrirModalActualizarRemito() {
+    const modal = new bootstrap.Modal(document.getElementById('modalActualizarRemito'));
+    modal.show();
+    
+    // Focus en el input
+    setTimeout(() => {
+        document.getElementById('inputNRemito').focus();
+    }, 500);
+}
+
+limpiarModalActualizarRemito() {
+    document.getElementById('inputNRemito').value = '';
+    document.getElementById('infoRemito').classList.add('d-none');
+    document.getElementById('alertaRemito').classList.add('d-none');
+    document.getElementById('btnEjecutarActualizacion').disabled = true;
+    
+    // Limpiar campos de detalle
+    document.getElementById('detalleNumero').textContent = '-';
+    document.getElementById('detalleFecha').textContent = '-';
+    document.getElementById('detalleProveedor').textContent = '-';
+    document.getElementById('detalleEstado').textContent = '-';
+    document.getElementById('detalleTotalArticulos').textContent = '-';
+    document.getElementById('detalleCantidadTotal').textContent = '-';
+}
+
+async verificarRemito() {
+    const nRemito = document.getElementById('inputNRemito').value.trim();
+    const btnVerificar = document.getElementById('btnVerificarRemito');
+    const originalText = btnVerificar.innerHTML;
+    
+    if (!nRemito) {
+        this.mostrarToast('Ingrese un número de remito', 'error');
+        return;
+    }
+
+    try {
+        // Mostrar loading
+        btnVerificar.innerHTML = '<span class="loading-spinner"></span> Verificando...';
+        btnVerificar.classList.add('btn-verificando');
+        
+        const formData = new FormData();
+        formData.append('action', 'verificarRemito');
+        formData.append('nComp', nRemito);
+
+        const response = await fetch('/ecommerce/Abastecimiento/Controller/importarRemitos.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Verificación resultado:', data);
+
+        if (data.success) {
+            if (data.existe) {
+                this.mostrarInformacionRemito(data);
+                
+                if (data.yaIngresado) {
+                    this.mostrarAlertaRemito('El remito ya está marcado como ingresado (ESTADO = "I"). No se puede actualizar.', 'warning');
+                    document.getElementById('btnEjecutarActualizacion').disabled = true;
+                } else {
+                    this.mostrarAlertaRemito('Remito encontrado y disponible para actualizar.', 'success');
+                    document.getElementById('btnEjecutarActualizacion').disabled = false;
+                }
+            } else {
+                this.ocultarInformacionRemito();
+                this.mostrarAlertaRemito('Remito no encontrado o fuera del rango de fechas válidas (últimos 45 días).', 'danger');
+                document.getElementById('btnEjecutarActualizacion').disabled = true;
+            }
+        } else {
+            this.ocultarInformacionRemito();
+            this.mostrarAlertaRemito('Error al verificar remito: ' + data.message, 'danger');
+            document.getElementById('btnEjecutarActualizacion').disabled = true;
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        this.ocultarInformacionRemito();
+        this.mostrarAlertaRemito('Error de conexión: ' + error.message, 'danger');
+        document.getElementById('btnEjecutarActualizacion').disabled = true;
+    } finally {
+        // Restaurar botón
+        btnVerificar.innerHTML = originalText;
+        btnVerificar.classList.remove('btn-verificando');
+    }
+}
+
+mostrarInformacionRemito(data) {
+    const infoRemito = document.getElementById('infoRemito');
+    
+    if (data.detalle) {
+        const detalle = data.detalle;
+        
+        document.getElementById('detalleNumero').textContent = detalle.N_COMP || '-';
+        document.getElementById('detalleFecha').textContent = this.formatearFecha(detalle.FECHA_MOV) || '-';
+        document.getElementById('detalleProveedor').textContent = detalle.COD_PRO_CL || '-';
+        
+        // Estado con clase CSS
+        const estadoElement = document.getElementById('detalleEstado');
+        estadoElement.textContent = detalle.ESTADO || '-';
+        estadoElement.className = `fw-bold estado-badge estado-${(detalle.ESTADO || '').toLowerCase()}`;
+        
+        document.getElementById('detalleTotalArticulos').textContent = detalle.TOTAL_ARTICULOS || '0';
+        document.getElementById('detalleCantidadTotal').textContent = this.formatearNumero(detalle.CANTIDAD_TOTAL) || '0';
+    }
+    
+    infoRemito.classList.remove('d-none');
+    infoRemito.classList.add('fade-in-up');
+}
+
+ocultarInformacionRemito() {
+    document.getElementById('infoRemito').classList.add('d-none');
+}
+
+mostrarAlertaRemito(mensaje, tipo) {
+    const alerta = document.getElementById('alertaRemito');
+    const alertDiv = alerta.querySelector('.alert');
+    const mensajeSpan = document.getElementById('mensajeAlerta');
+    
+    // Remover clases de tipo previas
+    alertDiv.classList.remove('alert-info', 'alert-success', 'alert-warning', 'alert-danger');
+    
+    // Agregar clase del tipo actual
+    alertDiv.classList.add(`alert-${tipo}`);
+    
+    // Cambiar icono según el tipo
+    const iconos = {
+        success: 'check-circle',
+        warning: 'exclamation-triangle',
+        danger: 'x-circle',
+        info: 'info-circle'
+    };
+    
+    const icono = iconos[tipo] || 'info-circle';
+    mensajeSpan.innerHTML = `<i class="bi bi-${icono} me-2"></i>${mensaje}`;
+    
+    alerta.classList.remove('d-none');
+    alerta.classList.add('fade-in-up');
+}
+
+async ejecutarActualizacionRemito() {
+    const nRemito = document.getElementById('inputNRemito').value.trim();
+    const btnEjecutar = document.getElementById('btnEjecutarActualizacion');
+    const originalText = btnEjecutar.innerHTML;
+
+    if (!nRemito) {
+        this.mostrarToast('Número de remito requerido', 'error');
+        return;
+    }
+
+    // Confirmar acción
+    const confirmacion = await this.mostrarConfirmacion(
+        'Confirmar Actualización',
+        `¿Está seguro que desea actualizar el remito ${nRemito}? Esta acción:\n\n• Cambiará el estado a 'P' (Procesado)\n• Actualizará las cantidades reales\n• No se puede deshacer`,
+        'Sí, Actualizar',
+        'Cancelar'
+    );
+
+    if (!confirmacion) {
+        return;
+    }
+
+    try {
+        // Mostrar loading
+        btnEjecutar.innerHTML = '<span class="loading-spinner"></span> Actualizando...';
+        btnEjecutar.disabled = true;
+
+        const formData = new FormData();
+        formData.append('action', 'actualizarRemito');
+        formData.append('nComp', nRemito);
+
+        const response = await fetch('/ecommerce/Abastecimiento/Controller/importarRemitos.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Actualización resultado:', data);
+
+        if (data.success) {
+            this.mostrarToast(data.message, 'success');
+            
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalActualizarRemito'));
+            modal.hide();
+            
+            // Recargar datos de la tabla
+            setTimeout(() => {
+                this.cargarRemitos();
+            }, 1000);
+            
+        } else {
+            this.mostrarToast('Error: ' + data.message, 'error');
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        this.mostrarToast('Error de conexión: ' + error.message, 'error');
+    } finally {
+        // Restaurar botón
+        btnEjecutar.innerHTML = originalText;
+        btnEjecutar.disabled = false;
+    }
+}
+
+// Agregar método auxiliar para formatear estado
+formatearEstado(estado) {
+    const estados = {
+        'P': { texto: 'Procesado', clase: 'estado-p' },
+        'I': { texto: 'Ingresado', clase: 'estado-i' },
+        'A': { texto: 'Anulado', clase: 'estado-a' }
+    };
+    
+    const estadoInfo = estados[estado] || { texto: estado, clase: '' };
+    return `<span class="${estadoInfo.clase}">${estadoInfo.texto}</span>`;
+}
 }
 
 // Inicializar cuando el DOM esté listo

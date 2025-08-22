@@ -39,7 +39,66 @@ try {
                 
                 echo json_encode($resultado);
                 break;
+            
+            case 'actualizarRemito':
+    $nComp = trim($_POST['nComp'] ?? '');
+    
+    if (empty($nComp)) {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Número de remito es requerido'
+        ]);
+        break;
+    }
+    
+    $remito = new Remito();
+    $resultado = $remito->actualizarEstadoYCantidad($nComp);
+    
+    echo json_encode($resultado);
+    break;
+
+            case 'verificarRemito':
+                $nComp = trim($_POST['nComp'] ?? '');
                 
+                if (empty($nComp)) {
+                    echo json_encode([
+                        'success' => false, 
+                        'message' => 'Número de remito es requerido'
+                    ]);
+                    break;
+                }
+                
+                $remito = new Remito();
+                $existe = $remito->verificarRemitoExiste($nComp);
+                $ingresado = $remito->verificarRemitoIngresado($nComp);
+                $detalle = $remito->obtenerDetalleRemito($nComp);
+                
+                echo json_encode([
+                    'success' => true,
+                    'existe' => $existe['existe'] ?? false,
+                    'yaIngresado' => $ingresado['existe'] ?? false,
+                    'detalle' => $detalle['data'] ?? null,
+                    'message' => $existe['existe'] ? 'Remito encontrado' : 'Remito no encontrado'
+                ]);
+                break;
+
+            case 'obtenerDetalleRemito':
+                $nComp = trim($_POST['nComp'] ?? '');
+                
+                if (empty($nComp)) {
+                    echo json_encode([
+                        'success' => false, 
+                        'message' => 'Número de remito es requerido'
+                    ]);
+                    break;
+                }
+                
+                $remito = new Remito();
+                $resultado = $remito->obtenerDetalleRemito($nComp);
+                
+                echo json_encode($resultado);
+                break;
+                            
             default:
                 echo json_encode([
                     'success' => false, 
