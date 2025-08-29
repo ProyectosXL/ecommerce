@@ -3,6 +3,53 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/Class/Conexion.php';
 
 class Control {
 
+    public function traerRemitosSinIntegrar() {
+        $sql = "WITH RemitosPendientes AS (
+            SELECT 
+                CAST(A.FECHA_MOV AS DATE) FECHA_MOV,
+                A.COD_PRO_CL, 
+                A.N_COMP, 
+                CAST(SUM(CANTIDAD) AS FLOAT) CANTIDAD
+            FROM STA14 A 
+            LEFT JOIN STA20 B ON A.ID_STA14 = B.ID_STA14
+            LEFT JOIN CTA115 C ON A.T_COMP = C.T_COMP AND A.N_COMP = C.N_COMP
+            LEFT JOIN (SELECT NCOMP_ORIG FROM STA14) D ON A.N_COMP = D.NCOMP_ORIG
+            WHERE A.COD_PRO_CL IN ('GTWEB', 'GTMELI') 
+                AND A.ESTADO_MOV != 'A'
+                AND A.FECHA_MOV >= GETDATE()-180
+                AND (C.ESTADO_MOV IS NULL OR D.NCOMP_ORIG IS NULL)
+            GROUP BY A.FECHA_MOV, A.COD_PRO_CL, A.N_COMP
+        )
+        SELECT 
+            RP.*,
+            (SELECT MIN(FECHA_MOV) FROM RemitosPendientes) as FECHA_MAS_ANTIGUA
+        FROM RemitosPendientes RP
+        ORDER BY RP.FECHA_MOV DESC, RP.N_COMP DESC";
+
+        $cid = new Conexion();
+        $cid_central = $cid->conectarSql('central');
+        
+        if ($cid_central === false) {
+            throw new Exception("Error de conexión a la base de datos");
+        }
+        
+        ini_set('max_execution_time', 300);
+        $result = sqlsrv_query($cid_central, $sql, array(), array("Scrollable" => "buffered"));
+        
+        if ($result === false) {
+            $errors = sqlsrv_errors();
+            throw new Exception("Error en la consulta: " . $errors[0]['message']);
+        }
+        
+        $rows = array();
+        while ($row = sqlsrv_fetch_object($result)) {
+            $rows[] = $row;
+        }
+        
+        sqlsrv_free_stmt($result);
+        return $rows;
+    }
+
     public function conectarSql($nameServer = null) {
         try {
             $serverDB = $this->servidor($nameServer);

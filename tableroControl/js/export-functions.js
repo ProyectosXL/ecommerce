@@ -1,6 +1,14 @@
 
 // export-functions.js
 
+function exportarRemitosSinIntegrar() {
+    exportTableToExcel(
+        '#tablaRemitosSinIntegrar',
+        'Remitos Sin Integrar',
+        'Remitos_Sin_Integrar.xlsx'
+    );
+}
+
 /**
  * Función base para exportar cualquier tabla a Excel
  * @param {string} tableSelector - Selector CSS para la tabla

@@ -56,6 +56,16 @@
     font-size: 1.8rem;
 }
 
+/* Estilos para Remitos Sin Ingresar */
+.card-pending-remitos .card-header {
+    background-color: #f3e5f5;
+    border: 1px solid rgba(156, 39, 176, 0.1);
+}
+.card-pending-remitos .card-icon {
+    color: #9c27b0;
+    font-size: 1.8rem;
+}
+
 .card-value {
     font-size: 2rem;
     font-weight: bold;

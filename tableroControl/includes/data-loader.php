@@ -7,6 +7,7 @@
 $ncPromociones = null;
 $ncDevoluciones = null;
 $ordenesSinIntegrar = null;
+$remitosSinIntegrar = null;
 $pedidosSinFacturar = null;
 $pedidosFlexCentral = null;
 $facturasSinRemito = null;
@@ -26,6 +27,7 @@ try {
     $ncPromociones = $control->traerNcPendPromociones();
     $ncDevoluciones = $control->traerNcPendDevoluciones();
     $ordenesSinIntegrar = $control->traerOrdenesSinIntegrar();
+    $remitosSinIntegrar = $control->traerRemitosSinIntegrar();
     $pedidosSinFacturar = $control->traerPedidosSinFactTiendas();
     $pedidosFlexCentral = $control->traerPedidosFlex();
     $facturasSinRemito = $control->traerFacturasSinRemito();
