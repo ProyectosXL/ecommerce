@@ -205,6 +205,7 @@
                 <?php if ($remitosSinIntegrar !== null && is_array($remitosSinIntegrar) && count($remitosSinIntegrar) > 0): ?>
                     <p class="card-value"><?php echo count($remitosSinIntegrar); ?></p>
                     <?php if (isset($remitosSinIntegrar[0]->FECHA_MAS_ANTIGUA)): ?>
+                        <br>
                         <p class="date-info">Desde: <?php echo $remitosSinIntegrar[0]->FECHA_MAS_ANTIGUA->format('d/m/Y'); ?></p>
                     <?php endif; ?>
                     <div class="mt-2">
