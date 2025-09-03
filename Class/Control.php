@@ -570,6 +570,7 @@ public function traerDetallePedidosRetiroTienda() {
                 AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND A.COD_SUCURS NOT IN ('01', '11')
                 AND D.ENTREGADO IS NULL 
+                AND D.CANCELADO IS NULL
                 AND B.METODO_ENVIO = 'TIENDA'
             ORDER BY A.FECHA_PEDI DESC";
     
