@@ -4,27 +4,39 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/Class/Conexion.php';
 class Control {
 
     public function traerRemitosSinIntegrar() {
-        $sql = "WITH RemitosPendientes AS (
+        $sql = "DECLARE @FechaLimite DATE = DATEADD(DAY, -180, CAST(GETDATE() AS DATE));
+        WITH RemitosPendientes AS (
             SELECT 
-                CAST(A.FECHA_MOV AS DATE) FECHA_MOV,
-                A.COD_PRO_CL, 
-                A.N_COMP, 
-                CAST(SUM(CANTIDAD) AS FLOAT) CANTIDAD
-            FROM STA14 A 
-            LEFT JOIN STA20 B ON A.ID_STA14 = B.ID_STA14
-            LEFT JOIN CTA115 C ON A.T_COMP = C.T_COMP AND A.N_COMP = C.N_COMP
-            LEFT JOIN (SELECT NCOMP_ORIG FROM STA14) D ON A.N_COMP = D.NCOMP_ORIG
-            WHERE A.COD_PRO_CL IN ('GTWEB', 'GTMELI') 
-                AND A.ESTADO_MOV != 'A'
-                AND A.FECHA_MOV >= GETDATE()-180
+                CAST(A.FECHA_MOV AS DATE) AS FECHA_MOV,
+                A.COD_PRO_CL,
+                A.N_COMP,
+                SUM(CAST(B.CANTIDAD AS FLOAT)) AS CANTIDAD
+            FROM STA14 AS A
+            LEFT JOIN STA20 AS B 
+                ON A.ID_STA14 = B.ID_STA14
+            LEFT JOIN CTA115 AS C 
+                ON A.T_COMP = C.T_COMP 
+            AND A.N_COMP = C.N_COMP
+            LEFT JOIN STA14 AS D 
+                ON A.N_COMP = D.NCOMP_ORIG
+            WHERE 
+                A.COD_PRO_CL IN ('GTWEB', 'GTMELI')
+                AND A.ESTADO_MOV <> 'A'
+                AND A.FECHA_MOV >= @FechaLimite
                 AND (C.ESTADO_MOV IS NULL OR D.NCOMP_ORIG IS NULL)
-            GROUP BY A.FECHA_MOV, A.COD_PRO_CL, A.N_COMP
+            GROUP BY 
+                A.FECHA_MOV, 
+                A.COD_PRO_CL, 
+                A.N_COMP
         )
         SELECT 
             RP.*,
-            (SELECT MIN(FECHA_MOV) FROM RemitosPendientes) as FECHA_MAS_ANTIGUA
+            MIN(RP.FECHA_MOV) OVER() AS FECHA_MAS_ANTIGUA
         FROM RemitosPendientes RP
-        ORDER BY RP.FECHA_MOV DESC, RP.N_COMP DESC";
+        ORDER BY 
+            RP.FECHA_MOV DESC, 
+            RP.N_COMP DESC;
+        ";
 
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
