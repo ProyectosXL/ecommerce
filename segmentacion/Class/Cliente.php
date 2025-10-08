@@ -35,7 +35,7 @@ class Cliente{
     public function traerCategorias($rubros = null){
 
         $sql = " 
-            SELECT * FROM RO_MAESTRO_RUBRO_CATEGORIA 
+            SELECT * FROM RO_MAESTRO_RUBRO_CATEGORIA2 
         ";
         
         if($rubros != null){
@@ -73,12 +73,12 @@ class Cliente{
     }
 
     public function traerClientes($desde, $hasta, $selectBanco, $selectRubro, $selectCategoria, $selectRangoEtario){
-        
+
 
         $mongoCollection = $this->cid_mongo->selectCollection("Ventas");
 
         $filter = [];
-        $arrayBanco = [];
+        $arrayBanco = []; 
         foreach ($selectBanco as $key => $banco) {
             $partes = explode("?", $banco);
             $arrayBanco[]= $partes[0];
