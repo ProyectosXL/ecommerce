@@ -25,6 +25,7 @@
                                             <th>Nro. Pedido</th>
                                             <th>Order ID</th>
                                             <th>Cliente</th>
+                                            <th>Estado Asignación</th>
                                             <th class="text-end">Total</th>
                                         </tr>
                                     </thead>
@@ -40,12 +41,15 @@
                                                     <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
+                                                    <td>
+                                                        <span class="badge bg-warning">Pendiente Asignación</span>
+                                                    </td>
                                                     <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 0); ?></td>
                                                 </tr>
                                             <?php endforeach;
                                         else: ?>
                                             <tr>
-                                                <td colspan="7" class="text-center">No hay pedidos pendientes de preparar</td>
+                                                <td colspan="8" class="text-center">No hay pedidos pendientes de preparar</td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>

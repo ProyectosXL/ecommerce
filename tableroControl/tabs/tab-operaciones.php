@@ -11,7 +11,7 @@
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Pedidos pendientes de preparar en Depósito Central en los últimos 7 días">
+                    title="Pedidos que aún no han sido asignados para picking en los últimos 7 días">
                     </i>
                 </h5>
             </div>
