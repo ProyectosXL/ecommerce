@@ -18,6 +18,7 @@ $ordenesPendientesCierre = null;
 $pedidosPendienteDespacho = null;
 $pedidosRecibidosNoEntregados = null;
 $pedidosRetiroTienda = null;
+$pedidosPendientesPreparar = null;
 $error = null;
 
 try {
@@ -38,6 +39,7 @@ try {
     $pedidosPendientesControl = $control->traerResumenPedidosPendientesControl();
     $pedidosRecibidosNoEntregados = $control->traerPedidosRecibidosNoEntregados();
     $pedidosRetiroTienda = $control->traerPedidosRetiroTienda();
+    $pedidosPendientesPreparar = $control->traerPedidosPendientesPreparar();
     
 } catch (Exception $e) {
     $error = $e->getMessage();
@@ -71,6 +73,9 @@ if ($productosMlFull && !empty($productosMlFull->CANTIDAD_PRODUCTOS)) {
 }
 
 // Operaciones
+if ($pedidosPendientesPreparar && !empty($pedidosPendientesPreparar->CANT_PED_PEND)) {
+    $totalPendientesOperaciones += $pedidosPendientesPreparar->CANT_PED_PEND;
+}
 if ($pedidosFlexCentral && !empty($pedidosFlexCentral->CANT_PED_PEND)) {
     $totalPendientesOperaciones += $pedidosFlexCentral->CANT_PED_PEND;
 }

@@ -109,6 +109,17 @@
     border-top: none;
     border-radius: 0 0 12px 12px;
 }
+
+/* Estilos para Pedidos Pendientes de Preparar */
+.card-pending-prepare .card-header {
+    background-color: #e8f5e9;
+    border: 1px solid rgba(76, 175, 80, 0.1);
+}
+.card-pending-prepare .card-icon {
+    color: #4caf50;
+    font-size: 1.8rem;
+}
+
 .card-flex .card-header {
     background-color: #f3e5f5;
     border: 1px solid rgba(156, 39, 176, 0.1);

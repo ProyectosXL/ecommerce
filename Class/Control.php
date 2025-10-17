@@ -588,4 +588,47 @@ public function traerDetallePedidosRetiroTienda() {
     
     return $this->getDatosMultiples($sql);
 }
+
+public function traerPedidosPendientesPreparar() {
+    $sql = "SELECT MIN(CAST(A.FECHA_PEDI AS DATETIME)) AS FECHA_PEDI, 
+            COUNT(*) AS CANT_PED_PEND, 
+            SUM(A.TOTAL_PEDI) AS TOTAL_PEDIDOS 
+            FROM GVA21 A
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE C ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
+            WHERE A.COD_CLIENT = '000000' 
+                AND A.COD_SUCURS = '01'
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE)
+                AND ISNULL(C.PREPARADO, 0) = 0
+                AND ISNULL(C.CANCELADO, 0) = 0
+                AND ISNULL(C.DESPACHADO, 0) = 0
+                AND ISNULL(C.ENTREGADO, 0) = 0";
+    
+    return $this->getDatos($sql);
+}
+
+public function traerDetallePedidosPendientesPreparar() {
+    $sql = "SELECT CAST(A.FECHA_PEDI AS DATETIME) FECHA_PEDI,
+            CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
+                WHEN A.TALON_PED = '99' THEN 'VTEX'
+                ELSE 'OTROS'
+            END CANAL,
+            A.NRO_PEDIDO, 
+            A.ORDER_ID_TIENDA, 
+            UPPER(D.RAZON_SOCI) CLIENTE,
+            CAST(A.TOTAL_PEDI AS DECIMAL(10,0)) TOTAL_PEDI,
+            CAST(C.FECHA_SINCRONIZADO AS DATETIME) FECHA_SINCRONIZADO
+            FROM GVA21 A
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE C ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
+            LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
+            WHERE A.COD_CLIENT = '000000' 
+                AND A.COD_SUCURS = '01'
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE)
+                AND ISNULL(C.PREPARADO, 0) = 0
+                AND ISNULL(C.CANCELADO, 0) = 0
+                AND ISNULL(C.DESPACHADO, 0) = 0
+                AND ISNULL(C.ENTREGADO, 0) = 0
+            ORDER BY A.FECHA_PEDI DESC, A.NRO_PEDIDO DESC";
+    
+    return $this->getDatosMultiples($sql);
+}
 }
