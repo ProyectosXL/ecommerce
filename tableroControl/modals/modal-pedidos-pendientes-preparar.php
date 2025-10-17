@@ -8,7 +8,7 @@
                             <i class="fas fa-clipboard-list"></i> Detalle de Pedidos Pendientes de Preparar
                         </h5>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                            <button type="button" class="btn btn-success" onclick="exportToExcelPendientesPreparar()">
                                 <i class="fas fa-file-excel me-2"></i>Exportar
                             </button>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

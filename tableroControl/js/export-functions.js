@@ -102,6 +102,13 @@ function exportToExcel() {
     });
 }
 
+function exportToExcelPendientesPreparar() {
+    // En la tabla de Pedidos Pendientes de Preparar, la columna "Order ID" es la columna 4 (índice 4, 0-based)
+    exportTableToExcel('#modalPendientesPreparar table', "Pedidos Pendientes Preparar", "pedidos_pendientes_preparar", false, {
+        textColumns: [4] // El índice 4 corresponde a la columna "Order ID"
+    });
+}
+
 function exportToExcelFacturas() {
     exportTableToExcel('#modalFacturasDetalle table', "Facturas sin Remito", "facturas_sin_remito", true);
 }
