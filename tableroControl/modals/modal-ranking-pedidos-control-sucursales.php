@@ -4,7 +4,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalRankingPedidosControlSucursalesLabel">
-                    <i class="fas fa-trophy"></i> Ranking de Pedidos Pendientes de Control por Sucursal (Hasta Ayer)
+                    <i class="fas fa-trophy"></i> Ranking de Pedidos Pendientes de Control por Sucursal (Últimos 7 días)
                 </h5>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-success" onclick="exportToExcelRankingControlSucursales()">
@@ -16,7 +16,7 @@
             <div class="modal-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Ranking basado en pedidos sin controlar hasta ayer - Solo Sucursales (excluye Central)</strong>
+                    <strong>Ranking basado en pedidos sin controlar de los últimos 7 días - Solo Sucursales (excluye Central)</strong>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover" id="tablaRankingControlSucursales">
@@ -31,19 +31,26 @@
                         </thead>
                         <tbody>
                             <?php 
-                            // Usar método específico para sucursales y generar ranking
+                            // Usar método específico para sucursales y filtrar últimos 7 días
                             $detallePedidosControlSucursales = $control->traerDetallePedidosPendientesControlSucursales();
+                            
+                            // Filtrar solo los últimos 7 días
+                            $fechaLimite = new DateTime();
+                            $fechaLimite->modify('-7 days');
                             
                             $rankingSucursales = [];
                             if (!empty($detallePedidosControlSucursales)):
                                 $contadorPorSucursal = [];
                                 
                                 foreach ($detallePedidosControlSucursales as $detalle):
-                                    $sucursal = $detalle->SUCURSAL_PREPARA;
-                                    if (!isset($contadorPorSucursal[$sucursal])):
-                                        $contadorPorSucursal[$sucursal] = 0;
+                                    // Filtrar por fecha
+                                    if ($detalle->FECHA_SINCRONIZADO >= $fechaLimite):
+                                        $sucursal = $detalle->SUCURSAL_PREPARA;
+                                        if (!isset($contadorPorSucursal[$sucursal])):
+                                            $contadorPorSucursal[$sucursal] = 0;
+                                        endif;
+                                        $contadorPorSucursal[$sucursal]++;
                                     endif;
-                                    $contadorPorSucursal[$sucursal]++;
                                 endforeach;
                                 
                                 // Convertir a objetos y ordenar

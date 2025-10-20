@@ -111,9 +111,31 @@ if ($pedidosRecibidosNoEntregados && !empty($pedidosRecibidosNoEntregados->CANT_
 if ($pedidosRetiroTienda && !empty($pedidosRetiroTienda->CANT_PED_RETIRO)) {
     $totalPendientesOperacionesSucursales += $pedidosRetiroTienda->CANT_PED_RETIRO;
 }
-// Agregar Pedidos Pendientes Control Sucursales - Usando el método específico
-if ($pedidosPendientesControlSucursales && !empty($pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS)) {
-    $totalPendientesOperacionesSucursales += $pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS;
-}
+// Agregar Pedidos Pendientes Control Sucursales - Con filtro de 7 días
+$pedidosPendientesControlSucursales_detalle = $control->traerDetallePedidosPendientesControlSucursales();
+$fechaLimite7Dias = new DateTime();
+$fechaLimite7Dias->modify('-7 days');
+
+$contadorSucursales7Dias = 0;
+$fechaMasAntiguaSucursales = null;
+
+if (!empty($pedidosPendientesControlSucursales_detalle)):
+    foreach ($pedidosPendientesControlSucursales_detalle as $detalle):
+        if ($detalle->FECHA_SINCRONIZADO >= $fechaLimite7Dias):
+            $contadorSucursales7Dias++;
+            if ($fechaMasAntiguaSucursales === null || $detalle->FECHA_SINCRONIZADO < $fechaMasAntiguaSucursales):
+                $fechaMasAntiguaSucursales = $detalle->FECHA_SINCRONIZADO;
+            endif;
+        endif;
+    endforeach;
+endif;
+
+// Actualizar variable con datos filtrados de 7 días
+$pedidosPendientesControlSucursales = (object) [
+    'CANTIDAD_PEDIDOS' => $contadorSucursales7Dias,
+    'FECHA_MAS_ANTIGUA' => $fechaMasAntiguaSucursales
+];
+
+$totalPendientesOperacionesSucursales += $contadorSucursales7Dias;
 
 ?>
