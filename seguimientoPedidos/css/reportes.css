@@ -1,0 +1,55 @@
+/* Estilos para el dashboard de reportes */
+.kpi-card {
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.kpi-card .kpi-icon {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    font-size: 3.5em;
+    opacity: 0.3;
+}
+
+.kpi-card .kpi-value {
+    font-size: 2.5em;
+    font-weight: 700;
+    margin: 0;
+}
+
+.kpi-card .kpi-label {
+    font-size: 1em;
+    margin: 0;
+}
+
+.kpi-card-secondary {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 20px;
+    border-radius: 10px;
+    height: 100%;
+}
+
+.kpi-card-secondary h5 {
+    font-weight: 600;
+    color: #495057;
+}
+
+#tabla-reporte-incidentes_wrapper .dataTables_filter,
+#tabla-reporte-incidentes_wrapper .dataTables_length {
+    margin-bottom: 1rem;
+}
+.kpi-progress-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #343a40; /* Un color oscuro para buena legibilidad */
+    min-width: 65px; /* Evita que el layout salte cuando el número cambia de 1 a 2 dígitos */
+    text-align: right;
+}
