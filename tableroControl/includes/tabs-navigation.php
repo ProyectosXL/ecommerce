@@ -18,10 +18,18 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="operaciones-tab" data-bs-toggle="tab" data-bs-target="#operaciones" type="button" role="tab" aria-controls="operaciones" aria-selected="false">
-            <i class="fas fa-cogs me-2"></i>Operaciones
-            <?php if ($totalPendientesOperaciones > 0): ?>
-                <span class="badge bg-danger"><?php echo $totalPendientesOperaciones; ?></span>
+        <button class="nav-link" id="operaciones-central-tab" data-bs-toggle="tab" data-bs-target="#operaciones-central" type="button" role="tab" aria-controls="operaciones-central" aria-selected="false">
+            <i class="fas fa-warehouse me-2"></i>Operaciones Central
+            <?php if ($totalPendientesOperacionesCentral > 0): ?>
+                <span class="badge bg-danger"><?php echo $totalPendientesOperacionesCentral; ?></span>
+            <?php endif; ?>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="operaciones-sucursales-tab" data-bs-toggle="tab" data-bs-target="#operaciones-sucursales" type="button" role="tab" aria-controls="operaciones-sucursales" aria-selected="false">
+            <i class="fas fa-store me-2"></i>Operaciones Sucursales
+            <?php if ($totalPendientesOperacionesSucursales > 0): ?>
+                <span class="badge bg-danger"><?php echo $totalPendientesOperacionesSucursales; ?></span>
             <?php endif; ?>
         </button>
     </li>

@@ -17,3 +17,8 @@
 <?php include 'modal-ranking-pedidos-control.php'; ?>
 <?php include 'modal-pedidos-recibidos-no-entregados.php'; ?>
 <?php include 'modal-pedidos-retiro-tienda.php'; ?>
+<!-- Nuevos modales para control separado -->
+<?php include 'modal-pedidos-pendiente-control-central.php'; ?>
+<?php include 'modal-pedidos-pendiente-control-sucursales.php'; ?>
+<?php include 'modal-ranking-pedidos-control-central.php'; ?>
+<?php include 'modal-ranking-pedidos-control-sucursales.php'; ?>

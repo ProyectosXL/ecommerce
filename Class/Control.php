@@ -420,7 +420,11 @@ class Control {
                     MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA
                 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
                 INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
-                WHERE CONTROLADO IS NULL AND A.CANCELADO IS NULL AND A.FECHA_PEDI >= GETDATE()-14 AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)";
+                LEFT JOIN GVA55 C ON B.TALON_PED = C.TALON_PED AND B.NRO_PEDIDO = C.NRO_PEDIDO
+                WHERE A.CONTROLADO IS NULL 
+                AND A.CANCELADO IS NULL 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND C.N_COMP IS NULL";
         return $this->getDatos($sql);
     }
 
@@ -437,11 +441,12 @@ class Control {
                 INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
                 LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
                 LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
+                LEFT JOIN GVA55 E ON B.TALON_PED = E.TALON_PED AND B.NRO_PEDIDO = E.NRO_PEDIDO
                 WHERE A.CONTROLADO IS NULL 
-                AND A.FECHA_PEDI >= GETDATE()-30 
                 AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND A.CANCELADO IS NULL
                 AND B.COD_SUCURS != '11'
+                AND E.N_COMP IS NULL
                 ORDER BY FECHA_SINCRONIZADO";
         return $this->getDatosMultiples($sql);
     }
@@ -472,6 +477,86 @@ class Control {
                 FROM PedidosPorSucursal P
                 CROSS JOIN TotalPedidos T
                 ORDER BY P.CANTIDAD_PEDIDOS DESC, P.SUCURSAL";
+        return $this->getDatosMultiples($sql);
+    }
+
+    // Función para obtener el resumen de pedidos pendientes de control - Central
+    public function traerResumenPedidosPendientesControlCentral() {
+        $sql = "SELECT COUNT(*) AS CANTIDAD_PEDIDOS, 
+                    MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
+                LEFT JOIN GVA55 D ON B.TALON_PED = D.TALON_PED AND B.NRO_PEDIDO = D.NRO_PEDIDO
+                WHERE A.CONTROLADO IS NULL 
+                AND A.CANCELADO IS NULL 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND B.COD_SUCURS = '01'
+                AND D.N_COMP IS NULL";
+        return $this->getDatos($sql);
+    }
+
+    // Función para obtener el detalle de pedidos pendientes de control - Central
+    public function traerDetallePedidosPendientesControlCentral() {
+        $sql = "SELECT FECHA_SINCRONIZADO, 
+                    CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
+                            WHEN A.TALON_PED = '99' THEN 'VTEX' 
+                            WHEN A.TALON_PED = '80' THEN 'ICBC' 
+                    END CANAL,
+                    A.NRO_PEDIDO, ORDER_ID, UPPER(D.RAZON_SOCI) CLIENTE, 
+                    'CENTRAL' AS SUCURSAL_PREPARA
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
+                LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
+                LEFT JOIN GVA55 E ON B.TALON_PED = E.TALON_PED AND B.NRO_PEDIDO = E.NRO_PEDIDO
+                WHERE A.CONTROLADO IS NULL 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.CANCELADO IS NULL
+                AND B.COD_SUCURS = '01'
+                AND E.N_COMP IS NULL
+                ORDER BY FECHA_SINCRONIZADO";
+        return $this->getDatosMultiples($sql);
+    }
+
+    // Función para obtener el resumen de pedidos pendientes de control - Sucursales
+    public function traerResumenPedidosPendientesControlSucursales() {
+        $sql = "SELECT COUNT(*) AS CANTIDAD_PEDIDOS, 
+                    MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
+                LEFT JOIN GVA55 D ON B.TALON_PED = D.TALON_PED AND B.NRO_PEDIDO = D.NRO_PEDIDO
+                WHERE A.CONTROLADO IS NULL 
+                AND A.CANCELADO IS NULL 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND B.COD_SUCURS != '01'
+                AND B.COD_SUCURS != '11'
+                AND D.N_COMP IS NULL";
+        return $this->getDatos($sql);
+    }
+
+    // Función para obtener el detalle de pedidos pendientes de control - Sucursales
+    public function traerDetallePedidosPendientesControlSucursales() {
+        $sql = "SELECT FECHA_SINCRONIZADO, 
+                    CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
+                            WHEN A.TALON_PED = '99' THEN 'VTEX' 
+                            WHEN A.TALON_PED = '80' THEN 'ICBC' 
+                    END CANAL,
+                    A.NRO_PEDIDO, ORDER_ID, UPPER(D.RAZON_SOCI) CLIENTE, 
+                    ISNULL(C.SUCURSAL_ENTREGA, 'SUCURSAL') SUCURSAL_PREPARA
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
+                LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
+                LEFT JOIN GVA55 E ON B.TALON_PED = E.TALON_PED AND B.NRO_PEDIDO = E.NRO_PEDIDO
+                WHERE A.CONTROLADO IS NULL 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.CANCELADO IS NULL
+                AND B.COD_SUCURS != '01'
+                AND B.COD_SUCURS != '11'
+                AND E.N_COMP IS NULL
+                ORDER BY FECHA_SINCRONIZADO";
         return $this->getDatosMultiples($sql);
     }
 

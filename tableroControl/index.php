@@ -62,9 +62,14 @@
                 <?php include 'tabs/tab-integraciones.php'; ?>
             </div>
             
-            <!-- Pestaña de Operaciones -->
-            <div class="tab-pane fade" id="operaciones" role="tabpanel" aria-labelledby="operaciones-tab">
-                <?php include 'tabs/tab-operaciones.php'; ?>
+            <!-- Pestaña de Operaciones Central -->
+            <div class="tab-pane fade" id="operaciones-central" role="tabpanel" aria-labelledby="operaciones-central-tab">
+                <?php include 'tabs/tab-operaciones-central.php'; ?>
+            </div>
+            
+            <!-- Pestaña de Operaciones Sucursales -->
+            <div class="tab-pane fade" id="operaciones-sucursales" role="tabpanel" aria-labelledby="operaciones-sucursales-tab">
+                <?php include 'tabs/tab-operaciones-sucursales.php'; ?>
             </div>
         </div>
     </div>

@@ -310,3 +310,152 @@ function exportToExcelPedidosRetiroTienda() {
         textColumns: [3] // El índice 3 corresponde a la columna "Order ID"
     });
 }
+
+// Funciones para los nuevos modales de control separado
+function exportToExcelPedidosControlCentral() {
+    exportTableToExcel('#tablaPedidosControlCentral', "Pedidos Pendientes Control Central", "pedidos_pendientes_control_central");
+}
+
+function exportToExcelPedidosControlSucursales() {
+    exportTableToExcel('#tablaPedidosControlSucursales', "Pedidos Pendientes Control Sucursales", "pedidos_pendientes_control_sucursales");
+}
+
+function exportToExcelRankingControlCentral() {
+    // Función especializada para exportar el ranking de pedidos control central
+    const table = document.querySelector('#tablaRankingControlCentral');
+    if (!table) return;
+    
+    const tableClone = table.cloneNode(true);
+    const rows = tableClone.querySelectorAll('tr');
+    const wb = XLSX.utils.book_new();
+    const data = [];
+    
+    rows.forEach((row, rowIndex) => {
+        const rowData = [];
+        row.querySelectorAll('th, td').forEach((cell, colIndex) => {
+            let value = cell.textContent.trim();
+            
+            // Manejar la columna de posición (puede contener íconos)
+            if (colIndex === 0 && rowIndex > 0) {
+                // Si contiene íconos, extraer solo el número o convertir íconos a texto
+                if (value.includes('👑') || cell.querySelector('.fa-crown')) {
+                    value = '1';
+                } else if (value.includes('🥈') || cell.querySelector('.fa-medal')) {
+                    value = '2';
+                } else if (value.includes('🥉') || cell.querySelector('.fa-award')) {
+                    value = '3';
+                } else {
+                    // Extraer solo números
+                    value = value.replace(/[^0-9]/g, '') || value;
+                }
+            }
+            
+            // Manejar la columna de cantidad (quitar badges)
+            if (colIndex === 2 && rowIndex > 0) {
+                value = value.replace(/[^0-9,]/g, '');
+                if (value.match(/^[\d,]+$/)) {
+                    value = parseFloat(value.replace(/,/g, ''));
+                }
+            }
+            
+            // Manejar la columna de porcentaje
+            if (colIndex === 3 && rowIndex > 0) {
+                if (value.includes('%')) {
+                    value = parseFloat(value.replace('%', ''));
+                }
+            }
+            
+            // Omitir la columna de progreso (índice 4)
+            if (colIndex !== 4) {
+                rowData.push(value);
+            }
+        });
+        data.push(rowData);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Configurar anchos de columna
+    ws['!cols'] = [
+        { width: 10 },  // Posición
+        { width: 25 },  // Departamento/Sucursal
+        { width: 12 },  // Cantidad
+        { width: 12 }   // Porcentaje
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Ranking Control Central");
+    
+    // Generar nombre de archivo con fecha actual
+    const today = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `ranking_control_central_${today}.xlsx`);
+}
+
+function exportToExcelRankingControlSucursales() {
+    // Función especializada para exportar el ranking de pedidos control sucursales
+    const table = document.querySelector('#tablaRankingControlSucursales');
+    if (!table) return;
+    
+    const tableClone = table.cloneNode(true);
+    const rows = tableClone.querySelectorAll('tr');
+    const wb = XLSX.utils.book_new();
+    const data = [];
+    
+    rows.forEach((row, rowIndex) => {
+        const rowData = [];
+        row.querySelectorAll('th, td').forEach((cell, colIndex) => {
+            let value = cell.textContent.trim();
+            
+            // Manejar la columna de posición (puede contener íconos)
+            if (colIndex === 0 && rowIndex > 0) {
+                // Si contiene íconos, extraer solo el número o convertir íconos a texto
+                if (value.includes('👑') || cell.querySelector('.fa-crown')) {
+                    value = '1';
+                } else if (value.includes('🥈') || cell.querySelector('.fa-medal')) {
+                    value = '2';
+                } else if (value.includes('🥉') || cell.querySelector('.fa-award')) {
+                    value = '3';
+                } else {
+                    // Extraer solo números
+                    value = value.replace(/[^0-9]/g, '') || value;
+                }
+            }
+            
+            // Manejar la columna de cantidad (quitar badges)
+            if (colIndex === 2 && rowIndex > 0) {
+                value = value.replace(/[^0-9,]/g, '');
+                if (value.match(/^[\d,]+$/)) {
+                    value = parseFloat(value.replace(/,/g, ''));
+                }
+            }
+            
+            // Manejar la columna de porcentaje
+            if (colIndex === 3 && rowIndex > 0) {
+                if (value.includes('%')) {
+                    value = parseFloat(value.replace('%', ''));
+                }
+            }
+            
+            // Omitir la columna de progreso (índice 4)
+            if (colIndex !== 4) {
+                rowData.push(value);
+            }
+        });
+        data.push(rowData);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Configurar anchos de columna
+    ws['!cols'] = [
+        { width: 10 },  // Posición
+        { width: 25 },  // Sucursal
+        { width: 12 },  // Cantidad
+        { width: 12 }   // Porcentaje
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Ranking Control Sucursales");
+    
+    // Generar nombre de archivo con fecha actual
+    const today = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `ranking_control_sucursales_${today}.xlsx`);
+}

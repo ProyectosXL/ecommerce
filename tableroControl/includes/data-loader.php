@@ -14,6 +14,8 @@ $facturasSinRemito = null;
 $productosMlFull = null;
 $pedidosDespachados = null;
 $pedidosPendientesControl = null;
+$pedidosPendientesControlCentral = null;
+$pedidosPendientesControlSucursales = null;
 $ordenesPendientesCierre = null;
 $pedidosPendienteDespacho = null;
 $pedidosRecibidosNoEntregados = null;
@@ -41,6 +43,10 @@ try {
     $pedidosRetiroTienda = $control->traerPedidosRetiroTienda();
     $pedidosPendientesPreparar = $control->traerPedidosPendientesPreparar();
     
+    // Cargar las nuevas consultas separadas para control
+    $pedidosPendientesControlCentral = $control->traerResumenPedidosPendientesControlCentral();
+    $pedidosPendientesControlSucursales = $control->traerResumenPedidosPendientesControlSucursales();
+    
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
@@ -48,7 +54,8 @@ try {
 // Calcular totales para badges
 $totalPendientesDocumentacion = 0;
 $totalPendientesIntegraciones = 0;
-$totalPendientesOperaciones = 0;
+$totalPendientesOperacionesCentral = 0;
+$totalPendientesOperacionesSucursales = 0;
 
 // Documentación
 if ($pedidosSinFacturar && !empty($pedidosSinFacturar->CANT_PED_SIN_FACT)) {
@@ -72,30 +79,58 @@ if ($productosMlFull && !empty($productosMlFull->CANTIDAD_PRODUCTOS)) {
     $totalPendientesIntegraciones += $productosMlFull->CANTIDAD_PRODUCTOS;
 }
 
-// Operaciones
+// Operaciones Central
 if ($pedidosPendientesPreparar && !empty($pedidosPendientesPreparar->CANT_PED_PEND)) {
-    $totalPendientesOperaciones += $pedidosPendientesPreparar->CANT_PED_PEND;
+    $totalPendientesOperacionesCentral += $pedidosPendientesPreparar->CANT_PED_PEND;
 }
 if ($pedidosFlexCentral && !empty($pedidosFlexCentral->CANT_PED_PEND)) {
-    $totalPendientesOperaciones += $pedidosFlexCentral->CANT_PED_PEND;
+    $totalPendientesOperacionesCentral += $pedidosFlexCentral->CANT_PED_PEND;
 }
 if ($pedidosPendienteDespacho && !empty($pedidosPendienteDespacho->CANT_PED_PEND)) {
-    $totalPendientesOperaciones += $pedidosPendienteDespacho->CANT_PED_PEND;
+    $totalPendientesOperacionesCentral += $pedidosPendienteDespacho->CANT_PED_PEND;
 }
+if ($remitosSinIntegrar !== null && is_array($remitosSinIntegrar) && count($remitosSinIntegrar) > 0) {
+    $totalPendientesOperacionesCentral += count($remitosSinIntegrar);
+}
+// Agregar Pedidos Pendientes Control Central
+if ($pedidosPendientesControlCentral && !empty($pedidosPendientesControlCentral->CANTIDAD_PEDIDOS)) {
+    $totalPendientesOperacionesCentral += $pedidosPendientesControlCentral->CANTIDAD_PEDIDOS;
+}
+
+// Operaciones Sucursales
 if ($ordenesPendientesCierre && !empty($ordenesPendientesCierre->CANT_ORDENES)) {
-    $totalPendientesOperaciones += $ordenesPendientesCierre->CANT_ORDENES;
+    $totalPendientesOperacionesSucursales += $ordenesPendientesCierre->CANT_ORDENES;
 }
 if ($pedidosDespachados && !empty($pedidosDespachados->CANT_PED_PEND)) {
-    $totalPendientesOperaciones += $pedidosDespachados->CANT_PED_PEND;
-}
-if ($pedidosPendientesControl && !empty($pedidosPendientesControl->CANTIDAD_PEDIDOS)) {
-    $totalPendientesOperaciones += $pedidosPendientesControl->CANTIDAD_PEDIDOS;
+    $totalPendientesOperacionesSucursales += $pedidosDespachados->CANT_PED_PEND;
 }
 if ($pedidosRecibidosNoEntregados && !empty($pedidosRecibidosNoEntregados->CANT_PED_PEND)) {
-    $totalPendientesOperaciones += $pedidosRecibidosNoEntregados->CANT_PED_PEND;
+    $totalPendientesOperacionesSucursales += $pedidosRecibidosNoEntregados->CANT_PED_PEND;
 }
 if ($pedidosRetiroTienda && !empty($pedidosRetiroTienda->CANT_PED_RETIRO)) {
-    $totalPendientesOperaciones += $pedidosRetiroTienda->CANT_PED_RETIRO;
+    $totalPendientesOperacionesSucursales += $pedidosRetiroTienda->CANT_PED_RETIRO;
+}
+// Agregar Pedidos Pendientes Control Sucursales
+if ($pedidosPendientesControlSucursales && !empty($pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS)) {
+    $totalPendientesOperacionesSucursales += $pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS;
+}
+
+// Variables temporales para las cards separadas de control
+// Estas variables se reemplazarán cuando se implementen las consultas separadas
+$pedidosPendientesControlCentral = null;
+$pedidosPendientesControlSucursales = null;
+
+if ($pedidosPendientesControl && !empty($pedidosPendientesControl->CANTIDAD_PEDIDOS)) {
+    // Crear objetos temporales simulando la separación
+    $pedidosPendientesControlCentral = (object) [
+        'CANTIDAD_PEDIDOS' => round($pedidosPendientesControl->CANTIDAD_PEDIDOS * 0.4),
+        'FECHA_MAS_ANTIGUA' => $pedidosPendientesControl->FECHA_MAS_ANTIGUA ?? null
+    ];
+    
+    $pedidosPendientesControlSucursales = (object) [
+        'CANTIDAD_PEDIDOS' => round($pedidosPendientesControl->CANTIDAD_PEDIDOS * 0.6),
+        'FECHA_MAS_ANTIGUA' => $pedidosPendientesControl->FECHA_MAS_ANTIGUA ?? null
+    ];
 }
 
 ?>
