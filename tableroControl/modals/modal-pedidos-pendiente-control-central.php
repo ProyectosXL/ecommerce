@@ -14,11 +14,6 @@
                 </div>
             </div>
             <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Pendiente implementación de consulta separada para Central</strong><br>
-                    Actualmente muestra los mismos datos que el modal general hasta que se implemente la consulta específica para Central.
-                </div>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover" id="tablaPedidosControlCentral">
                         <thead class="table-light">
@@ -33,13 +28,9 @@
                         </thead>
                         <tbody>
                             <?php 
-                            // TODO: Implementar consulta específica para Central
-                            // Por ahora usar la consulta general filtrada
-                            $detallePedidosControlCentral = $control->traerDetallePedidosPendientesControl();
+                            $detallePedidosControlCentral = $control->traerDetallePedidosPendientesControlCentral();
                             if (!empty($detallePedidosControlCentral)):
-                                foreach ($detallePedidosControlCentral as $detalle): 
-                                    // Filtrar solo central (código sucursal 001 o similar)
-                                    if ($detalle->SUCURSAL_PREPARA == '001' || strpos($detalle->SUCURSAL_PREPARA, 'CENTRAL') !== false): ?>
+                                foreach ($detallePedidosControlCentral as $detalle): ?>
                                     <tr>
                                         <td><?php echo $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i'); ?></td>
                                         <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
@@ -48,8 +39,7 @@
                                         <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
                                         <td><?php echo htmlspecialchars($detalle->SUCURSAL_PREPARA); ?></td>
                                     </tr>
-                                    <?php endif;
-                                endforeach;
+                                <?php endforeach;
                             else: ?>
                                 <tr>
                                     <td colspan="6" class="text-center">No hay pedidos pendientes</td>

@@ -320,7 +320,8 @@ function exportToExcelPedidosControlSucursales() {
     exportTableToExcel('#tablaPedidosControlSucursales', "Pedidos Pendientes Control Sucursales", "pedidos_pendientes_control_sucursales");
 }
 
-function exportToExcelRankingControlCentral() {
+// Función eliminada - Modal de ranking de Central no es necesario
+/* function exportToExcelRankingControlCentral() {
     // Función especializada para exportar el ranking de pedidos control central
     const table = document.querySelector('#tablaRankingControlCentral');
     if (!table) return;
@@ -388,7 +389,7 @@ function exportToExcelRankingControlCentral() {
     // Generar nombre de archivo con fecha actual
     const today = new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb, `ranking_control_central_${today}.xlsx`);
-}
+} */
 
 function exportToExcelRankingControlSucursales() {
     // Función especializada para exportar el ranking de pedidos control sucursales

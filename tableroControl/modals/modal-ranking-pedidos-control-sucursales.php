@@ -4,7 +4,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalRankingPedidosControlSucursalesLabel">
-                    <i class="fas fa-trophy"></i> Ranking de Pedidos Pendientes de Control por Sucursal
+                    <i class="fas fa-trophy"></i> Ranking de Pedidos Pendientes de Control por Sucursal (Hasta Ayer)
                 </h5>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-success" onclick="exportToExcelRankingControlSucursales()">
@@ -14,14 +14,9 @@
                 </div>
             </div>
             <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Pendiente implementación de consulta separada para Sucursales</strong><br>
-                    Por ahora usa el ranking general filtrado.
-                </div>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Ranking basado en pedidos hasta ayer sin controlar - Solo Sucursales</strong>
+                    <strong>Ranking basado en pedidos sin controlar hasta ayer - Solo Sucursales (excluye Central)</strong>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover" id="tablaRankingControlSucursales">
@@ -36,23 +31,38 @@
                         </thead>
                         <tbody>
                             <?php 
-                            // TODO: Implementar consulta específica para ranking de Sucursales
-                            // Por ahora usar el ranking general excluyendo central
-                            $rankingPedidosControlGeneral = $control->traerRankingPedidosPendientesControlPorSucursal();
-                            $rankingSucursales = [];
+                            // Usar método específico para sucursales y generar ranking
+                            $detallePedidosControlSucursales = $control->traerDetallePedidosPendientesControlSucursales();
                             
-                            if (!empty($rankingPedidosControlGeneral)):
-                                foreach ($rankingPedidosControlGeneral as $ranking):
-                                    // Excluir central del ranking
-                                    if ($ranking->SUCURSAL != 'CENTRAL' && strpos($ranking->SUCURSAL, 'CENTRAL') === false):
-                                        $rankingSucursales[] = $ranking;
+                            $rankingSucursales = [];
+                            if (!empty($detallePedidosControlSucursales)):
+                                $contadorPorSucursal = [];
+                                
+                                foreach ($detallePedidosControlSucursales as $detalle):
+                                    $sucursal = $detalle->SUCURSAL_PREPARA;
+                                    if (!isset($contadorPorSucursal[$sucursal])):
+                                        $contadorPorSucursal[$sucursal] = 0;
                                     endif;
+                                    $contadorPorSucursal[$sucursal]++;
                                 endforeach;
                                 
-                                // Recalcular porcentajes
-                                $totalSucursales = array_sum(array_column($rankingSucursales, 'CANTIDAD_PEDIDOS'));
+                                // Convertir a objetos y ordenar
+                                foreach ($contadorPorSucursal as $sucursal => $cantidad):
+                                    $rankingSucursales[] = (object)[
+                                        'SUCURSAL' => $sucursal,
+                                        'CANTIDAD_PEDIDOS' => $cantidad
+                                    ];
+                                endforeach;
+                                
+                                // Ordenar por cantidad descendente
+                                usort($rankingSucursales, function($a, $b) {
+                                    return $b->CANTIDAD_PEDIDOS - $a->CANTIDAD_PEDIDOS;
+                                });
+                                
+                                // Calcular porcentajes
+                                $totalPedidos = array_sum(array_column($rankingSucursales, 'CANTIDAD_PEDIDOS'));
                                 foreach ($rankingSucursales as $ranking):
-                                    $ranking->PORCENTAJE = ($ranking->CANTIDAD_PEDIDOS / $totalSucursales) * 100;
+                                    $ranking->PORCENTAJE = $totalPedidos > 0 ? ($ranking->CANTIDAD_PEDIDOS / $totalPedidos) * 100 : 0;
                                 endforeach;
                             endif;
                             

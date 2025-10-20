@@ -16,6 +16,7 @@ $pedidosDespachados = null;
 $pedidosPendientesControl = null;
 $pedidosPendientesControlCentral = null;
 $pedidosPendientesControlSucursales = null;
+$pedidosPendientesControlSucursales_7dias = null;
 $ordenesPendientesCierre = null;
 $pedidosPendienteDespacho = null;
 $pedidosRecibidosNoEntregados = null;
@@ -110,27 +111,9 @@ if ($pedidosRecibidosNoEntregados && !empty($pedidosRecibidosNoEntregados->CANT_
 if ($pedidosRetiroTienda && !empty($pedidosRetiroTienda->CANT_PED_RETIRO)) {
     $totalPendientesOperacionesSucursales += $pedidosRetiroTienda->CANT_PED_RETIRO;
 }
-// Agregar Pedidos Pendientes Control Sucursales
+// Agregar Pedidos Pendientes Control Sucursales - Usando el método específico
 if ($pedidosPendientesControlSucursales && !empty($pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS)) {
     $totalPendientesOperacionesSucursales += $pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS;
-}
-
-// Variables temporales para las cards separadas de control
-// Estas variables se reemplazarán cuando se implementen las consultas separadas
-$pedidosPendientesControlCentral = null;
-$pedidosPendientesControlSucursales = null;
-
-if ($pedidosPendientesControl && !empty($pedidosPendientesControl->CANTIDAD_PEDIDOS)) {
-    // Crear objetos temporales simulando la separación
-    $pedidosPendientesControlCentral = (object) [
-        'CANTIDAD_PEDIDOS' => round($pedidosPendientesControl->CANTIDAD_PEDIDOS * 0.4),
-        'FECHA_MAS_ANTIGUA' => $pedidosPendientesControl->FECHA_MAS_ANTIGUA ?? null
-    ];
-    
-    $pedidosPendientesControlSucursales = (object) [
-        'CANTIDAD_PEDIDOS' => round($pedidosPendientesControl->CANTIDAD_PEDIDOS * 0.6),
-        'FECHA_MAS_ANTIGUA' => $pedidosPendientesControl->FECHA_MAS_ANTIGUA ?? null
-    ];
 }
 
 ?>

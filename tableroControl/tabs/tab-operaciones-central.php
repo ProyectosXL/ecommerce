@@ -148,14 +148,9 @@
                     <?php if ($pedidosPendientesControlCentral->FECHA_MAS_ANTIGUA): ?>
                         <p class="date-info">Desde: <?php echo $pedidosPendientesControlCentral->FECHA_MAS_ANTIGUA->format('d/m/Y H:i'); ?></p>
                     <?php endif; ?>
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalRankingPedidosControlCentral">
-                            <i class="fas fa-trophy me-2"></i>Ver Ranking
-                        </button>
-                        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalPedidosPendientesControlCentral">
-                            <i class="fas fa-list-ul me-2"></i>Ver Detalle
-                        </button>
-                    </div>
+                    <button type="button" class="btn btn-outline-success w-100" data-bs-toggle="modal" data-bs-target="#modalPedidosPendientesControlCentral">
+                        <i class="fas fa-list-ul me-2"></i>Ver Detalle
+                    </button>
                 <?php else: ?>
                     <p class="no-data">Sin pedidos pendientes</p>
                 <?php endif; ?>

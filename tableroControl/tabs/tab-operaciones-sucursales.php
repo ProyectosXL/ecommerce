@@ -132,7 +132,7 @@
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Pedidos sin controlar de Sucursales hasta ayer (no incluye pedidos ya facturados)">
+                    title="Pedidos sin controlar de Sucursales hasta ayer (excluye Central y pedidos ya facturados)">
                     </i>
                 </h5>
             </div>
