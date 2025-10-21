@@ -14,7 +14,7 @@
             $cid_central = $cid->conectarSql('central');
 
 
-            ini_set('max_execution_time', 300);
+            ini_set('max_execution_time', 3000);
             $result=sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query"));
 
             $data = [];
@@ -36,6 +36,7 @@
                 
             $sql = "
             SET DATEFORMAT YMD
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
             EXEC RO_ECOMMERCE_PEDIDOS '$desde', '$hasta', '%$tienda', '%$warehouse', '$estado', '$orden'
 
             ";
