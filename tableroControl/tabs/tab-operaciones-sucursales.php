@@ -132,7 +132,7 @@
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Pedidos sin controlar de Sucursales en los últimos 7 días (excluye Central y pedidos ya facturados)">
+                    title="Pedidos sin controlar de Sucursales en los últimos 7 días (excluye Central)">
                     </i>
                 </h5>
             </div>

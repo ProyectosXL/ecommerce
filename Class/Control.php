@@ -526,13 +526,11 @@ class Control {
                 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
                 INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
                 LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
-                LEFT JOIN GVA55 D ON B.TALON_PED = D.TALON_PED AND B.NRO_PEDIDO = D.NRO_PEDIDO
                 WHERE A.CONTROLADO IS NULL 
                 AND A.CANCELADO IS NULL 
                 AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND B.COD_SUCURS != '01'
-                AND B.COD_SUCURS != '11'
-                AND D.N_COMP IS NULL";
+                AND B.COD_SUCURS != '11'";
         return $this->getDatos($sql);
     }
 
@@ -549,13 +547,11 @@ class Control {
                 INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
                 LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
                 LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
-                LEFT JOIN GVA55 E ON B.TALON_PED = E.TALON_PED AND B.NRO_PEDIDO = E.NRO_PEDIDO
                 WHERE A.CONTROLADO IS NULL 
                 AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND A.CANCELADO IS NULL
                 AND B.COD_SUCURS != '01'
                 AND B.COD_SUCURS != '11'
-                AND E.N_COMP IS NULL
                 ORDER BY FECHA_SINCRONIZADO";
         return $this->getDatosMultiples($sql);
     }
