@@ -1,0 +1,276 @@
+/* Modal NC Pendientes - Diseño moderno y minimalista */
+
+/* Forzar que el modal esté SIEMPRE al frente */
+#modalNcPendientes {
+    z-index: 99999 !important;
+}
+
+.modal-nc-pendientes {
+    z-index: 99999 !important;
+}
+
+/* Backdrop siempre detrás */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal-backdrop.show {
+    z-index: 1040 !important;
+    opacity: 0 !important;
+}
+
+/* Dialog del modal */
+#modalNcPendientes .modal-dialog,
+.modal-nc-pendientes .modal-dialog {
+    max-width: 900px;
+    margin: 1.75rem auto;
+}
+
+.modal-nc-pendientes .modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.modal-nc-pendientes .modal-header {
+    background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+    color: white;
+    border: none;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0;
+}
+
+.modal-nc-pendientes .modal-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-nc-pendientes .modal-header .close {
+    color: white;
+    opacity: 0.9;
+    text-shadow: none;
+    font-size: 1.5rem;
+    font-weight: 300;
+    transition: opacity 0.3s ease;
+}
+
+.modal-nc-pendientes .modal-header .close:hover {
+    opacity: 1;
+}
+
+.modal-nc-pendientes .modal-body {
+    padding: 0;
+    background-color: #f8f9fa;
+}
+
+.modal-nc-pendientes .table-responsive {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.modal-nc-pendientes table {
+    margin: 0;
+    background: white;
+}
+
+.modal-nc-pendientes thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+}
+
+.modal-nc-pendientes thead th {
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 0.75rem 0.5rem;
+    border: none;
+    white-space: nowrap;
+}
+
+.modal-nc-pendientes tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.modal-nc-pendientes tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+.modal-nc-pendientes tbody td {
+    padding: 0.65rem 0.5rem;
+    vertical-align: middle;
+    font-size: 0.8rem;
+    color: #495057;
+    white-space: nowrap;
+}
+
+/* Fila atrasada (más de 5 días) */
+.modal-nc-pendientes tbody tr.atrasado {
+    background-color: #fff8e1;
+    border-left: 3px solid #ffa726;
+}
+
+.modal-nc-pendientes tbody tr.atrasado:hover {
+    background-color: #ffecb3;
+}
+
+.modal-nc-pendientes tbody tr.atrasado td {
+    font-weight: 500;
+}
+
+/* Badge para indicador de atraso */
+.badge-atrasado {
+    background-color: #e65100;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+
+/* Estilos para importes */
+.modal-nc-pendientes .importe-cell {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.8rem;
+}
+
+.modal-nc-pendientes tr.atrasado .importe-cell {
+    color: #e65100;
+}
+
+/* Footer del modal */
+.modal-nc-pendientes .modal-footer {
+    background-color: white;
+    border-top: 2px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+.modal-nc-pendientes .btn-cerrar {
+    background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(73, 80, 87, 0.3);
+}
+
+.modal-nc-pendientes .btn-cerrar:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(73, 80, 87, 0.4);
+}
+
+.modal-nc-pendientes .btn-cerrar:active {
+    transform: translateY(0);
+}
+
+/* Resumen en el footer */
+.modal-nc-pendientes .resumen-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.modal-nc-pendientes .resumen-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.modal-nc-pendientes .resumen-label {
+    font-size: 0.7rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 0.25rem;
+}
+
+.modal-nc-pendientes .resumen-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #495057;
+}
+
+.modal-nc-pendientes .resumen-value.atrasados {
+    color: #e65100;
+}
+
+/* Icono de advertencia */
+.icon-warning {
+    color: #ffa726;
+    font-size: 1.1rem;
+}
+
+/* Mensaje cuando no hay datos */
+.modal-nc-pendientes .sin-datos {
+    text-align: center;
+    padding: 2.5rem 2rem;
+    color: #6c757d;
+}
+
+.modal-nc-pendientes .sin-datos i {
+    font-size: 2.5rem;
+    color: #28a745;
+    margin-bottom: 1rem;
+}
+
+.modal-nc-pendientes .sin-datos h4 {
+    color: #28a745;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Scrollbar personalizada */
+.modal-nc-pendientes .table-responsive::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-nc-pendientes .table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.modal-nc-pendientes .table-responsive::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 3px;
+}
+
+.modal-nc-pendientes .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #495057;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modal-nc-pendientes .modal-dialog {
+        max-width: 95%;
+        margin: 0.5rem auto;
+    }
+    
+    .modal-nc-pendientes thead th,
+    .modal-nc-pendientes tbody td {
+        padding: 0.5rem 0.35rem;
+        font-size: 0.75rem;
+    }
+    
+    .modal-nc-pendientes .resumen-footer {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+}

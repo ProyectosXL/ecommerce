@@ -3,16 +3,16 @@
 require_once 'Class/Conexion.php';
 require_once 'Class/Pedido.php';
 require_once 'Controlador/envio_remitos_once.php';
-require_once 'Controlador/nuevo_ml.php';
 // require_once 'Controlador/nc_pend.php';
 $pedidos = new Pedido();
 
 
 remitos_buscar_once();
-new_ml();
 
+// Obtener NC pendientes si no hay filtro de fecha
+$nc_pendientes = [];
 // if(!isset($_GET['desde'])){
-// 	nc_pendientes();
+// $nc_pendientes = nc_pendientes();
 // }
 
 $hoy = date("Y-m-d");
@@ -40,60 +40,11 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
 <?php 
 	require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/css/css.php';
 ?>
+<link rel="stylesheet" href="assets/css/helpIndex.css" class="rel">
+<link rel="stylesheet" href="assets/css/nc_pendientes.css">
 
 <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
-
-<style>
-#buttonAyuda {
-    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-    border: none;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-#buttonAyuda:hover {
-    background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-#buttonAyuda:active {
-    transform: translateY(0);
-}
-
-/* Mejorar la apariencia de los otros botones para mantener consistencia */
-#buttonPendientes, #buttonCancelados, #buttonIncompletos {
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-#buttonPendientes:hover, #buttonCancelados:hover, #buttonIncompletos:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-#buttonExportar {
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    border: none;
-}
-
-#buttonExportar:hover {
-    background-color: #218838 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-</style>
 
 </head>
 
@@ -458,6 +409,29 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/assets/js/js.php';
 <script src="assets/bootstrap/bootstrap.min.js" ></script>
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 <?php require_once 'modals/ayuda.php'; ?>
+<?php require_once 'modals/nc_pendientes.php'; ?>
+
+<?php if (!empty($nc_pendientes)): ?>
+<script>
+$(document).ready(function() {
+    // Convertir datos de PHP a JavaScript
+    const ncPendientes = <?php echo json_encode(array_map(function($item) {
+        return [
+            'fecha' => $item['fecha']->format('Y-m-d'),
+            'promocion' => $item['promocion'],
+            'importe' => $item['importe'],
+            'cod_articulo' => $item['cod_articulo']
+        ];
+    }, $nc_pendientes)); ?>;
+    
+    // Cargar datos
+    cargarNcPendientes(ncPendientes);
+    
+    // Mostrar modal y forzar z-index
+    $('#modalNcPendientes').modal('show').css('z-index', 99999);
+});
+</script>
+<?php endif; ?>
 
 </body>
 
