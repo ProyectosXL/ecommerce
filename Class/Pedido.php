@@ -251,7 +251,7 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
                     A.NRO_PEDIDO, 
                     A.NRO_ORDEN_ECOMMERCE AS NRO_ORDEN
                 FROM SOF_AUDITORIA A
-                WHERE A.FECHA_AUDITORIA_1 IS NOT NULL
+                WHERE A.FECHA_AUDITORIA_1 IS NOT NULL AND COD_ARTICULO LIKE '[XO]%'
                 GROUP BY CAST(A.FECHA_PEDIDO AS DATE), A.NRO_PEDIDO, A.NRO_ORDEN_ECOMMERCE
                 HAVING SUM(CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)) <> SUM(CAST(A.CANT_AUDITADO AS FLOAT))
             ),
