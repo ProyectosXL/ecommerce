@@ -235,72 +235,83 @@ class Pedido{
      * Obtiene el historial completo de incidentes por faltantes, con filtros.
      * Este es el nuevo método para el dashboard de reportes.
      */
+// Reemplaza esta función completa en Class/Pedido.php
+
 public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '')
-    {
-        // Nota: Esta consulta asume que las tablas SOF_AUDITORIA y RO_T_ENC_ECOMMERCE_HISTORIAL_FALT
-        // son accesibles desde la misma conexión. Si SOF_AUDITORIA está en un servidor vinculado,
-        // la sintaxis sería [SERVIDOR].LAKER_SA.dbo.SOF_AUDITORIA.
-        $cid = new Conexion();
-        $cid_central = $cid->conectarSql("central"); // O la conexión que llegue a LAKER_SA
+{
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql("central");
 
-        $sql = "
-            -- Usamos un CTE (Common Table Expression) para definir nuestra lista maestra de incidentes de auditoría
-            WITH IncidentesAuditoria AS (
-                SELECT 
-                    CAST(A.FECHA_PEDIDO AS DATE) AS FECHA_PEDIDO, 
-                    A.NRO_PEDIDO, 
-                    A.NRO_ORDEN_ECOMMERCE AS NRO_ORDEN
-                FROM SOF_AUDITORIA A
-                WHERE A.FECHA_AUDITORIA_1 IS NOT NULL AND COD_ARTICULO LIKE '[XO]%'
-                GROUP BY CAST(A.FECHA_PEDIDO AS DATE), A.NRO_PEDIDO, A.NRO_ORDEN_ECOMMERCE
-                HAVING SUM(CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)) <> SUM(CAST(A.CANT_AUDITADO AS FLOAT))
-            ),
-            -- Unimos la auditoría con los datos de gestión de reclamos
-            IncidentesCombinados AS (
-                SELECT
-                    A.FECHA_PEDIDO,
-                    A.NRO_PEDIDO,
-                    A.NRO_ORDEN,
-                    -- Si hay un reclamo, usamos su información; si no, usamos la de la auditoría o valores por defecto
-                    ISNULL(H.CLIENTE, 'No especificado') as CLIENTE,
-                    ISNULL(H.COD_ARTICULO, 'Discrepancia General') as COD_ARTICULO,
-                    ISNULL(H.WAREHOUSE, 'N/A') as WAREHOUSE,
-                    ISNULL(H.SUC_DESPACHO, 'N/A') as SUC_DESPACHO,
-                    ISNULL(H.ESTADO, 'abierto') as ESTADO, -- Si no hay reclamo, es 'abierto' por defecto
-                    ISNULL(H.RESOLUCION, 'Pendiente') as RESOLUCION,
-                    H.FECHA_ULT_MODIF,
-                    H.FECHA_ALTA
-                FROM IncidentesAuditoria A
-                LEFT JOIN RO_T_ENC_ECOMMERCE_HISTORIAL_FALT H ON A.NRO_ORDEN = H.NRO_ORDEN
-            )
-            -- Finalmente, seleccionamos y filtramos los resultados combinados
-            SELECT *
-            FROM IncidentesCombinados
-            WHERE FECHA_PEDIDO BETWEEN ? AND ?
-        ";
+    // CORRECCIÓN FINAL: Usamos el JOIN a la vista RO_V_STA22, que es la misma que genera el campo "Prepara".
+    $sql = "
+        WITH IncidentesAuditoria AS (
+            SELECT 
+                A.NRO_ORDEN_ECOMMERCE
+            FROM SOF_AUDITORIA A
+            WHERE 
+                A.FECHA_AUDITORIA_1 IS NOT NULL 
+                AND A.COD_ARTICULO LIKE '[XO]%'
+                AND CAST(A.FECHA_PEDIDO AS DATE) BETWEEN ? AND ?
+            GROUP BY 
+                A.NRO_ORDEN_ECOMMERCE
+            HAVING 
+                SUM(CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)) <> SUM(CAST(A.CANT_AUDITADO AS FLOAT))
+        )
+        SELECT 
+            ISNULL(H.ESTADO, 'abierto') as ESTADO,
+            ISNULL(H.RESOLUCION, 'Pendiente') as RESOLUCION,
+            ISNULL(H.CLIENTE, GVA38.RAZON_SOCI) as CLIENTE,
+            ISNULL(H.WAREHOUSE, H.SUC_DESPACHO) as WAREHOUSE_RECLAMO,
+            H.FECHA_ULT_MODIF,
+            H.FECHA_ALTA,
+            
+            GVA21.NRO_PEDIDO,
+            GVA21.ORDER_ID_TIENDA AS NRO_ORDEN,
+            CAST(GVA21.FECHA_PEDI AS DATE) AS FECHA_PEDIDO,
+            
+            GVA21.COD_SUCURS AS DEPOSITO_ORIGEN,
 
-        // Los parámetros para la consulta preparada
-        $params = array($fechaInicio, $fechaFin);
+            -- NUEVA LÓGICA: Obtenemos el nombre de la sucursal desde la vista RO_V_STA22
+            COALESCE(V_STA22.SUCURSAL_ENTREGA, CASE WHEN GVA21.COD_SUCURS = '01' THEN 'CENTRAL' ELSE 'No especificado' END) AS NOMBRE_ORIGEN,
 
-        // Aplicamos el filtro de estado si se proporciona
-        if (!empty($estado)) {
-            $sql .= " AND ESTADO = ?";
-            array_push($params, $estado);
-        }
+            ISNULL(H.COD_ARTICULO, 'Discrepancia General') as COD_ARTICULO
+            
+        FROM IncidentesAuditoria IA
+        INNER JOIN GVA21 ON IA.NRO_ORDEN_ECOMMERCE = GVA21.ORDER_ID_TIENDA COLLATE DATABASE_DEFAULT
+        LEFT JOIN GVA38 ON GVA21.NRO_PEDIDO = GVA38.N_COMP AND GVA21.TALON_PED = GVA38.TALONARIO
+        LEFT JOIN RO_T_ENC_ECOMMERCE_HISTORIAL_FALT H ON GVA21.ORDER_ID_TIENDA = H.NRO_ORDEN COLLATE DATABASE_DEFAULT
+        -- NUEVO JOIN: Unimos con la vista RO_V_STA22 para obtener el nombre de la sucursal de origen
+        LEFT JOIN RO_V_STA22 V_STA22 ON GVA21.COD_SUCURS = V_STA22.COD_SUCURS COLLATE DATABASE_DEFAULT
+    ";
+    
+    $params = array($fechaInicio, $fechaFin);
 
-        $sql .= " ORDER BY FECHA_PEDIDO DESC;";
-
-        $stmt = sqlsrv_query($cid_central, $sql, $params);
-
-        if ($stmt === false) {
-            die(print_r(sqlsrv_errors(), true));
-        }
-
-        $data = [];
-        while ($v = sqlsrv_fetch_object($stmt)) {
-            $data[] = array($v);
-        }
-
-        return $data;
+    $whereConditions = [];
+    if (!empty($estado)) {
+        $whereConditions[] = "ISNULL(H.ESTADO, 'abierto') = ?";
+        array_push($params, $estado);
     }
+    
+    if (!empty($whereConditions)) {
+        $sql .= " WHERE " . implode(' AND ', $whereConditions);
+    }
+
+    $sql .= " ORDER BY GVA21.FECHA_PEDI DESC;";
+
+    $stmt = sqlsrv_query($cid_central, $sql, $params);
+
+    if ($stmt === false) {
+        header('Content-Type: application/json');
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Error en la consulta SQL', 'details' => sqlsrv_errors()]);
+        exit;
+    }
+
+    $data = [];
+    while ($v = sqlsrv_fetch_object($stmt)) {
+        $data[] = array($v);
+    }
+
+    return $data;
+}
 }

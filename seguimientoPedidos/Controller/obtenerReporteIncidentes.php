@@ -25,6 +25,8 @@ try {
         'resuelto' => 0
     ];
 
+    $desglose_resolucion = [];
+
     if ($incidentesData) {
         foreach($incidentesData as $row) {
             $item = $row[0];
@@ -43,6 +45,14 @@ try {
                 $dias_abierto = $diff->days;
                 $total_dias_resolucion += $dias_abierto;
                 $resueltos_count++;
+
+                $resolucion = strtolower(trim($item->RESOLUCION));
+                if (!empty($resolucion) && $resolucion != 'pendiente') {
+                    if (!isset($desglose_resolucion[$resolucion])) {
+                        $desglose_resolucion[$resolucion] = 0;
+                    }
+                    $desglose_resolucion[$resolucion]++;
+                }
             } else {
                 $diff = $hoy->diff($fecha_incidente);
                 $dias_abierto = $diff->days;
@@ -54,26 +64,44 @@ try {
                 'fecha_incidente' => $fecha_incidente->format('d/m/Y'),
                 'cliente' => $item->CLIENTE,
                 'articulo_faltante' => $item->COD_ARTICULO,
-                'warehouse' => $item->WAREHOUSE ?? $item->SUC_DESPACHO,
+                'warehouse' => $item->WAREHOUSE_RECLAMO ?? 'N/A',
+                'deposito_origen' => $item->DEPOSITO_ORIGEN ?? 'N/A',
+                'nombre_origen' => $item->NOMBRE_ORIGEN ?? 'N/A',
                 'estado' => $item->ESTADO,
                 'resolucion' => $item->RESOLUCION ?? 'Pendiente',
                 'dias_abierto' => $dias_abierto
             ];
 
-            if ($item->ESTADO && isset($kpis[$item->ESTADO])) {
-                $kpis[$item->ESTADO]++;
+            $estadoActual = strtolower(trim($item->ESTADO));
+            if(isset($kpis[$estadoActual])){
+                 $kpis[$estadoActual]++;
             }
         }
     }
     
+    // --- NUEVA LÓGICA PARA EL RANKING DE DEPÓSITOS ---
+    $ranking_depositos = [];
+    foreach ($incidentes as $incidente) {
+        $nombreOrigen = $incidente['nombre_origen'] ?? 'No especificado';
+        if (!isset($ranking_depositos[$nombreOrigen])) {
+            $ranking_depositos[$nombreOrigen] = 0;
+        }
+        $ranking_depositos[$nombreOrigen]++;
+    }
+    // Ordenar de mayor a menor
+    arsort($ranking_depositos);
+    // --- FIN DE LA NUEVA LÓGICA ---
+
     $kpis['total'] = count($incidentes);
     $kpis['tasa_resolucion'] = ($kpis['total'] > 0) ? ($kpis['resuelto'] / $kpis['total']) * 100 : 0;
-    $kpis['tiempo_promedio'] = ($resueltos_count > 0) ? $total_dias_resolucion / $resueltos_count : 0;
+    $kpis['tiempo_promedio'] = ($resueltos_count > 0) ? round($total_dias_resolucion / $resueltos_count, 1) : 0;
 
     echo json_encode([
         'success' => true,
         'kpis' => $kpis,
-        'tablaData' => $incidentes
+        'tablaData' => $incidentes,
+        'desgloseResolucion' => $desglose_resolucion,
+        'rankingDepositos' => $ranking_depositos // NUEVO: Enviamos el ranking al frontend
     ]);
 
 } catch (Exception $e) {

@@ -29,12 +29,17 @@ require_once 'config.php';
 
     <!-- DataTables (necesario para el reporte) -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <!-- NUEVO: CSS para los botones de DataTables -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- CSS personalizado -->
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/timeline.css">
     <link rel="stylesheet" href="css/modal.css">
-    <link rel="stylesheet" href="css/reportes.css"> <!-- Nuevo archivo CSS -->
+    <link rel="stylesheet" href="css/reportes.css">
 </head>
 <body>
     <div class="container py-4">
@@ -93,15 +98,21 @@ require_once 'config.php';
         </div>
     </div>
 
-    <!-- DataTables JS (necesario para el reporte) -->
+    <!-- DataTables JS y extensiones para botones -->
     <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <!-- NUEVO: Scripts para los botones de exportación -->
+    <script type="text/javascript" src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
     <!-- Scripts personalizados -->
     <script src="js/main.js"></script>
     <script src="js/modal-handler.js"></script>
     <script src="js/ajax-requests.js"></script>
-    <script src="js/reporte-incidentes.js"></script> <!-- Nuevo archivo JS -->
+    <script src="js/reporte-incidentes.js"></script>
     
     <script>
         window.addEventListener('load', function() {
