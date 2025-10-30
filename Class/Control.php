@@ -156,7 +156,7 @@ class Control {
 
     public function traerDetalleNcPendPromociones() {
         $sql = "SELECT FECHA, COD_PROMOCION_TARJETA, DESC_PROMOCION_TARJETA, PORC_REINTEGRO, COD_ARTICU, NC 
-                FROM SJ_NC_ECOMMERCE_PEND WHERE NUM_NC = 'NO'";
+                FROM SJ_NC_ECOMMERCE_PEND WHERE NUM_NC = 'NO' ORDER BY FECHA DESC";
         return $this->getDatosMultiples($sql);
     }
 
