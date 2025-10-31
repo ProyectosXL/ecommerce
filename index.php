@@ -16,14 +16,13 @@ $nc_pendientes = [];
 // }
 
 $hoy = date("Y-m-d");
-$tienda = (!isset($_GET['tienda'])) ? '%' : '%'.$_GET['tienda'].'%';
-$warehouse = (!isset($_GET['warehouse'])) ? '%' : '%'.$_GET['warehouse'].'%';
+$tienda = (!isset($_GET['tienda']) || trim($_GET['tienda']) === '') ? '%' : '%'.$_GET['tienda'].'%';
+$warehouse = (!isset($_GET['warehouse']) || trim($_GET['warehouse']) === '') ? '%' : '%'.$_GET['warehouse'].'%';
 $desde = (!isset($_GET['desde'])) ? $hoy : $_GET['desde'];
 $hasta = (!isset($_GET['hasta'])) ? $hoy : $_GET['hasta'];
-$estado = (isset($_GET['estado'])) ? $_GET['estado'] : null;
-$orden = (!isset($_GET['orden'])) ? '%' : '%'.$_GET['orden'].'%';
+$estado = (isset($_GET['estado']) && trim($_GET['estado']) !== '') ? $_GET['estado'] : null;
+$orden = (!isset($_GET['orden']) || trim($_GET['orden']) === '') ? '%' : '%'.$_GET['orden'].'%';
 $todosLosWarehouse = $pedidos->traerWarehouse();
-							
 
 
 ?>
@@ -106,11 +105,11 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
 							<option selected></option>
 									<?php
 									
-								foreach($todosLosWarehouse as $warehouse => $key){
+								foreach($todosLosWarehouse as $idx => $wh){
 								
 								?>
 								
-							<option value="<?= $key[0]->WAREHOUSE ?>"><?= $key[0]->WAREHOUSE ?></option>
+							<option value="<?= $wh[0]->WAREHOUSE ?>"><?= $wh[0]->WAREHOUSE ?></option>
 								<?php   
 								}
 								?>
@@ -133,7 +132,7 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
 				?>
 
 				<label class="ml-2 mt-4">Busqueda:</label>
-					<input type="text" class="form-control form-control-sm ml-1 mt-4" onkeyup="busquedaRapida()" onkeypress = "return pulsar(event)" id="textBox" name="factura" placeholder="Sobre cualquier campo.." autofocus>
+					<input type="text" class="form-control form-control-sm ml-1 mt-4" onkeyup="busquedaRapida()" onkeypress = "return pulsar(event)" id="textBox" name="factura" placeholder="Sobre cualquier campo..">
 				<?php 
 				}
 				?>

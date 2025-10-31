@@ -18,18 +18,19 @@ class Pedido{
         return $data;
     }
     
-    public function traerPedidos($desde, $hasta, $tienda, $warehouse, $orden, $estado = null){
-        $tienda = $_GET['tienda'];
-        $warehouse = $_GET['warehouse'];
+    public function traerPedidos($desde, $hasta, $tienda, $warehouse, $estado = null, $orden = '%'){
+        
+        // Manejar el estado: si es null, pasar NULL sin comillas al SQL
+        $estadoSQL = ($estado === null || $estado === '') ? 'NULL' : "'$estado'";
             
         $sql = "
         SET DATEFORMAT YMD;
         SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
-        EXEC RO_ECOMMERCE_PEDIDOS '$desde', '$hasta', '%$tienda', '%$warehouse', '$estado', '$orden'
+        EXEC RO_ECOMMERCE_PEDIDOS '$desde', '$hasta', '$tienda', '$warehouse', $estadoSQL, '$orden'
         ";
-
-        $array = $this->getDatos($sql);    
-
+        
+        $array = $this->getDatos($sql);
+        
         return $array;
     }
 
