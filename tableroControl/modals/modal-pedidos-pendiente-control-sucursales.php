@@ -4,7 +4,7 @@
         <div class="modal-content">
             <div class="modal-header d-flex justify-content-between align-items-center">
                 <h5 class="modal-title">
-                    <i class="fas fa-search"></i> Detalle de Pedidos Pendientes de Control Sucursales (Últimos 7 días)
+                    <i class="fas fa-search"></i> Detalle de Pedidos Pendientes de Control Sucursales (Hasta Ayer)
                 </h5>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-success" onclick="exportToExcelPedidosControlSucursales()">
@@ -28,24 +28,11 @@
                         </thead>
                         <tbody>
                             <?php 
-                            // Usar método específico para sucursales y filtrar últimos 7 días
+                            // Usar método específico para sucursales
                             $detallePedidosControlSucursales = $control->traerDetallePedidosPendientesControlSucursales();
                             
-                            // Filtrar solo los últimos 7 días
-                            $fechaLimite = new DateTime();
-                            $fechaLimite->modify('-7 days');
-                            
-                            $pedidosFiltrados = [];
                             if (!empty($detallePedidosControlSucursales)):
-                                foreach ($detallePedidosControlSucursales as $detalle):
-                                    if ($detalle->FECHA_SINCRONIZADO >= $fechaLimite):
-                                        $pedidosFiltrados[] = $detalle;
-                                    endif;
-                                endforeach;
-                            endif;
-                            
-                            if (!empty($pedidosFiltrados)):
-                                foreach ($pedidosFiltrados as $detalle): ?>
+                                foreach ($detallePedidosControlSucursales as $detalle): ?>
                                     <tr>
                                         <td><?php echo $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i'); ?></td>
                                         <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
@@ -57,7 +44,7 @@
                                 <?php endforeach;
                             else: ?>
                                 <tr>
-                                    <td colspan="6" class="text-center">No hay pedidos pendientes de sucursales en los últimos 7 días</td>
+                                    <td colspan="6" class="text-center">No hay pedidos pendientes de sucursales</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>

@@ -528,7 +528,7 @@ class Control {
                 LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
                 WHERE A.CONTROLADO IS NULL 
                 AND A.CANCELADO IS NULL 
-                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE) AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND B.COD_SUCURS != '01'
                 AND B.COD_SUCURS != '11'";
         return $this->getDatos($sql);
@@ -548,7 +548,7 @@ class Control {
                 LEFT JOIN RO_V_STA22 C ON B.COD_SUCURS = C.COD_SUCURS  
                 LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
                 WHERE A.CONTROLADO IS NULL 
-                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE) AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND A.CANCELADO IS NULL
                 AND B.COD_SUCURS != '01'
                 AND B.COD_SUCURS != '11'

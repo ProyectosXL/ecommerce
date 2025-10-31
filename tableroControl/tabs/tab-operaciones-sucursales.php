@@ -65,7 +65,7 @@
             <div class="card-header">
                 <i class="fas fa-store card-icon"></i>
                 <h5 class="card-title">
-                    Pedidos de Retiro en Tienda con Stock de Central
+                    Pedidos Pendientes de Retiro - Stock Central
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
@@ -96,7 +96,7 @@
             <div class="card-header">
                 <i class="fas fa-store-alt card-icon"></i>
                 <h5 class="card-title">
-                    Pedidos de Retiro en Tienda con Stock Local
+                    Pedidos Pendientes de Retiro - Stock Sucursal
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
@@ -132,7 +132,7 @@
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Pedidos sin controlar de Sucursales en los últimos 7 días (excluye Central)">
+                    title="Pedidos sin controlar de Sucursales de los últimos 7 días hasta ayer (excluye Central)">
                     </i>
                 </h5>
             </div>
