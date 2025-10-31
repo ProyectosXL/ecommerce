@@ -90,66 +90,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const seccionArticulo = document.getElementById('seccionArticulo');
     const selectSucursal = document.getElementById('selectSucursal');
 
-    tipoResolucion?.addEventListener('change', async function () {
-        const resolucion = this.value;
+    if (tipoResolucion && seccionSucursal && seccionArticulo && selectSucursal) {
+        tipoResolucion.addEventListener('change', async function () {
+            const resolucion = this.value;
 
-        if (['cambio', 'completado'].includes(resolucion)) {
-            seccionSucursal.style.display = 'block';
-            seccionArticulo.style.display = 'none';
-            selectSucursal.innerHTML = '<option value="">Seleccione sucursal...</option>';
+            if (['cambio', 'completado'].includes(resolucion)) {
+                seccionSucursal.style.display = 'block';
+                seccionArticulo.style.display = 'none';
+                selectSucursal.innerHTML = '<option value="">Seleccione sucursal...</option>';
 
-            try {
-                showSpinner();
-                
-                const response = await fetch('Controller/traerWarehouse.php');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    console.error('Response is not JSON:', text);
-                    throw new Error('La respuesta del servidor no es JSON válido');
-                }
-                
-                const sucursales = await response.json();
-
-                // Poblar selectSucursal
-                sucursales.forEach(suc => {
-                    if (suc[0]?.WAREHOUSE) {
-                        selectSucursal.innerHTML += `
-                            <option value="${suc[0].WAREHOUSE}">${suc[0].WAREHOUSE}</option>`;
-                    }
-                });
-            } catch (error) {
-                console.error('Error al cargar sucursales:', error);
-                alert('Error al cargar sucursales: ' + error.message);
-            } finally {
-                hideSpinner();
-            }
-        } else {
-            seccionSucursal.style.display = 'none';
-            seccionArticulo.style.display = 'none';
-        }
-    });
-
-    // Cambio en sucursal
-    selectSucursal?.addEventListener('change', async function () {
-        const sucursalSeleccionada = this.value;
-        const resolucionSeleccionada = document.getElementById('tipoResolucion').value;
-
-        if (sucursalSeleccionada) {
-            try {
-                showSpinner();
-
-                if(resolucionSeleccionada != 'completado') {
-                    $('#selectArticulo').prop('disabled', false);
-                    $('#selectArticulo').val('').trigger('change');
-
-                    // Petición al servidor para cargar artículos según la sucursal seleccionada
-                    const response = await fetch(`Controller/buscarStock.php?sucursal=${encodeURIComponent(sucursalSeleccionada)}`);
+                try {
+                    showSpinner();
+                    
+                    const response = await fetch('Controller/traerWarehouse.php');
                     
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -162,82 +115,139 @@ document.addEventListener('DOMContentLoaded', function() {
                         throw new Error('La respuesta del servidor no es JSON válido');
                     }
                     
-                    const articulos = await response.json();
+                    const sucursales = await response.json();
 
-                    // Limpiar y poblar selectArticulo
-                    const selectArticulo = document.getElementById('selectArticulo');
-                    selectArticulo.innerHTML = '<option value="">Seleccione artículo...</option>';
-                    articulos.forEach(art => {
-                        if (art[0]?.ARTICULO) {
-                            const option = document.createElement('option');
-                            option.value = art[0].ARTICULO;
-                            option.textContent = `${art[0].ARTICULO} - ${art[0].DESC_CTA_ARTICULO}`;
-                            option.dataset.codigo = art[0].ARTICULO;
-                            option.dataset.descripcion = art[0].DESC_CTA_ARTICULO;
-                            option.dataset.stock = art[0].CANT_STOCK || '0';
-                            selectArticulo.appendChild(option);
+                    // Poblar selectSucursal
+                    sucursales.forEach(suc => {
+                        if (suc[0]?.WAREHOUSE) {
+                            selectSucursal.innerHTML += `
+                                <option value="${suc[0].WAREHOUSE}">${suc[0].WAREHOUSE}</option>`;
                         }
                     });
-                } else if (resolucionSeleccionada === 'completado' && articuloReclamado.codigo) {
-                    $('#selectArticulo').prop('disabled', true);
-                    $('#selectArticulo').val('').trigger('change');
-
-                    const selectArticulo = document.getElementById('selectArticulo');
-                    const option = document.createElement('option');
-                    option.value = articuloReclamado.codigo;
-                    option.textContent = `${articuloReclamado.codigo} - ${articuloReclamado.descripcion}`;
-                    option.dataset.codigo = articuloReclamado.codigo;
-                    option.dataset.descripcion = articuloReclamado.descripcion;
-                    option.dataset.stock = articuloReclamado.stock || '1';
-                    selectArticulo.appendChild(option);
-                    selectArticulo.value = articuloReclamado.codigo;
-                    $('#selectArticulo').trigger('change');
-
-                    // Mostrar el artículo reclamado en el modal
-                    document.getElementById('modalArticulo').textContent = articuloReclamado.descripcion;
-                    document.getElementById('modalCodigo').textContent = `Código: ${articuloReclamado.codigo}`;
-                    document.getElementById('modalPrecio').textContent = `$ ${parseFloat(articuloReclamado.precio).toLocaleString('es-AR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    })}`;
-                    document.getElementById('modalCantidad').textContent = articuloReclamado.cantidad;
+                } catch (error) {
+                    console.error('Error al cargar sucursales:', error);
+                    alert('Error al cargar sucursales: ' + error.message);
+                } finally {
+                    hideSpinner();
                 }
-
-                $('#selectArticulo').select2({
-                    width: '100%',
-                    placeholder: 'Buscar artículo...',
-                    dropdownParent: $('#historialModal'),
-                    language: 'es',
-                    templateResult: formatArticuloResult,
-                    templateSelection: formatArticuloSelection,
-                    escapeMarkup: function (markup) {
-                        return markup;
-                    }
-                });
-
-                seccionArticulo.style.display = 'block';
-
-            } catch (error) {
-                console.error('Error al cargar artículos:', error);
-                alert('Error al cargar los artículos: ' + error.message);
-            } finally {
-                hideSpinner();
+            } else {
+                seccionSucursal.style.display = 'none';
+                seccionArticulo.style.display = 'none';
             }
-        } else {
-            seccionArticulo.style.display = 'none';
-        }
-    });
+        });
+    }
+
+    // Cambio en sucursal
+    if (selectSucursal) {
+        selectSucursal.addEventListener('change', async function () {
+            const sucursalSeleccionada = this.value;
+            const resolucionSeleccionada = document.getElementById('tipoResolucion').value;
+
+            if (sucursalSeleccionada) {
+                try {
+                    showSpinner();
+
+                    if(resolucionSeleccionada != 'completado') {
+                        $('#selectArticulo').prop('disabled', false);
+                        $('#selectArticulo').val('').trigger('change');
+
+                        // Petición al servidor para cargar artículos según la sucursal seleccionada
+                        const response = await fetch(`Controller/buscarStock.php?sucursal=${encodeURIComponent(sucursalSeleccionada)}`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const contentType = response.headers.get('content-type');
+                        if (!contentType || !contentType.includes('application/json')) {
+                            const text = await response.text();
+                            console.error('Response is not JSON:', text);
+                            throw new Error('La respuesta del servidor no es JSON válido');
+                        }
+                        
+                        const articulos = await response.json();
+
+                        // Limpiar y poblar selectArticulo
+                        const selectArticulo = document.getElementById('selectArticulo');
+                        selectArticulo.innerHTML = '<option value="">Seleccione artículo...</option>';
+                        articulos.forEach(art => {
+                            if (art[0]?.ARTICULO) {
+                                const option = document.createElement('option');
+                                option.value = art[0].ARTICULO;
+                                option.textContent = `${art[0].ARTICULO} - ${art[0].DESC_CTA_ARTICULO}`;
+                                option.dataset.codigo = art[0].ARTICULO;
+                                option.dataset.descripcion = art[0].DESC_CTA_ARTICULO;
+                                option.dataset.stock = art[0].CANT_STOCK || '0';
+                                selectArticulo.appendChild(option);
+                            }
+                        });
+                    } else if (resolucionSeleccionada === 'completado' && articuloReclamado.codigo) {
+                        $('#selectArticulo').prop('disabled', true);
+                        $('#selectArticulo').val('').trigger('change');
+
+                        const selectArticulo = document.getElementById('selectArticulo');
+                        const option = document.createElement('option');
+                        option.value = articuloReclamado.codigo;
+                        option.textContent = `${articuloReclamado.codigo} - ${articuloReclamado.descripcion}`;
+                        option.dataset.codigo = articuloReclamado.codigo;
+                        option.dataset.descripcion = articuloReclamado.descripcion;
+                        option.dataset.stock = articuloReclamado.stock || '1';
+                        selectArticulo.appendChild(option);
+                        selectArticulo.value = articuloReclamado.codigo;
+                        $('#selectArticulo').trigger('change');
+
+                        // Mostrar el artículo reclamado en el modal
+                        document.getElementById('modalArticulo').textContent = articuloReclamado.descripcion;
+                        document.getElementById('modalCodigo').textContent = `Código: ${articuloReclamado.codigo}`;
+                        document.getElementById('modalPrecio').textContent = `$ ${parseFloat(articuloReclamado.precio).toLocaleString('es-AR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })}`;
+                        document.getElementById('modalCantidad').textContent = articuloReclamado.cantidad;
+                    }
+
+                    $('#selectArticulo').select2({
+                        width: '100%',
+                        placeholder: 'Buscar artículo...',
+                        dropdownParent: $('#historialModal'),
+                        language: 'es',
+                        templateResult: formatArticuloResult,
+                        templateSelection: formatArticuloSelection,
+                        escapeMarkup: function (markup) {
+                            return markup;
+                        }
+                    });
+
+                    seccionArticulo.style.display = 'block';
+
+                } catch (error) {
+                    console.error('Error al cargar artículos:', error);
+                    alert('Error al cargar los artículos: ' + error.message);
+                } finally {
+                    hideSpinner();
+                }
+            } else {
+                seccionArticulo.style.display = 'none';
+            }
+        });
+    }
 
     // Event listener para botones de guardar sección
-    document.getElementById('seccionesHistorial').addEventListener('click', function (e) {
+    const seccionesHistorial = document.getElementById('seccionesHistorial');
+    if (seccionesHistorial) {
+        seccionesHistorial.addEventListener('click', function (e) {
         if (e.target.classList.contains('btn-guardar-seccion')) {
             const seccionElement = e.target.closest('.seccion-historial');
             guardarSeccion(seccionElement);
         }
-    });
+        });
+    }
 
     // Event listener para finalizar reclamo
-    $('#finalizarReclamo').on('click', function() {
-        guardarReclamo('resuelto'); // Esto se guardará como 'resuelto' en BD pero se mostrará como 'Finalizado'
-    });
+    const finalizarReclamoBtn = document.getElementById('finalizarReclamo');
+    if (finalizarReclamoBtn) {
+        finalizarReclamoBtn.addEventListener('click', function() {
+            guardarReclamo('resuelto'); // Esto se guardará como 'resuelto' en BD pero se mostrará como 'Finalizado'
+        });
+    }
 });

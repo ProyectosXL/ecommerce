@@ -18,12 +18,12 @@ class Pedido{
         return $data;
     }
     
-    public function traerPedidos($desde, $hasta, $tienda, $warehouse, $estado = null, $orden){
+    public function traerPedidos($desde, $hasta, $tienda, $warehouse, $orden, $estado = null){
         $tienda = $_GET['tienda'];
         $warehouse = $_GET['warehouse'];
             
         $sql = "
-        SET DATEFORMAT YMD
+        SET DATEFORMAT YMD;
         SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
         EXEC RO_ECOMMERCE_PEDIDOS '$desde', '$hasta', '%$tienda', '%$warehouse', '$estado', '$orden'
         ";
@@ -82,12 +82,40 @@ class Pedido{
     public function guardarHistorialReclamo($data) {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
+        
+        // Establecer formato de fecha
+        sqlsrv_query($cid_central, "SET DATEFORMAT YMD");
+        
+        // Parsear y formatear la fecha correctamente
+        $fechaPedido = null;
+        if (!empty($data['fechaHora'])) {
+            $fechaTexto = trim($data['fechaHora']);
+            
+            // Formato: "31/10/2025 10:30:45" o "31/10/2025"
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})/', $fechaTexto, $matches)) {
+                $fechaPedido = $matches[3] . '-' . $matches[2] . '-' . $matches[1]; // YYYY-MM-DD
+            } 
+            // Formato: "2025-10-31 10:30:45" o "2025-10-31"
+            else if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $fechaTexto)) {
+                $fechaPedido = substr($fechaTexto, 0, 10);
+            }
+            // Usar strtotime como fallback
+            else {
+                $timestamp = strtotime($fechaTexto);
+                if ($timestamp !== false) {
+                    $fechaPedido = date('Y-m-d', $timestamp);
+                }
+            }
+        }
+        
+        $fechaPedidoSQL = $fechaPedido ? "'$fechaPedido'" : "GETDATE()";
     
-        $sql = "INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (FECHA_PEDIDO, NRO_ORDEN, NRO_PEDIDO, CLIENTE, WAREHOUSE, COD_ARTICULO_CAMBIO, DESCRIPCION, CANTIDAD, ESTADO, RESOLUCION, SUC_DESPACHO, COD_ARTICULO)
-        VALUES ('".$data['fechaHora']."', '".$data['nroOrden']."', '".$data['nro_pedido']."', '".$data['cliente']."', '".$data['sucursal']."', '".$data['articulo']."', '".$data['descripcion']."', '".$data['modalCantidad']."', '".$data['estado']."', '".$data['resolucion']."', '".$data['sucursal']."', '".$data['modalCodigo']."')
+        $sql = "SET DATEFORMAT YMD;
+                INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (FECHA_PEDIDO, NRO_ORDEN, NRO_PEDIDO, CLIENTE, WAREHOUSE, COD_ARTICULO_CAMBIO, DESCRIPCION, CANTIDAD, ESTADO, RESOLUCION, SUC_DESPACHO, COD_ARTICULO)
+                VALUES ($fechaPedidoSQL, '".$data['nroOrden']."', '".$data['nro_pedido']."', '".$data['cliente']."', '".$data['sucursal']."', '".$data['articulo']."', '".$data['descripcion']."', '".$data['modalCantidad']."', '".$data['estado']."', '".$data['resolucion']."', '".$data['sucursal']."', '".$data['modalCodigo']."')
         ";
 
-        $result=sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query"));
+        $result=sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query: " . print_r(sqlsrv_errors(), true)));
         return $result;
     }
 
@@ -174,6 +202,9 @@ class Pedido{
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
 
+        // Establecer formato de fecha
+        sqlsrv_query($cid_central, "SET DATEFORMAT YMD");
+
         // Verificar si ya existe un registro para este pedido
         $nro_pedido = $data['nro_pedido'];
         $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
@@ -187,6 +218,32 @@ class Pedido{
         $modalCodigo = !empty($data['modalCodigo']) ? $data['modalCodigo'] : '';
         $modalCantidad = !empty($data['modalCantidad']) ? $data['modalCantidad'] : '1';
         $sucDespacho = !empty($data['sucursal']) ? $data['sucursal'] : ''; // Sucursal seleccionada en modal
+        
+        // CORRECCIÓN: Parsear y formatear la fecha correctamente
+        $fechaPedido = null;
+        if (!empty($data['fechaHora'])) {
+            // Intentar parsear diferentes formatos de fecha
+            $fechaTexto = trim($data['fechaHora']);
+            
+            // Formato: "31/10/2025 10:30:45" o "31/10/2025"
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})/', $fechaTexto, $matches)) {
+                $fechaPedido = $matches[3] . '-' . $matches[2] . '-' . $matches[1]; // Convertir a YYYY-MM-DD
+            } 
+            // Formato: "2025-10-31 10:30:45" o "2025-10-31"
+            else if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $fechaTexto)) {
+                $fechaPedido = substr($fechaTexto, 0, 10); // Extraer solo la fecha
+            }
+            // Si no coincide con ningún formato, usar strtotime
+            else {
+                $timestamp = strtotime($fechaTexto);
+                if ($timestamp !== false) {
+                    $fechaPedido = date('Y-m-d', $timestamp);
+                }
+            }
+        }
+        
+        // Si no se pudo parsear la fecha, usar GETDATE()
+        $fechaPedidoSQL = $fechaPedido ? "'$fechaPedido'" : "GETDATE()";
         
         if ($row['count'] > 0) {
             // UPDATE - Actualizar registro existente
@@ -205,12 +262,13 @@ class Pedido{
                     WHERE NRO_PEDIDO = '$nro_pedido'";
         } else {
             // INSERT - Crear nuevo registro
-            $sql = "INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (
+            $sql = "SET DATEFORMAT YMD;
+                    INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (
                     FECHA_PEDIDO, NRO_ORDEN, NRO_PEDIDO, CLIENTE, WAREHOUSE, 
                     COD_ARTICULO_CAMBIO, DESCRIPCION, CANTIDAD, ESTADO, RESOLUCION, 
                     SUC_DESPACHO, COD_ARTICULO, FECHA_ALTA, FECHA_ULT_MODIF
                     ) VALUES (
-                    '" . ($data['fechaHora'] ?? '') . "', 
+                    $fechaPedidoSQL, 
                     '$nroOrden', 
                     '$nro_pedido', 
                     '$cliente', 
@@ -242,8 +300,22 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
     $cid = new Conexion();
     $cid_central = $cid->conectarSql("central");
 
+    // CORRECCIÓN: Establecer formato de fecha YMD para SQL Server
+    $sqlSetFormat = "SET DATEFORMAT YMD";
+    sqlsrv_query($cid_central, $sqlSetFormat);
+
+    // Validar y formatear fechas
+    if (!empty($fechaInicio)) {
+        $fechaInicio = date('Y-m-d', strtotime($fechaInicio));
+    }
+    if (!empty($fechaFin)) {
+        $fechaFin = date('Y-m-d', strtotime($fechaFin));
+    }
+
     // CORRECCIÓN FINAL: Usamos el JOIN a la vista RO_V_STA22, que es la misma que genera el campo "Prepara".
     $sql = "
+        SET DATEFORMAT YMD;
+        
         WITH IncidentesAuditoria AS (
             SELECT 
                 A.NRO_ORDEN_ECOMMERCE
@@ -301,10 +373,10 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
     $stmt = sqlsrv_query($cid_central, $sql, $params);
 
     if ($stmt === false) {
-        header('Content-Type: application/json');
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Error en la consulta SQL', 'details' => sqlsrv_errors()]);
-        exit;
+        $errors = sqlsrv_errors();
+        error_log("Error en getHistorialFaltantesCompleto: " . print_r($errors, true));
+        error_log("Fechas enviadas: Inicio=$fechaInicio, Fin=$fechaFin");
+        return [];
     }
 
     $data = [];

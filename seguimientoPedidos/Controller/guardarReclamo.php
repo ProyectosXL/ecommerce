@@ -1,11 +1,16 @@
 
 <?php 
-// Configurar para mostrar errores en desarrollo
+// Configurar para NO mostrar errores en producción, solo loguearlos
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Limpiar cualquier salida previa
+ob_start();
 
 // Verificar que sea una petición POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    ob_end_clean();
     http_response_code(405);
     header('Content-Type: application/json');
     echo json_encode([
@@ -38,6 +43,8 @@ try {
 
     // Validar datos requeridos
     if (empty($resolucion) || empty($nro_pedido)) {
+        ob_end_clean();
+        header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
             'error' => 'Faltan datos requeridos (resolución y número de pedido).'
@@ -48,6 +55,8 @@ try {
     // Validar campos adicionales solo para ciertas resoluciones
     if (in_array($resolucion, ['cambio', 'completado'])) {
         if (empty($sucursal) || empty($articulo)) {
+            ob_end_clean();
+            header('Content-Type: application/json');
             echo json_encode([
                 'success' => false,
                 'error' => 'Para la resolución seleccionada se requiere sucursal y artículo.'
@@ -84,6 +93,7 @@ try {
     }
 
     if ($resultado) {
+        ob_end_clean();
         header('Content-Type: application/json');
         echo json_encode([
             'success' => true,
@@ -91,6 +101,7 @@ try {
         ]);
     } else {
         $sqlError = sqlsrv_errors();
+        ob_end_clean();
         header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
@@ -100,6 +111,7 @@ try {
     }
 
 } catch (Exception $e) {
+    ob_end_clean();
     header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
