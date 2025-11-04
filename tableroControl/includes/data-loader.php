@@ -9,6 +9,13 @@ $ncDevoluciones = null;
 $ordenesSinIntegrar = null;
 $remitosSinIntegrar = null;
 $pedidosSinFacturar = null;
+$pedidosSinFacturarUruguay = null;
+$pedidosSinRemitoUruguay = null;
+$ncDevolucionesUruguay = null;
+$ordenesSinIntegrarUruguay = null;
+$ordenesPendientesCierreUruguay = null;
+$pedidosRetiroTiendaUruguay = null;
+$pedidosPendientesControlSucursalesUruguay = null;
 $pedidosFlexCentral = null;
 $facturasSinRemito = null;
 $productosMlFull = null;
@@ -33,6 +40,13 @@ try {
     $ordenesSinIntegrar = $control->traerOrdenesSinIntegrar();
     $remitosSinIntegrar = $control->traerRemitosSinIntegrar();
     $pedidosSinFacturar = $control->traerPedidosSinFactTiendas();
+    $pedidosSinFacturarUruguay = $control->traerPedidosSinFactTiendasUruguay();
+    $pedidosSinRemitoUruguay = $control->traerFacturasSinRemitoUruguay();
+    $ncDevolucionesUruguay = $control->traerNcPendDevolucionesUruguay();
+    $ordenesSinIntegrarUruguay = $control->traerOrdenesSinIntegrarUruguay();
+    $ordenesPendientesCierreUruguay = $control->traerOrdenesPendientesCierreUruguay();
+    $pedidosRetiroTiendaUruguay = $control->traerPedidosRetiroTiendaUruguay();
+    $pedidosPendientesControlSucursalesUruguay = $control->traerResumenPedidosPendientesControlSucursalesUruguay();
     $pedidosFlexCentral = $control->traerPedidosFlex();
     $facturasSinRemito = $control->traerFacturasSinRemito();
     $ordenesPendientesCierre = $control->traerOrdenesPendientesCierre();
@@ -57,6 +71,7 @@ $totalPendientesDocumentacion = 0;
 $totalPendientesIntegraciones = 0;
 $totalPendientesOperacionesCentral = 0;
 $totalPendientesOperacionesSucursales = 0;
+$totalPendientesUruguay = 0;
 
 // Documentación
 if ($pedidosSinFacturar && !empty($pedidosSinFacturar->CANT_PED_SIN_FACT)) {
@@ -114,6 +129,29 @@ if ($pedidosRetiroTienda && !empty($pedidosRetiroTienda->CANT_PED_RETIRO)) {
 // Agregar Pedidos Pendientes Control Sucursales - Usando el método específico
 if ($pedidosPendientesControlSucursales && !empty($pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS)) {
     $totalPendientesOperacionesSucursales += $pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS;
+}
+
+// Uruguay
+if ($pedidosSinFacturarUruguay && !empty($pedidosSinFacturarUruguay->CANT_PED_SIN_FACT)) {
+    $totalPendientesUruguay += $pedidosSinFacturarUruguay->CANT_PED_SIN_FACT;
+}
+if ($pedidosSinRemitoUruguay && !empty($pedidosSinRemitoUruguay->CANT_FACTURAS)) {
+    $totalPendientesUruguay += $pedidosSinRemitoUruguay->CANT_FACTURAS;
+}
+if ($ncDevolucionesUruguay && !empty($ncDevolucionesUruguay->CANT_NC_DEV)) {
+    $totalPendientesUruguay += $ncDevolucionesUruguay->CANT_NC_DEV;
+}
+if ($ordenesSinIntegrarUruguay && !empty($ordenesSinIntegrarUruguay->CANT_ORDENES)) {
+    $totalPendientesUruguay += $ordenesSinIntegrarUruguay->CANT_ORDENES;
+}
+if ($ordenesPendientesCierreUruguay && !empty($ordenesPendientesCierreUruguay->CANT_ORDENES)) {
+    $totalPendientesUruguay += $ordenesPendientesCierreUruguay->CANT_ORDENES;
+}
+if ($pedidosRetiroTiendaUruguay && !empty($pedidosRetiroTiendaUruguay->CANT_PED_RETIRO)) {
+    $totalPendientesUruguay += $pedidosRetiroTiendaUruguay->CANT_PED_RETIRO;
+}
+if ($pedidosPendientesControlSucursalesUruguay && !empty($pedidosPendientesControlSucursalesUruguay->CANTIDAD_PEDIDOS)) {
+    $totalPendientesUruguay += $pedidosPendientesControlSucursalesUruguay->CANTIDAD_PEDIDOS;
 }
 
 ?>

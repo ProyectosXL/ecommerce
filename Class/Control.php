@@ -243,6 +243,616 @@ class Control {
         return $this->getDatos($sql);
     }
 
+    public function traerPedidosSinFactTiendasUruguay() {
+        $sql = "SELECT 
+                    MIN(FECHA_HORA) AS FECHA_PEDI, 
+                    COUNT(*) AS CANT_PED_SIN_FACT, 
+                    SUM(TOTAL_PEDI) AS TOTAL_PEDIDOS 
+                FROM (
+                    SELECT 
+                        CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
+                            STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120) AS FECHA_HORA,
+                        A.TOTAL_PEDI 
+                    FROM GVA21 A
+                    LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+                    LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
+                    WHERE A.COD_CLIENT = '000000' 
+                        AND A.FECHA_PEDI >= DATEADD(DAY, -7, GETDATE()) 
+                        AND C.N_COMP IS NULL 
+                        AND A.COD_SUCURS NOT IN ('01')
+                ) A 
+                WHERE DATEADD(MINUTE, 30, FECHA_HORA) < GETDATE();
+                ";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $row = sqlsrv_fetch_object($result);
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $row ? $row : null;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerDetallePedidosSinFactTiendasUruguay() {
+        $sql = "SELECT 
+                    CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
+                        STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120) AS FECHA_HORA,
+                    CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
+                        WHEN A.TALON_PED = '99' THEN 'VTEX'
+                        WHEN A.TALON_PED = '80' THEN 'ICBC'
+                        ELSE 'OTROS'
+                    END CANAL,
+                    A.NRO_PEDIDO,
+                    A.ORDER_ID_TIENDA,
+                    UPPER(E.RAZON_SOCI) CLIENTE,
+                    CAST(A.TOTAL_PEDI AS FLOAT) TOTAL_PEDI
+                FROM GVA21 A
+                LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+                LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
+                LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
+                WHERE A.COD_CLIENT = '000000' 
+                    AND A.FECHA_PEDI >= DATEADD(DAY, -7, GETDATE()) 
+                    AND C.N_COMP IS NULL 
+                    AND A.COD_SUCURS NOT IN ('01')
+                    AND DATEADD(MINUTE, 30, CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
+                        STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120)) < GETDATE()
+                ORDER BY FECHA_HORA DESC";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $rows = array();
+            while ($row = sqlsrv_fetch_object($result)) {
+                $rows[] = $row;
+            }
+            
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $rows;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerFacturasSinRemitoUruguay() {
+        $sql = "SELECT 
+                    MIN(CAST(C.FECHA_EMIS AS DATE)) AS FECHA_FACTURA,
+                    COUNT(DISTINCT B.N_COMP) AS CANT_FACTURAS,
+                    SUM(CAST(A.TOTAL_PEDI AS FLOAT)) AS IMPORTE
+                FROM GVA21 A
+                INNER JOIN GVA55 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                INNER JOIN GVA12 C ON B.N_COMP = C.N_COMP AND B.T_COMP = C.T_COMP
+                LEFT JOIN STA14 D ON B.N_COMP = D.N_COMP AND B.T_COMP = D.T_COMP
+                WHERE A.COD_CLIENT = '000000'
+                    AND C.FECHA_EMIS >= DATEADD(DAY, -30, GETDATE())
+                    AND A.COD_SUCURS NOT IN ('01')
+                    AND D.N_COMP IS NULL";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $row = sqlsrv_fetch_object($result);
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $row ? $row : null;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerDetalleFacturasSinRemitoUruguay() {
+        $sql = "SELECT 
+                    CAST(C.FECHA_EMIS AS DATE) FECHA_FACTURA,
+                    CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
+                        WHEN A.TALON_PED = '99' THEN 'VTEX'
+                        WHEN A.TALON_PED = '80' THEN 'ICBC'
+                        ELSE 'OTROS'
+                    END CANAL,
+                    A.NRO_PEDIDO,
+                    A.ORDER_ID_TIENDA,
+                    C.N_COMP AS FACTURA,
+                    UPPER(E.RAZON_SOCI) CLIENTE,
+                    CAST(A.TOTAL_PEDI AS FLOAT) TOTAL_PEDI,
+                    DATEDIFF(DAY, C.FECHA_EMIS, GETDATE()) DIAS_PENDIENTE
+                FROM GVA21 A
+                INNER JOIN GVA55 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                INNER JOIN GVA12 C ON B.N_COMP = C.N_COMP AND B.T_COMP = C.T_COMP
+                LEFT JOIN STA14 D ON B.N_COMP = D.N_COMP AND B.T_COMP = D.T_COMP
+                LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
+                WHERE A.COD_CLIENT = '000000'
+                    AND C.FECHA_EMIS >= DATEADD(DAY, -30, GETDATE())
+                    AND A.COD_SUCURS NOT IN ('01')
+                    AND D.N_COMP IS NULL
+                ORDER BY C.FECHA_EMIS DESC";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $rows = array();
+            while ($row = sqlsrv_fetch_object($result)) {
+                $rows[] = $row;
+            }
+            
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $rows;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerNcPendDevolucionesUruguay() {
+        $sql = "SELECT MIN(CAST(FECHA_PEDI AS DATE)) FECHA, COUNT(*) CANT_NC_DEV, SUM(IMPORTE) IMPORTE_PEND FROM 
+                (
+                SELECT A.FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, C.N_COMP, D.IMPORTE FROM GVA21 A
+                LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
+                LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+                LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1
+                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND A.COD_SUCURS NOT IN ('01')
+                ) A";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $row = sqlsrv_fetch_object($result);
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $row ? $row : null;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerDetalleNcPendDevolucionesUruguay() {
+        $sql = "SELECT CAST(A.FECHA_PEDI AS DATE) FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, UPPER(E.RAZON_SOCI) CLIENTE,
+                D.COD_SUCURS, F.SUCURSAL, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
+                LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
+                LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+                LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
+                LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
+                LEFT JOIN RO_T_DEPOSITOS_ECOMMERCE_TIENDAS F ON D.COD_SUCURS = F.COD_DEPOSI_ECOMM
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1
+                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND A.COD_SUCURS NOT IN ('01')
+                ORDER BY A.FECHA_PEDI ASC";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $rows = array();
+            while ($row = sqlsrv_fetch_object($result)) {
+                $rows[] = $row;
+            }
+            
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $rows;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerOrdenesSinIntegrarUruguay() {
+        $sql = "SELECT MIN(CAST(A.FECHA_ORDEN AS DATETIME)) FECHA_ORDEN, COUNT(*) CANT_ORDENES, SUM(TOTAL_ORDEN) TOTAL_ORDEN FROM
+                (
+                SELECT A.FECHA_ULTIMA_SINCRONIZACION FECHA_ORDEN, A.ORDER_NRO_TIENDA, A.TOTAL_ORDEN, A.ESTADO_ORDEN FROM NEXO_PEDIDOS_ORDEN A
+                LEFT JOIN GVA21 B ON A.ORDER_ID_TIENDA = B.ORDER_ID_TIENDA
+                WHERE B.NRO_PEDIDO IS NULL AND A.FECHA_ORDEN >= GETDATE()-60 AND A.ESTADO_ORDEN NOT LIKE 'CANCELADA%'
+                ) A";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $row = sqlsrv_fetch_object($result);
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $row ? $row : null;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerDetalleOrdenesSinIntegrarUruguay() {
+        $sql = "SELECT A.FECHA_ULTIMA_SINCRONIZACION FECHA_ORDEN, A.TIENDA, A.ORDER_NRO_TIENDA, A.TOTAL_ORDEN FROM NEXO_PEDIDOS_ORDEN A
+                LEFT JOIN GVA21 B ON A.ORDER_ID_TIENDA = B.ORDER_ID_TIENDA
+                WHERE B.NRO_PEDIDO IS NULL AND A.FECHA_ORDEN >= GETDATE()-60 AND A.ESTADO_ORDEN NOT LIKE 'CANCELADA%'
+                ORDER BY FECHA_ULTIMA_SINCRONIZACION";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $rows = array();
+            while ($row = sqlsrv_fetch_object($result)) {
+                $rows[] = $row;
+            }
+            
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $rows;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerOrdenesPendientesCierreUruguay() {
+        $sql = "SELECT MIN(FECHA) FECHA, COUNT(*) CANT_ORDENES, AVG(DIAS_ANTIGUEDAD) PROM_RETRASO FROM
+                (
+                SELECT CAST(A.FECHA_ORDER AS datetime) FECHA, A.ORDER_ID, UPPER(A.NOMBRE_COMPRADOR) CLIENTE, 
+                UPPER(REPLACE(REPLACE(B.DESCRIPCION, 'Franquicia ', ''), 'Cuenta principal ', '')) as SUCURSAL, A.DIAS_ANTIGUEDAD 
+                FROM GC_VIEW_ECOMMERCE_ORDENES_VTEX_PENDIENTES_CIERRE A
+                LEFT JOIN GC_ECOMMERCE_CUENTA B ON A.ID_GC_ECOMMERCE_CUENTA_SELLER = B.ID_GC_ECOMMERCE_CUENTA
+                ) A";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $row = sqlsrv_fetch_object($result);
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $row ? $row : null;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerDetalleOrdenesPendientesCierreUruguay() {
+        $sql = "SELECT CAST(A.FECHA_ORDER AS datetime) FECHA, A.ORDER_ID, UPPER(A.NOMBRE_COMPRADOR) CLIENTE, 
+                UPPER(REPLACE(REPLACE(B.DESCRIPCION, 'Franquicia ', ''), 'Cuenta principal ', '')) as SUCURSAL, A.DIAS_ANTIGUEDAD 
+                FROM GC_VIEW_ECOMMERCE_ORDENES_VTEX_PENDIENTES_CIERRE A
+                LEFT JOIN GC_ECOMMERCE_CUENTA B ON A.ID_GC_ECOMMERCE_CUENTA_SELLER = B.ID_GC_ECOMMERCE_CUENTA
+                ORDER BY FECHA_ORDER ASC";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $rows = array();
+            while ($row = sqlsrv_fetch_object($result)) {
+                $rows[] = $row;
+            }
+            
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $rows;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerPedidosRetiroTiendaUruguay() {
+        $sql = "SELECT MIN(CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
+                        STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120)) AS FECHA_PEDI,
+                   COUNT(*) AS CANT_PED_RETIRO, 
+                   SUM(CAST(A.TOTAL_PEDI AS FLOAT)) AS TOTAL_PEDIDOS 
+            FROM GVA21 A
+            LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE D ON A.NRO_PEDIDO = D.NRO_PEDIDO AND A.TALON_PED = D.TALON_PED
+            LEFT JOIN GVA38 F ON A.TALON_PED = F.TALONARIO AND A.NRO_PEDIDO = F.N_COMP
+            WHERE A.COD_CLIENT = '000000' 
+                AND A.FECHA_PEDI >= DATEADD(DAY, -45, GETDATE()) 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.COD_SUCURS NOT IN ('01')
+                AND D.ENTREGADO IS NULL 
+                AND D.CANCELADO IS NULL
+                AND A.COD_TRANSP LIKE '%TIENDA%'";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $row = sqlsrv_fetch_object($result);
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $row ? $row : null;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerDetallePedidosRetiroTiendaUruguay() {
+        $sql = "SELECT A.COD_SUCURS,
+                    CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
+                        STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120) AS FECHA_HORA, 
+                    A.NRO_PEDIDO, 
+                    A.ORDER_ID_TIENDA,
+                    UPPER(F.RAZON_SOCI) CLIENTE, 
+                    CAST(A.TOTAL_PEDI AS FLOAT) TOTAL_PEDI,
+                    DATEDIFF(DAY, A.FECHA_PEDI, GETDATE()) AS DIAS_PENDIENTE
+            FROM GVA21 A
+            LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE D ON A.NRO_PEDIDO = D.NRO_PEDIDO AND A.TALON_PED = D.TALON_PED
+            LEFT JOIN GVA38 F ON A.TALON_PED = F.TALONARIO AND A.NRO_PEDIDO = F.N_COMP
+            WHERE A.COD_CLIENT = '000000' 
+                AND A.FECHA_PEDI >= DATEADD(DAY, -45, GETDATE()) 
+                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.COD_SUCURS NOT IN ('01')
+                AND D.ENTREGADO IS NULL 
+                AND D.CANCELADO IS NULL
+                AND A.COD_TRANSP LIKE '%TIENDA%'
+            ORDER BY A.FECHA_PEDI DESC";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $rows = array();
+            while ($row = sqlsrv_fetch_object($result)) {
+                $rows[] = $row;
+            }
+            
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $rows;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerResumenPedidosPendientesControlSucursalesUruguay() {
+        $sql = "SELECT COUNT(*) AS CANTIDAD_PEDIDOS, 
+                    MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                WHERE A.CANCELADO IS NULL 
+                AND A.FACTURADO IS NULL
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE) AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND B.COD_SUCURS NOT IN ('01')";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $row = sqlsrv_fetch_object($result);
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $row ? $row : null;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    public function traerDetallePedidosPendientesControlSucursalesUruguay() {
+        $sql = "SELECT FECHA_SINCRONIZADO, 
+                    CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
+                            WHEN A.TALON_PED = '99' THEN 'VTEX' 
+                            WHEN A.TALON_PED = '80' THEN 'ICBC' 
+                    END CANAL,
+                    A.NRO_PEDIDO, ORDER_ID, UPPER(D.RAZON_SOCI) CLIENTE, 
+                    B.COD_SUCURS AS SUCURSAL_PREPARA
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
+                INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
+                LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
+                WHERE A.FACTURADO IS NULL
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE) AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.CANCELADO IS NULL
+                AND B.COD_SUCURS NOT IN ('01')
+                ORDER BY FECHA_SINCRONIZADO";
+        
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay === false) {
+                throw new Exception("Error de conexión a la base de datos de Uruguay");
+            }
+            
+            ini_set('max_execution_time', 300);
+            $result = sqlsrv_query($cid_uruguay, $sql, array(), array("Scrollable" => "buffered"));
+            
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+            }
+            
+            $rows = array();
+            while ($row = sqlsrv_fetch_object($result)) {
+                $rows[] = $row;
+            }
+            
+            sqlsrv_free_stmt($result);
+            sqlsrv_close($cid_uruguay);
+            
+            return $rows;
+            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
     public function traerPedidosFlex() {
         $sql = "SELECT MIN(CAST(FECHA_SINCRONIZADO AS DATETIME)) AS FECHA_PEDI, COUNT(*) AS CANT_PED_PEND, SUM(TOTAL_PEDI) AS TOTAL_PEDIDOS FROM 
                 (
@@ -490,7 +1100,7 @@ class Control {
                 LEFT JOIN GVA55 D ON B.TALON_PED = D.TALON_PED AND B.NRO_PEDIDO = D.NRO_PEDIDO
                 WHERE A.CONTROLADO IS NULL 
                 AND A.CANCELADO IS NULL 
-                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE) AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND B.COD_SUCURS = '01'
                 AND D.N_COMP IS NULL";
         return $this->getDatos($sql);
@@ -511,7 +1121,7 @@ class Control {
                 LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
                 LEFT JOIN GVA55 E ON B.TALON_PED = E.TALON_PED AND B.NRO_PEDIDO = E.NRO_PEDIDO
                 WHERE A.CONTROLADO IS NULL 
-                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE) AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
                 AND A.CANCELADO IS NULL
                 AND B.COD_SUCURS = '01'
                 AND E.N_COMP IS NULL

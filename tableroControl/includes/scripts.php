@@ -10,7 +10,6 @@
 <script src="js/modal-fix.js"></script>
 <script src="js/chart-config.js"></script>
 <script src="js/export-functions.js"></script>
-<script src="js/modal-fix.js"></script>
 
 <script>
     // Definir chartData como variable global para que esté disponible en chart-config.js

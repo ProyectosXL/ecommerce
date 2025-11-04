@@ -71,6 +71,11 @@
             <div class="tab-pane fade" id="operaciones-sucursales" role="tabpanel" aria-labelledby="operaciones-sucursales-tab">
                 <?php include 'tabs/tab-operaciones-sucursales.php'; ?>
             </div>
+            
+            <!-- Pestaña de Uruguay -->
+            <div class="tab-pane fade" id="uruguay" role="tabpanel" aria-labelledby="uruguay-tab">
+                <?php include 'tabs/tab-uruguay.php'; ?>
+            </div>
         </div>
     </div>
 

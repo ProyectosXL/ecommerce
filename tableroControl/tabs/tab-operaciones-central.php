@@ -138,7 +138,7 @@
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Pedidos sin controlar de Central hasta ayer (no incluye pedidos ya facturados)">
+                    title="Pedidos sin controlar de Central de los últimos 7 días hasta ayer">
                     </i>
                 </h5>
             </div>

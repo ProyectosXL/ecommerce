@@ -78,18 +78,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Manejar eventos de botones que abren modales
-    document.addEventListener('click', function(event) {
-        const target = event.target.closest('[data-bs-toggle="modal"]');
-        if (target) {
-            event.preventDefault();
-            const modalId = target.getAttribute('data-bs-target');
-            if (modalId) {
-                const modalElementId = modalId.replace('#', '');
-                safeModalShow(modalElementId);
-            }
-        }
-    });
+    // Ya no interceptamos los clics - dejamos que Bootstrap maneje los modales nativamente
+    // Bootstrap 5 maneja los modales automáticamente con data-bs-toggle="modal"
     
     // Limpiar instancias de modales al cerrar
     document.addEventListener('hidden.bs.modal', function(event) {
