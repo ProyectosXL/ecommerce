@@ -29,23 +29,31 @@
                         </thead>
                         <tbody>
                             <?php 
-                            $detallePedidosControl = $control->traerDetallePedidosPendientesControlSucursalesUruguay();
-                            if (!empty($detallePedidosControl)):
-                                foreach ($detallePedidosControl as $detalle): ?>
+                            try {
+                                $detallePedidosControl = $control->traerDetallePedidosPendientesControlSucursalesUruguay();
+                                if (!empty($detallePedidosControl)):
+                                    foreach ($detallePedidosControl as $detalle): ?>
+                                        <tr>
+                                            <td><?php echo $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i'); ?></td>
+                                            <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
+                                            <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
+                                            <td><?php echo htmlspecialchars($detalle->ORDER_ID); ?></td>
+                                            <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
+                                            <td><?php echo htmlspecialchars($detalle->SUCURSAL_PREPARA); ?></td>
+                                        </tr>
+                                    <?php endforeach;
+                                else: ?>
                                     <tr>
-                                        <td><?php echo $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i'); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->ORDER_ID); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->SUCURSAL_PREPARA); ?></td>
+                                        <td colspan="6" class="text-center">No hay pedidos pendientes de control</td>
                                     </tr>
-                                <?php endforeach;
-                            else: ?>
+                                <?php endif;
+                            } catch (Exception $e) { ?>
                                 <tr>
-                                    <td colspan="6" class="text-center">No hay pedidos pendientes de control</td>
+                                    <td colspan="6" class="text-center text-danger">
+                                        Error al cargar los datos: <?php echo htmlspecialchars($e->getMessage()); ?>
+                                    </td>
                                 </tr>
-                            <?php endif; ?>
+                            <?php } ?>
                         </tbody>
                     </table>
                 </div>
