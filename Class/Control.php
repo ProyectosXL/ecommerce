@@ -348,18 +348,9 @@ class Control {
     }
 
     public function traerFacturasSinRemitoUruguay() {
-        $sql = "SELECT 
-                    MIN(CAST(C.FECHA_EMIS AS DATE)) AS FECHA_FACTURA,
-                    COUNT(DISTINCT B.N_COMP) AS CANT_FACTURAS,
-                    SUM(CAST(A.TOTAL_PEDI AS FLOAT)) AS IMPORTE
-                FROM GVA21 A
-                INNER JOIN GVA55 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
-                INNER JOIN GVA12 C ON B.N_COMP = C.N_COMP AND B.T_COMP = C.T_COMP
-                LEFT JOIN STA14 D ON B.N_COMP = D.N_COMP AND B.T_COMP = D.T_COMP
-                WHERE A.COD_CLIENT = '000000'
-                    AND C.FECHA_EMIS >= DATEADD(DAY, -30, GETDATE())
-                    AND A.COD_SUCURS NOT IN ('01')
-                    AND D.N_COMP IS NULL";
+        $sql = "SELECT MIN(CAST(FECHA_FACTURA AS DATE)) FECHA_FACTURA, COUNT(DISTINCT(FACTURA)) CANT_FACTURAS, SUM(IMPORTE) IMPORTE, MAX(FECHA_ACTUALIZACION) FECHA_ACTUALIZACION 
+                FROM [LAKERBIS].[SUCURSALES_URUGUAY].DBO.RO_FACTURAS_SIN_REMITO";
+;
         
         try {
             $cid = new Conexion();
@@ -389,29 +380,11 @@ class Control {
     }
 
     public function traerDetalleFacturasSinRemitoUruguay() {
-        $sql = "SELECT 
-                    CAST(C.FECHA_EMIS AS DATE) FECHA_FACTURA,
-                    CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
-                        WHEN A.TALON_PED = '99' THEN 'VTEX'
-                        WHEN A.TALON_PED = '80' THEN 'ICBC'
-                        ELSE 'OTROS'
-                    END CANAL,
-                    A.NRO_PEDIDO,
-                    A.ORDER_ID_TIENDA,
-                    C.N_COMP AS FACTURA,
-                    UPPER(E.RAZON_SOCI) CLIENTE,
-                    CAST(A.TOTAL_PEDI AS FLOAT) TOTAL_PEDI,
-                    DATEDIFF(DAY, C.FECHA_EMIS, GETDATE()) DIAS_PENDIENTE
-                FROM GVA21 A
-                INNER JOIN GVA55 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
-                INNER JOIN GVA12 C ON B.N_COMP = C.N_COMP AND B.T_COMP = C.T_COMP
-                LEFT JOIN STA14 D ON B.N_COMP = D.N_COMP AND B.T_COMP = D.T_COMP
-                LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
-                WHERE A.COD_CLIENT = '000000'
-                    AND C.FECHA_EMIS >= DATEADD(DAY, -30, GETDATE())
-                    AND A.COD_SUCURS NOT IN ('01')
-                    AND D.N_COMP IS NULL
-                ORDER BY C.FECHA_EMIS DESC";
+        $sql = "SELECT SUCURSAL, CAST(FECHA_FACTURA AS DATE) FECHA_FACTURA, FACTURA, A.COD_ARTICU, B.DESC_CTA_ARTICULO, CANTIDAD 
+                FROM [LAKERBIS].[SUCURSALES_URUGUAY].DBO.RO_FACTURAS_SIN_REMITO A  
+                INNER JOIN [LAKERBIS].[SUCURSALES_URUGUAY].DBO.CTA_ARTICULO B ON A.COD_ARTICU = B.COD_ARTICULO
+                ORDER BY FECHA_FACTURA DESC, SUCURSAL";
+;
         
         try {
             $cid = new Conexion();

@@ -19,35 +19,46 @@
                                 <table class="table table-striped table-hover" id="tablaFacturasSinRemitoUruguay">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Fecha Factura</th>
-                                            <th>Canal</th>
-                                            <th>Nro. Pedido</th>
-                                            <th>Order ID</th>
+                                            <th>Sucursal</th>
+                                            <th>Fecha</th>
                                             <th>Factura</th>
-                                            <th>Cliente</th>
-                                            <th>Días Pendiente</th>
-                                            <th class="text-end">Total</th>
+                                            <th>Código</th>
+                                            <th>Descripción</th>
+                                            <th class="text-end">Cantidad</th>
+                                            <th></th> <!-- Nueva columna para el ícono -->
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php 
                                         $detalleFacturasSinRemito = $control->traerDetalleFacturasSinRemitoUruguay();
+                                        $fechaActual = new DateTime();
+                                        
                                         if (!empty($detalleFacturasSinRemito)):
-                                            foreach ($detalleFacturasSinRemito as $detalle): ?>
-                                                <tr>
+                                            foreach ($detalleFacturasSinRemito as $detalle):
+                                                $fechaFactura = clone $detalle->FECHA_FACTURA;
+                                                $diasTranscurridos = $fechaActual->diff($fechaFactura)->days;
+                                                $excedeDias = $diasTranscurridos > 10;
+                                                ?>
+                                                <tr class="<?php echo $excedeDias ? 'text-danger' : ''; ?>">
+                                                    <td><?php echo htmlspecialchars($detalle->SUCURSAL); ?></td>
                                                     <td><?php echo $detalle->FECHA_FACTURA->format('d/m/Y'); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA); ?></td>
                                                     <td><?php echo htmlspecialchars($detalle->FACTURA); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->DIAS_PENDIENTE); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 0); ?></td>
+                                                    <td><?php echo htmlspecialchars($detalle->COD_ARTICU); ?></td>
+                                                    <td><?php echo htmlspecialchars($detalle->DESC_CTA_ARTICULO); ?></td>
+                                                    <td class="text-end"><?php echo number_format($detalle->CANTIDAD, 0); ?></td>
+                                                    <td class="text-center">
+                                                        <?php if ($excedeDias): ?>
+                                                            <i class="fas fa-exclamation-circle text-danger" 
+                                                            data-bs-toggle="tooltip" 
+                                                            data-bs-placement="left"
+                                                            title="Excede los 10 días (<?php echo $diasTranscurridos; ?> días)"></i>
+                                                        <?php endif; ?>
+                                                    </td>
                                                 </tr>
                                             <?php endforeach;
                                         else: ?>
                                             <tr>
-                                                <td colspan="8" class="text-center">No hay facturas pendientes</td>
+                                                <td colspan="7" class="text-center">No hay datos para mostrar</td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>
