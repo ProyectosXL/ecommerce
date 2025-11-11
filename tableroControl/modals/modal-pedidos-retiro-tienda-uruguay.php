@@ -19,7 +19,7 @@
                     <table id="tablePedidosRetiroTiendaUruguay" class="table table-striped table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th>Cod. Sucursal</th>
+                                <th>Sucursal</th>
                                 <th>Fecha Pedido</th>
                                 <th>Nro. Pedido</th>
                                 <th>Order ID</th>
@@ -34,7 +34,7 @@
                             if (!empty($detallePedidosRetiro)):
                                 foreach ($detallePedidosRetiro as $detalle): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($detalle->COD_SUCURS); ?></td>
+                                        <td><?php echo htmlspecialchars($detalle->NOMBRE_SUCURSAL); ?></td>
                                         <td><?php echo $detalle->FECHA_HORA->format('d/m/Y H:i'); ?></td>
                                         <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
                                         <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA); ?></td>

@@ -457,14 +457,13 @@ class Control {
 
     public function traerDetalleNcPendDevolucionesUruguay() {
         $sql = "SELECT CAST(A.FECHA_PEDI AS DATE) FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, UPPER(E.RAZON_SOCI) CLIENTE,
-                D.COD_SUCURS, F.SUCURSAL, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
+                D.COD_SUCURS, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
                 LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
                 LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
-                LEFT JOIN RO_T_DEPOSITOS_ECOMMERCE_TIENDAS F ON D.COD_SUCURS = F.COD_DEPOSI_ECOMM
                 WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1
-                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND A.COD_SUCURS NOT IN ('01')
+                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND A.COD_SUCURS LIKE 'U%'
                 ORDER BY A.FECHA_PEDI ASC";
         
         try {
@@ -650,16 +649,14 @@ class Control {
                    COUNT(*) AS CANT_PED_RETIRO, 
                    SUM(CAST(A.TOTAL_PEDI AS FLOAT)) AS TOTAL_PEDIDOS 
             FROM GVA21 A
-            LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
-            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE D ON A.NRO_PEDIDO = D.NRO_PEDIDO AND A.TALON_PED = D.TALON_PED
-            LEFT JOIN GVA38 F ON A.TALON_PED = F.TALONARIO AND A.NRO_PEDIDO = F.N_COMP
+            INNER JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE D ON A.ORDER_ID_TIENDA = D.ORDER_ID
             WHERE A.COD_CLIENT = '000000' 
                 AND A.FECHA_PEDI >= DATEADD(DAY, -45, GETDATE()) 
-                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
-                AND A.COD_SUCURS NOT IN ('01')
-                AND D.ENTREGADO IS NULL 
-                AND D.CANCELADO IS NULL
-                AND A.COD_TRANSP LIKE '%TIENDA%'";
+                AND A.COD_SUCURS LIKE 'U%'
+                AND A.TALON_PED = '99'
+                AND D.FACTURADO = 1
+                AND D.ENTREGADO IS NULL
+                AND D.CANCELADO IS NULL";
         
         try {
             $cid = new Conexion();
@@ -690,6 +687,12 @@ class Control {
 
     public function traerDetallePedidosRetiroTiendaUruguay() {
         $sql = "SELECT A.COD_SUCURS,
+                    CASE A.COD_SUCURS
+                        WHEN 'U1' THEN 'TRES CRUCES'
+                        WHEN 'U2' THEN 'NUEVO CENTRO'
+                        WHEN 'U3' THEN 'MONTEVIDEO'
+                        ELSE A.COD_SUCURS
+                    END AS NOMBRE_SUCURSAL,
                     CONVERT(DATETIME, FORMAT(A.FECHA_PEDI, 'yyyy-MM-dd') + ' ' + 
                         STUFF(STUFF(RIGHT('000000' + A.HORA_INGRESO, 6), 3, 0, ':'), 6, 0, ':'), 120) AS FECHA_HORA, 
                     A.NRO_PEDIDO, 
@@ -698,16 +701,15 @@ class Control {
                     CAST(A.TOTAL_PEDI AS FLOAT) TOTAL_PEDI,
                     DATEDIFF(DAY, A.FECHA_PEDI, GETDATE()) AS DIAS_PENDIENTE
             FROM GVA21 A
-            LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
-            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE D ON A.NRO_PEDIDO = D.NRO_PEDIDO AND A.TALON_PED = D.TALON_PED
+            INNER JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE D ON A.ORDER_ID_TIENDA = D.ORDER_ID
             LEFT JOIN GVA38 F ON A.TALON_PED = F.TALONARIO AND A.NRO_PEDIDO = F.N_COMP
             WHERE A.COD_CLIENT = '000000' 
                 AND A.FECHA_PEDI >= DATEADD(DAY, -45, GETDATE()) 
-                AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
-                AND A.COD_SUCURS NOT IN ('01')
-                AND D.ENTREGADO IS NULL 
+                AND A.COD_SUCURS LIKE 'U%'
+                AND A.TALON_PED = '99'
+                AND D.FACTURADO = 1
+                AND D.ENTREGADO IS NULL
                 AND D.CANCELADO IS NULL
-                AND A.COD_TRANSP LIKE '%TIENDA%'
             ORDER BY A.FECHA_PEDI DESC";
         
         try {
@@ -743,13 +745,14 @@ class Control {
 
     public function traerResumenPedidosPendientesControlSucursalesUruguay() {
         $sql = "SELECT COUNT(*) AS CANTIDAD_PEDIDOS, 
-                    MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA
+                    MIN(FECHA_FACTURADO) AS FECHA_MAS_ANTIGUA
                 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
                 INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
                 WHERE A.CANCELADO IS NULL 
-                AND A.FACTURADO IS NULL
-                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE) AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
-                AND B.COD_SUCURS NOT IN ('01')";
+                AND A.FACTURADO = 1
+                AND A.CONTROLADO IS NULL
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE)
+                AND B.COD_SUCURS LIKE 'U%'";
         
         try {
             $cid = new Conexion();
@@ -779,21 +782,33 @@ class Control {
     }
 
     public function traerDetallePedidosPendientesControlSucursalesUruguay() {
-        $sql = "SELECT FECHA_SINCRONIZADO, 
+        $sql = "SELECT A.FECHA_FACTURADO, 
                     CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
                             WHEN A.TALON_PED = '99' THEN 'VTEX' 
-                            WHEN A.TALON_PED = '80' THEN 'ICBC' 
+                            WHEN A.TALON_PED = '80' THEN 'ICBC'
+                            ELSE 'OTROS'
                     END CANAL,
-                    A.NRO_PEDIDO, ORDER_ID, UPPER(D.RAZON_SOCI) CLIENTE, 
-                    B.COD_SUCURS AS SUCURSAL_PREPARA
+                    A.NRO_PEDIDO, 
+                    A.ORDER_ID, 
+                    A.FACTURA,
+                    UPPER(D.RAZON_SOCI) CLIENTE, 
+                    B.COD_SUCURS AS SUCURSAL_PREPARA,
+                    CASE B.COD_SUCURS
+                        WHEN 'U1' THEN 'TRES CRUCES'
+                        WHEN 'U2' THEN 'NUEVO CENTRO'
+                        WHEN 'U3' THEN 'MONTEVIDEO'
+                        ELSE B.COD_SUCURS
+                    END AS NOMBRE_SUCURSAL,
+                    DATEDIFF(DAY, A.FECHA_FACTURADO, GETDATE()) AS DIAS_PENDIENTE
                 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE A
                 INNER JOIN GVA21 B ON A.TALON_PED = B.TALON_PED AND A.NRO_PEDIDO = B.NRO_PEDIDO
                 LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
-                WHERE A.FACTURADO IS NULL
-                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE) AND A.FECHA_PEDI < CAST(GETDATE() AS DATE)
+                WHERE A.FACTURADO = 1
+                AND A.CONTROLADO IS NULL
+                AND A.FECHA_PEDI >= CAST(GETDATE() - 7 AS DATE)
                 AND A.CANCELADO IS NULL
-                AND B.COD_SUCURS NOT IN ('01')
-                ORDER BY FECHA_SINCRONIZADO";
+                AND B.COD_SUCURS LIKE 'U%'
+                ORDER BY A.FECHA_FACTURADO DESC";
         
         try {
             $cid = new Conexion();

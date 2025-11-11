@@ -19,41 +19,40 @@
                     <table id="tablePedidosControlSucursalesUruguay" class="table table-striped table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th>Fecha Sincronizado</th>
+                                <th>Fecha Facturado</th>
                                 <th>Canal</th>
                                 <th>Nro. Pedido</th>
                                 <th>Order ID</th>
+                                <th>Factura</th>
                                 <th>Cliente</th>
                                 <th>Sucursal</th>
+                                <th>Días Pendiente</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php 
-                            try {
-                                $detallePedidosControl = $control->traerDetallePedidosPendientesControlSucursalesUruguay();
-                                if (!empty($detallePedidosControl)):
-                                    foreach ($detallePedidosControl as $detalle): ?>
-                                        <tr>
-                                            <td><?php echo $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i'); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->ORDER_ID); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->SUCURSAL_PREPARA); ?></td>
-                                        </tr>
-                                    <?php endforeach;
-                                else: ?>
+                            $detallePedidosControl = $control->traerDetallePedidosPendientesControlSucursalesUruguay();
+                            if (!empty($detallePedidosControl)):
+                                foreach ($detallePedidosControl as $detalle): 
+                                    $diasPendiente = $detalle->DIAS_PENDIENTE;
+                                    $badgeClass = $diasPendiente > 3 ? 'bg-danger' : 'bg-warning text-dark';
+                                    ?>
                                     <tr>
-                                        <td colspan="6" class="text-center">No hay pedidos pendientes de control</td>
+                                        <td><?php echo $detalle->FECHA_FACTURADO->format('d/m/Y H:i'); ?></td>
+                                        <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
+                                        <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
+                                        <td><?php echo htmlspecialchars($detalle->ORDER_ID); ?></td>
+                                        <td><?php echo htmlspecialchars($detalle->FACTURA); ?></td>
+                                        <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
+                                        <td><?php echo htmlspecialchars($detalle->NOMBRE_SUCURSAL); ?></td>
+                                        <td><span class="badge <?php echo $badgeClass; ?>"><?php echo $diasPendiente; ?> días</span></td>
                                     </tr>
-                                <?php endif;
-                            } catch (Exception $e) { ?>
+                                <?php endforeach;
+                            else: ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-danger">
-                                        Error al cargar los datos: <?php echo htmlspecialchars($e->getMessage()); ?>
-                                    </td>
+                                    <td colspan="8" class="text-center">No hay pedidos pendientes de control</td>
                                 </tr>
-                            <?php } ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
