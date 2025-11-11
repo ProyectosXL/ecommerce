@@ -654,6 +654,7 @@ class Control {
                 AND A.FECHA_PEDI >= DATEADD(DAY, -45, GETDATE()) 
                 AND A.COD_SUCURS LIKE 'U%'
                 AND A.TALON_PED = '99'
+                AND A.COD_TRANSP = '0131'
                 AND D.FACTURADO = 1
                 AND D.ENTREGADO IS NULL
                 AND D.CANCELADO IS NULL";
@@ -707,6 +708,7 @@ class Control {
                 AND A.FECHA_PEDI >= DATEADD(DAY, -45, GETDATE()) 
                 AND A.COD_SUCURS LIKE 'U%'
                 AND A.TALON_PED = '99'
+                AND A.COD_TRANSP = '0131'
                 AND D.FACTURADO = 1
                 AND D.ENTREGADO IS NULL
                 AND D.CANCELADO IS NULL
