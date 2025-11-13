@@ -1,8 +1,8 @@
-
 // Función para guardar comentarios
 const guardarComentario = (div) => {
     let seccion = div.parentElement.parentElement;
     const nroPedido = $('#nroPedido').text().trim();
+    const nroOrden = $('#nroOrden').text().trim(); // <-- SE AÑADE ESTA LÍNEA
 
     let dataSecciones = [];
 
@@ -20,6 +20,7 @@ const guardarComentario = (div) => {
         data: {
             dataSecciones: dataSecciones,
             nroPedido: nroPedido,
+            nroOrden: nroOrden, // <-- SE AÑADE ESTA LÍNEA
         },
         success: function(response) {
             response = JSON.parse(response);
@@ -30,7 +31,11 @@ const guardarComentario = (div) => {
                     title: "Comentario guardado exitosamente.",
                     showConfirmButton: true,
                 }).then(function () {
-                    // console.log('ok')
+                    // Actualizamos el estado visual a "En Curso" inmediatamente
+                    if (typeof actualizarBadgeEstado === 'function') {
+                        estadoActual = 'proceso';
+                        actualizarBadgeEstado();
+                    }
                 });
             } else {
                 alert('Error: ' + (response.error || 'No se pudo guardar el comentario.'));

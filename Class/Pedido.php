@@ -175,7 +175,7 @@ class Pedido{
         return $data;
     }
 
-    public function actualizarEstadoReclamo($nro_pedido, $estado) {
+public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null) {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
         
@@ -183,19 +183,24 @@ class Pedido{
         $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
         $resultCheck = sqlsrv_query($cid_central, $sqlCheck);
         $row = sqlsrv_fetch_array($resultCheck, SQLSRV_FETCH_ASSOC);
+
+        // Preparar el Nro de Orden para la consulta SQL
+        $nroOrdenSQL = $nro_orden ? "'$nro_orden'" : "NULL";
         
         if ($row['count'] > 0) {
             // Actualizar registro existente - solo estado y fecha de última modificación
+            // También actualizamos el NRO_ORDEN si viene, para asegurar consistencia.
+            $updateNroOrdenSQL = $nro_orden ? ", NRO_ORDEN = $nroOrdenSQL" : "";
             $sql = "UPDATE RO_T_ENC_ECOMMERCE_HISTORIAL_FALT 
-                    SET ESTADO = '$estado', FECHA_ULT_MODIF = GETDATE() 
-                    WHERE NRO_PEDIDO = '$nro_pedido'";
+                    SET ESTADO = '$estado', FECHA_ULT_MODIF = GETDATE() $updateNroOrdenSQL
+                    WHERE NRO_PEDIDO = '$nro_pedido' AND (NRO_ORDEN IS NULL OR NRO_ORDEN = '')";
         } else {
             // Crear registro básico si no existe - con fecha de alta
-            $sql = "INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, ESTADO, FECHA_PEDIDO, FECHA_ALTA, FECHA_ULT_MODIF) 
-                    VALUES ('$nro_pedido', '$estado', GETDATE(), GETDATE(), GETDATE())";
+            $sql = "INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, NRO_ORDEN, ESTADO, FECHA_PEDIDO, FECHA_ALTA, FECHA_ULT_MODIF) 
+                    VALUES ('$nro_pedido', $nroOrdenSQL, '$estado', GETDATE(), GETDATE(), GETDATE())";
         }
         
-        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query"));
+        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query: " . print_r(sqlsrv_errors(), true)));
         return $result;
     }
 
