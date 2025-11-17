@@ -875,17 +875,37 @@ class Control {
     }
 
     public function traerFacturasSinRemito() {
-        $sql = "SELECT MIN(CAST(FECHA_FACTURA AS DATE)) FECHA_FACTURA, COUNT(DISTINCT(FACTURA)) CANT_FACTURAS, SUM(IMPORTE) IMPORTE, MAX(FECHA_ACTUALIZACION) FECHA_ACTUALIZACION 
-                FROM [LAKERBIS].[LOCALES_LAKERS].DBO.RO_FACTURAS_SIN_REMITO;
+        $sql = "SELECT MIN(CAST(A.FECHA_FACTURA AS DATE)) FECHA_FACTURA, 
+                       COUNT(DISTINCT(A.FACTURA)) CANT_FACTURAS, 
+                       SUM(A.IMPORTE) IMPORTE, 
+                       MAX(A.FECHA_ACTUALIZACION) FECHA_ACTUALIZACION 
+                FROM [LAKERBIS].[LOCALES_LAKERS].DBO.RO_FACTURAS_SIN_REMITO A
+                WHERE A.FACTURA NOT IN (
+                    SELECT FACTURA
+                    FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE
+                    WHERE (CANCELADO = 1 OR INCOMPLETO = 1)
+                      AND FACTURA IS NOT NULL
+                );
         ";
         return $this->getDatos($sql);
     }
 
     public function traerDetalleFacturasSinRemito() {
-        $sql = "SELECT SUCURSAL, CAST(FECHA_FACTURA AS DATE) FECHA_FACTURA, FACTURA, A.COD_ARTICU, B.DESC_CTA_ARTICULO, CANTIDAD 
+        $sql = "SELECT A.SUCURSAL, 
+                       CAST(A.FECHA_FACTURA AS DATE) FECHA_FACTURA, 
+                       A.FACTURA, 
+                       A.COD_ARTICU, 
+                       B.DESC_CTA_ARTICULO, 
+                       A.CANTIDAD
                 FROM [LAKERBIS].[LOCALES_LAKERS].DBO.RO_FACTURAS_SIN_REMITO A  
                 INNER JOIN [LAKERBIS].[LOCALES_LAKERS].DBO.CTA_ARTICULO B ON A.COD_ARTICU = B.COD_ARTICULO
-                ORDER BY FECHA_FACTURA DESC, SUCURSAL";
+                WHERE A.FACTURA NOT IN (
+                    SELECT FACTURA
+                    FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE
+                    WHERE (CANCELADO = 1 OR INCOMPLETO = 1)
+                      AND FACTURA IS NOT NULL
+                )
+                ORDER BY A.FECHA_FACTURA DESC, A.SUCURSAL";
         return $this->getDatosMultiples($sql);
     }
 
