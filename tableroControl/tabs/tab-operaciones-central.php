@@ -107,7 +107,7 @@
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Remitos de abastecimiento que aún no han sido ingresados al sistema de los últimos 180 días">
+                    title="Remitos de abastecimiento que aún no han sido ingresados al sistema de los últimos 60 días">
                     </i>
                 </h5>
             </div>

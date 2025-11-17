@@ -4,7 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/Class/Conexion.php';
 class Control {
 
     public function traerRemitosSinIntegrar() {
-        $sql = "DECLARE @FechaLimite DATE = DATEADD(DAY, -180, CAST(GETDATE() AS DATE));
+        $sql = "DECLARE @FechaLimite DATE = DATEADD(DAY, -60, CAST(GETDATE() AS DATE));
         WITH RemitosPendientes AS (
             SELECT 
                 CAST(A.FECHA_MOV AS DATE) AS FECHA_MOV,
@@ -425,7 +425,7 @@ class Control {
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
                 WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1
-                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND A.COD_SUCURS NOT IN ('01')
+                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND A.COD_SUCURS LIKE 'U%'
                 ) A";
         
         try {
@@ -576,6 +576,9 @@ class Control {
                 UPPER(REPLACE(REPLACE(B.DESCRIPCION, 'Franquicia ', ''), 'Cuenta principal ', '')) as SUCURSAL, A.DIAS_ANTIGUEDAD 
                 FROM GC_VIEW_ECOMMERCE_ORDENES_VTEX_PENDIENTES_CIERRE A
                 LEFT JOIN GC_ECOMMERCE_CUENTA B ON A.ID_GC_ECOMMERCE_CUENTA_SELLER = B.ID_GC_ECOMMERCE_CUENTA
+                LEFT JOIN NEXO_PEDIDOS_ORDEN C ON A.ORDER_ID = C.ORDER_ID_TIENDA COLLATE Latin1_General_BIN
+                WHERE C.ORDER_ID_TIENDA IS NULL
+                AND A.FECHA_ORDER >= DATEADD(DAY, -60, CAST(GETDATE() AS DATE))
                 ) A";
         
         try {
@@ -610,6 +613,9 @@ class Control {
                 UPPER(REPLACE(REPLACE(B.DESCRIPCION, 'Franquicia ', ''), 'Cuenta principal ', '')) as SUCURSAL, A.DIAS_ANTIGUEDAD 
                 FROM GC_VIEW_ECOMMERCE_ORDENES_VTEX_PENDIENTES_CIERRE A
                 LEFT JOIN GC_ECOMMERCE_CUENTA B ON A.ID_GC_ECOMMERCE_CUENTA_SELLER = B.ID_GC_ECOMMERCE_CUENTA
+                LEFT JOIN NEXO_PEDIDOS_ORDEN C ON A.ORDER_ID = C.ORDER_ID_TIENDA COLLATE Latin1_General_BIN
+                WHERE C.ORDER_ID_TIENDA IS NULL
+                AND A.FECHA_ORDER >= DATEADD(DAY, -60, CAST(GETDATE() AS DATE))
                 ORDER BY FECHA_ORDER ASC";
         
         try {
@@ -916,6 +922,9 @@ class Control {
                 UPPER(REPLACE(REPLACE(B.DESCRIPCION, 'Franquicia ', ''), 'Cuenta principal ', '')) as SUCURSAL, A.DIAS_ANTIGUEDAD 
                 FROM GC_VIEW_ECOMMERCE_ORDENES_VTEX_PENDIENTES_CIERRE A
                 LEFT JOIN GC_ECOMMERCE_CUENTA B ON A.ID_GC_ECOMMERCE_CUENTA_SELLER = B.ID_GC_ECOMMERCE_CUENTA
+                LEFT JOIN NEXO_PEDIDOS_ORDEN C ON A.ORDER_ID = C.ORDER_ID_TIENDA COLLATE Latin1_General_BIN
+                WHERE C.ORDER_ID_TIENDA IS NULL
+                AND A.FECHA_ORDER >= DATEADD(DAY, -60, CAST(GETDATE() AS DATE))
                 ) A";
         return $this->getDatos($sql);
     }
@@ -924,7 +933,11 @@ class Control {
         $sql = "SELECT CAST(A.FECHA_ORDER AS datetime) FECHA, A.ORDER_ID, UPPER(A.NOMBRE_COMPRADOR) CLIENTE, 
                 UPPER(REPLACE(REPLACE(B.DESCRIPCION, 'Franquicia ', ''), 'Cuenta principal ', '')) as SUCURSAL, A.DIAS_ANTIGUEDAD 
                 FROM GC_VIEW_ECOMMERCE_ORDENES_VTEX_PENDIENTES_CIERRE A
-                LEFT JOIN GC_ECOMMERCE_CUENTA B ON A.ID_GC_ECOMMERCE_CUENTA_SELLER = B.ID_GC_ECOMMERCE_CUENTA";
+                LEFT JOIN GC_ECOMMERCE_CUENTA B ON A.ID_GC_ECOMMERCE_CUENTA_SELLER = B.ID_GC_ECOMMERCE_CUENTA
+                LEFT JOIN NEXO_PEDIDOS_ORDEN C ON A.ORDER_ID = C.ORDER_ID_TIENDA COLLATE Latin1_General_BIN
+                WHERE C.ORDER_ID_TIENDA IS NULL
+                AND A.FECHA_ORDER >= DATEADD(DAY, -60, CAST(GETDATE() AS DATE))
+                ORDER BY FECHA_ORDER ASC";
         return $this->getDatosMultiples($sql);
     }
 
