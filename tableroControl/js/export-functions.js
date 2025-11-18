@@ -511,3 +511,21 @@ function exportToExcelRankingControlSucursales() {
     const today = new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb, `ranking_control_sucursales_${today}.xlsx`);
 }
+
+// ============================================
+// FUNCIONES DE EXPORTACIÓN PARA PEDIDOS INCOMPLETOS
+// ============================================
+
+// Función para exportar pedidos incompletos de Central
+function exportToExcelPedidosIncompletosCentral() {
+    exportTableToExcel('#modalPedidosIncompletosCentral table', "Pedidos Incompletos Central", "pedidos_incompletos_central", false, {
+        textColumns: [1, 2] // NRO_ORDEN_ECOMMERCE (índice 1) y NRO_PEDIDO (índice 2) como texto
+    });
+}
+
+// Función para exportar pedidos incompletos de Sucursales
+function exportToExcelPedidosIncompletosSucursales() {
+    exportTableToExcel('#modalPedidosIncompletosSucursales table', "Pedidos Incompletos Sucursales", "pedidos_incompletos_sucursales", false, {
+        textColumns: [1, 2] // NRO_ORDEN_ECOMMERCE (índice 1) y NRO_PEDIDO (índice 2) como texto
+    });
+}

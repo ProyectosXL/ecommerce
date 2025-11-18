@@ -1345,4 +1345,76 @@ public function traerDetallePedidosPendientesPreparar() {
     
     return $this->getDatosMultiples($sql);
 }
+
+public function traerPedidosIncompletosCentral() {
+    $sql = "SELECT COUNT(DISTINCT A.NRO_PEDIDO) AS CANT_PEDIDOS_INCOMPLETOS,
+            MIN(CAST(A.FECHA_PEDID AS DATETIME)) AS FECHA_MAS_ANTIGUA
+            FROM RO_ECOMMERCE_PEDIDOS_INCOMPLETOS A
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.NRO_PEDIDO = B.NRO_PEDIDO
+            WHERE A.DEPOSITO = 'CENTRAL'
+                AND ISNULL(B.NCR, '') = ''
+                AND ISNULL(B.CANCELADO, 0) = 0
+                AND ISNULL(B.ENTREGADO, 0) = 0";
+    
+    return $this->getDatos($sql);
+}
+
+public function traerDetallePedidosIncompletosCentral() {
+    $sql = "SELECT A.ORIGEN, 
+            A.NRO_ORDEN_ECOMMERCE, 
+            A.NRO_PEDIDO, 
+            CAST(A.FECHA_PEDID AS DATETIME) AS FECHA_PEDID, 
+            A.CLIENTE, 
+            A.COD_ARTICU, 
+            A.DESCRIPCIO, 
+            A.CANT_PEDID, 
+            A.CANT_AUDITADO, 
+            A.METODO_ENVIO, 
+            A.TIENDA
+            FROM RO_ECOMMERCE_PEDIDOS_INCOMPLETOS A
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.NRO_PEDIDO = B.NRO_PEDIDO
+            WHERE A.DEPOSITO = 'CENTRAL'
+                AND ISNULL(B.NCR, '') = ''
+                AND ISNULL(B.CANCELADO, 0) = 0
+                AND ISNULL(B.ENTREGADO, 0) = 0
+            ORDER BY A.FECHA_PEDID DESC, A.NRO_PEDIDO DESC";
+    
+    return $this->getDatosMultiples($sql);
+}
+
+public function traerPedidosIncompletosSucursales() {
+    $sql = "SELECT COUNT(DISTINCT A.NRO_PEDIDO) AS CANT_PEDIDOS_INCOMPLETOS,
+            MIN(CAST(A.FECHA_PEDID AS DATETIME)) AS FECHA_MAS_ANTIGUA
+            FROM RO_ECOMMERCE_PEDIDOS_INCOMPLETOS A
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.NRO_PEDIDO = B.NRO_PEDIDO
+            WHERE A.DEPOSITO <> 'CENTRAL'
+                AND ISNULL(B.NCR, '') = ''
+                AND ISNULL(B.CANCELADO, 0) = 0
+                AND ISNULL(B.ENTREGADO, 0) = 0";
+    
+    return $this->getDatos($sql);
+}
+
+public function traerDetallePedidosIncompletosSucursales() {
+    $sql = "SELECT A.ORIGEN, 
+            A.NRO_ORDEN_ECOMMERCE, 
+            A.NRO_PEDIDO, 
+            CAST(A.FECHA_PEDID AS DATETIME) AS FECHA_PEDID, 
+            A.CLIENTE, 
+            A.COD_ARTICU, 
+            A.DESCRIPCIO, 
+            A.CANT_PEDID, 
+            A.CANT_AUDITADO, 
+            A.DEPOSITO, 
+            A.METODO_ENVIO
+            FROM RO_ECOMMERCE_PEDIDOS_INCOMPLETOS A
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.NRO_PEDIDO = B.NRO_PEDIDO
+            WHERE A.DEPOSITO <> 'CENTRAL'
+                AND ISNULL(B.NCR, '') = ''
+                AND ISNULL(B.CANCELADO, 0) = 0
+                AND ISNULL(B.ENTREGADO, 0) = 0
+            ORDER BY A.FECHA_PEDID DESC, A.NRO_PEDIDO DESC";
+    
+    return $this->getDatosMultiples($sql);
+}
 }

@@ -1,7 +1,7 @@
 <!-- tabs/tab-uruguay.php -->
 <?php
 // Verificar si mostrar el aviso de nuevo
-$fechaLanzamientoUruguay = new DateTime('2025-11-04');
+$fechaLanzamientoUruguay = new DateTime('2025-11-18');
 $fechaActual = new DateTime();
 $diasDesdeeLanzamiento = $fechaActual->diff($fechaLanzamientoUruguay)->days;
 $mostrarNuevoUruguay = $diasDesdeeLanzamiento <= 7;

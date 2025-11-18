@@ -21,6 +21,9 @@
 <?php include 'modal-pedidos-pendiente-control-central.php'; ?>
 <?php include 'modal-pedidos-pendiente-control-sucursales.php'; ?>
 <?php include 'modal-ranking-pedidos-control-sucursales.php'; ?>
+<!-- Modales para pedidos incompletos -->
+<?php include 'modal-pedidos-incompletos-central.php'; ?>
+<?php include 'modal-pedidos-incompletos-sucursales.php'; ?>
 <!-- Modal para Uruguay -->
 <?php include 'modal-pedidos-sin-facturar-uruguay.php'; ?>
 <?php include 'modal-pedidos-sin-remito-uruguay.php'; ?>

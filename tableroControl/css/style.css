@@ -431,3 +431,23 @@ body.modal-open {
     background-color: #2196f3;
     border-color: #2196f3;
 }
+
+/* Estilos para Pedidos Incompletos (tonos amarillo/ámbar) */
+.card-incomplete .card-header {
+    background-color: #fffbea; /* Fondo amarillo suave */
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+.card-incomplete .card-icon {
+    color: #f57c00; /* Naranja ámbar para el ícono */
+    font-size: 1.8rem;
+}
+
+.btn-outline-warning {
+    color: #f57c00;
+    border-color: #f57c00;
+}
+.btn-outline-warning:hover {
+    color: #fff;
+    background-color: #f57c00;
+    border-color: #f57c00;
+}

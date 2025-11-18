@@ -29,6 +29,8 @@ $pedidosPendienteDespacho = null;
 $pedidosRecibidosNoEntregados = null;
 $pedidosRetiroTienda = null;
 $pedidosPendientesPreparar = null;
+$pedidosIncompletosCentral = null;
+$pedidosIncompletosSucursales = null;
 $error = null;
 
 try {
@@ -61,6 +63,10 @@ try {
     // Cargar las nuevas consultas separadas para control
     $pedidosPendientesControlCentral = $control->traerResumenPedidosPendientesControlCentral();
     $pedidosPendientesControlSucursales = $control->traerResumenPedidosPendientesControlSucursales();
+    
+    // Cargar pedidos incompletos
+    $pedidosIncompletosCentral = $control->traerPedidosIncompletosCentral();
+    $pedidosIncompletosSucursales = $control->traerPedidosIncompletosSucursales();
     
 } catch (Exception $e) {
     $error = $e->getMessage();
@@ -112,6 +118,10 @@ if ($remitosSinIntegrar !== null && is_array($remitosSinIntegrar) && count($remi
 if ($pedidosPendientesControlCentral && !empty($pedidosPendientesControlCentral->CANTIDAD_PEDIDOS)) {
     $totalPendientesOperacionesCentral += $pedidosPendientesControlCentral->CANTIDAD_PEDIDOS;
 }
+// Agregar Pedidos Incompletos Central
+if ($pedidosIncompletosCentral && !empty($pedidosIncompletosCentral->CANT_PEDIDOS_INCOMPLETOS)) {
+    $totalPendientesOperacionesCentral += $pedidosIncompletosCentral->CANT_PEDIDOS_INCOMPLETOS;
+}
 
 // Operaciones Sucursales
 if ($ordenesPendientesCierre && !empty($ordenesPendientesCierre->CANT_ORDENES)) {
@@ -129,6 +139,10 @@ if ($pedidosRetiroTienda && !empty($pedidosRetiroTienda->CANT_PED_RETIRO)) {
 // Agregar Pedidos Pendientes Control Sucursales - Usando el método específico
 if ($pedidosPendientesControlSucursales && !empty($pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS)) {
     $totalPendientesOperacionesSucursales += $pedidosPendientesControlSucursales->CANTIDAD_PEDIDOS;
+}
+// Agregar Pedidos Incompletos Sucursales
+if ($pedidosIncompletosSucursales && !empty($pedidosIncompletosSucursales->CANT_PEDIDOS_INCOMPLETOS)) {
+    $totalPendientesOperacionesSucursales += $pedidosIncompletosSucursales->CANT_PEDIDOS_INCOMPLETOS;
 }
 
 // Uruguay

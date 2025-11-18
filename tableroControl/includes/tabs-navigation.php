@@ -2,10 +2,15 @@
 <!-- includes/tabs-navigation.php -->
 <?php
 // Fecha de lanzamiento de la pestaña Uruguay
-$fechaLanzamientoUruguay = new DateTime('2025-11-04'); // Fecha actual
+$fechaLanzamientoUruguay = new DateTime('2025-11-18'); // Fecha actual
 $fechaActual = new DateTime();
 $diasDesdeeLanzamiento = $fechaActual->diff($fechaLanzamientoUruguay)->days;
 $mostrarNuevoUruguay = $diasDesdeeLanzamiento <= 7;
+
+// Fecha de lanzamiento de las tarjetas de Pedidos Incompletos
+$fechaLanzamientoPedidosIncompletos = new DateTime('2025-11-18');
+$diasDesdeLanzamientoPedidosIncompletos = $fechaActual->diff($fechaLanzamientoPedidosIncompletos)->days;
+$mostrarNuevoPedidosIncompletos = $diasDesdeLanzamientoPedidosIncompletos <= 7;
 ?>
 
 <ul class="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
