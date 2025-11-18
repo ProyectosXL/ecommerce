@@ -58,11 +58,3 @@
         </div>
     </div>
 </div>
-
-<script>
-function exportToExcelPedidosRetiroTiendaUruguay() {
-    const table = document.getElementById('tablePedidosRetiroTiendaUruguay');
-    const wb = XLSX.utils.table_to_book(table, {sheet: "Pedidos Retiro Tienda UY"});
-    XLSX.writeFile(wb, 'pedidos_retiro_tienda_uruguay.xlsx');
-}
-</script>

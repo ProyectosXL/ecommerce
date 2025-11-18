@@ -71,11 +71,3 @@
                     </div>
                 </div>
             </div>
-
-            <script>
-            function exportToExcelFacturasSinRemitoUruguay() {
-                const table = document.getElementById('tablaFacturasSinRemitoUruguay');
-                const wb = XLSX.utils.table_to_book(table, {sheet: "Facturas sin Remito Uruguay"});
-                XLSX.writeFile(wb, 'facturas_sin_remito_uruguay.xlsx');
-            }
-            </script>

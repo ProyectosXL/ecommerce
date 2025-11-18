@@ -320,6 +320,57 @@ function exportToExcelPedidosControlSucursales() {
     exportTableToExcel('#tablaPedidosControlSucursales', "Pedidos Pendientes Control Sucursales", "pedidos_pendientes_control_sucursales");
 }
 
+// ============================================
+// FUNCIONES DE EXPORTACIÓN PARA URUGUAY
+// ============================================
+
+// Función para exportar pedidos sin facturar de Uruguay
+function exportToExcelPedidosUruguay() {
+    exportTableToExcel('#tablaPedidosUruguay', "Pedidos Uruguay", "pedidos_sin_facturar_uruguay", false, {
+        textColumns: [3] // El índice 3 corresponde a la columna "Order ID"
+    });
+}
+
+// Función para exportar facturas sin remito de Uruguay
+function exportToExcelFacturasSinRemitoUruguay() {
+    exportTableToExcel('#tablaFacturasSinRemitoUruguay', "Facturas sin Remito Uruguay", "facturas_sin_remito_uruguay", true);
+}
+
+// Función para exportar NC devoluciones de Uruguay
+function exportToExcelNcDevolucionesUruguay() {
+    exportTableToExcel('#tablaNcDevolucionesUruguay', "NC Devoluciones Uruguay", "nc_devoluciones_uruguay", false, {
+        textColumns: [2] // El índice 2 corresponde a la columna "Order ID"
+    });
+}
+
+// Función para exportar órdenes sin integrar de Uruguay
+function exportToExcelOrdenesSinIntegrarUruguay() {
+    exportTableToExcel('#tablaOrdenesSinIntegrarUruguay', "Ordenes sin Integrar Uruguay", "ordenes_sin_integrar_uruguay", false, {
+        textColumns: [2] // El índice 2 corresponde a la columna "Nro. Orden"
+    });
+}
+
+// Función para exportar órdenes pendientes de cierre de Uruguay
+function exportToExcelOrdenesPendientesCierreUruguay() {
+    exportTableToExcel('#tableOrdenesPendientesCierreUruguay', "Órdenes Pendientes Cierre UY", "ordenes_pendientes_cierre_uruguay", true, {
+        textColumns: [1] // El índice 1 corresponde a la columna "Order ID"
+    });
+}
+
+// Función para exportar pedidos de retiro en tienda de Uruguay
+function exportToExcelPedidosRetiroTiendaUruguay() {
+    exportTableToExcel('#tablePedidosRetiroTiendaUruguay', "Pedidos Retiro en Tienda Uruguay", "pedidos_retiro_tienda_uruguay", true, {
+        textColumns: [3] // El índice 3 corresponde a la columna "Order ID"
+    });
+}
+
+// Función para exportar pedidos pendientes de control de sucursales de Uruguay
+function exportToExcelPedidosControlSucursalesUruguay() {
+    exportTableToExcel('#tablePedidosControlSucursalesUruguay', "Pedidos Pendientes Control Sucursales Uruguay", "pedidos_pendientes_control_sucursales_uruguay", false, {
+        textColumns: [3] // El índice 3 corresponde a la columna "Order ID"
+    });
+}
+
 // Función eliminada - Modal de ranking de Central no es necesario
 /* function exportToExcelRankingControlCentral() {
     // Función especializada para exportar el ranking de pedidos control central

@@ -54,11 +54,3 @@
         </div>
     </div>
 </div>
-
-<script>
-function exportToExcelPedidosControlSucursales() {
-    const table = document.getElementById('tablaPedidosControlSucursales');
-    const wb = XLSX.utils.table_to_book(table, {sheet: "Pedidos Control Sucursales"});
-    XLSX.writeFile(wb, 'pedidos_pendientes_control_sucursales.xlsx');
-}
-</script>

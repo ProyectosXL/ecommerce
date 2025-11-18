@@ -52,11 +52,3 @@
                     </div>
                 </div>
             </div>
-
-            <script>
-            function exportToExcelOrdenesSinIntegrarUruguay() {
-                const table = document.getElementById('tablaOrdenesSinIntegrarUruguay');
-                const wb = XLSX.utils.table_to_book(table, {sheet: "Ordenes sin Integrar Uruguay"});
-                XLSX.writeFile(wb, 'ordenes_sin_integrar_uruguay.xlsx');
-            }
-            </script>

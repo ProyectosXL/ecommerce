@@ -54,11 +54,3 @@
         </div>
     </div>
 </div>
-
-<script>
-function exportToExcelOrdenesPendientesCierreUruguay() {
-    const table = document.getElementById('tableOrdenesPendientesCierreUruguay');
-    const wb = XLSX.utils.table_to_book(table, {sheet: "Órdenes Pendientes Cierre UY"});
-    XLSX.writeFile(wb, 'ordenes_pendientes_cierre_uruguay.xlsx');
-}
-</script>

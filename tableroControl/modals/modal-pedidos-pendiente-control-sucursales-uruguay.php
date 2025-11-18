@@ -63,11 +63,3 @@
         </div>
     </div>
 </div>
-
-<script>
-function exportToExcelPedidosControlSucursalesUruguay() {
-    const table = document.getElementById('tablePedidosControlSucursalesUruguay');
-    const wb = XLSX.utils.table_to_book(table, {sheet: "Pedidos Control Sucursales UY"});
-    XLSX.writeFile(wb, 'pedidos_pendientes_control_sucursales_uruguay.xlsx');
-}
-</script>

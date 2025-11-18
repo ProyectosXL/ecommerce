@@ -56,11 +56,3 @@
                     </div>
                 </div>
             </div>
-
-            <script>
-            function exportToExcelPedidosUruguay() {
-                const table = document.getElementById('tablaPedidosUruguay');
-                const wb = XLSX.utils.table_to_book(table, {sheet: "Pedidos Uruguay"});
-                XLSX.writeFile(wb, 'pedidos_sin_facturar_uruguay.xlsx');
-            }
-            </script>

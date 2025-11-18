@@ -60,11 +60,3 @@
                     </div>
                 </div>
             </div>
-
-            <script>
-            function exportToExcelNcDevolucionesUruguay() {
-                const table = document.getElementById('tablaNcDevolucionesUruguay');
-                const wb = XLSX.utils.table_to_book(table, {sheet: "NC Devoluciones Uruguay"});
-                XLSX.writeFile(wb, 'nc_devoluciones_uruguay.xlsx');
-            }
-            </script>
