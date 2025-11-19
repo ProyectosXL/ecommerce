@@ -70,9 +70,48 @@ class Pedido{
     }
 
     public function buscarStockArticulo($sucursal){
+        // Mapeo de nombres de sucursales entre warehouse y tabla de stock
+        $mapeoSucursales = [
+            'PILAR' => 'PALMAS DEL PILAR',
+            'UNICENTER' => 'UNICENTER',
+            'ALTO PALERMO' => 'ALTO PALERMO',
+            'AVELLANEDA' => 'AVELLANEDA',
+            'ABASTO' => 'ABASTO',
+            'SOLAR' => 'SOLAR',
+            'TORTUGAS' => 'TORTUGAS',
+            'SAN MARTIN' => 'FACTORY SAN MARTIN',
+            'PASEO DEL SIGLO' => 'PASEO DEL SIGLO',
+            'MDP GALLEGOS' => 'MDP GALLEGOS',
+            'MDP ALDREY' => 'PASEO ALDREY',
+            'FLORES 1' => 'FLORES 1',
+            'ALTO ROSARIO' => 'ALTO ROSARIO',
+            'CABALLITO' => 'CABALLITO',
+            'PORTAL ROSARIO' => 'PORTAL ROSARIO',
+            'DOT' => 'DOT',
+            'PALACE GARDEN' => 'PALACE GARDEN',
+            'GURRUCHAGA' => 'GURRUCHAGA',
+            'FLORES 2' => 'FLORES 2',
+            'SOLEIL' => 'SOLEIL',
+            'PARQUE BROWN' => 'PARQUE BROWN',
+            'DISTRITO ARCOS' => 'DISTRITO ARCOS',
+            'SAN JUSTO' => 'SAN JUSTO',
+            'CENTRAL' => 'CASA CENTRAL'
+        ];
+        
+        // Buscar en el mapeo (case-insensitive)
+        $sucursalUpper = strtoupper(trim($sucursal));
+        $sucursalStock = $sucursal;
+        
+        foreach ($mapeoSucursales as $key => $value) {
+            if (strtoupper($key) === $sucursalUpper) {
+                $sucursalStock = $value;
+                break;
+            }
+        }
+        
         $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL, ARTICULO, DESC_CTA_ARTICULO, CANT_STOCK FROM [LAKERBIS].LOCALES_LAKERS.DBO.RO_STOCK_LAKERS A
                 INNER JOIN [LAKERBIS].LOCALES_LAKERS.DBO.CTA_ARTICULO B ON A.ARTICULO = B.COD_ARTICULO
-                WHERE DESC_SUCURSAL = '$sucursal' AND A.ARTICULO LIKE '[XO]%'
+                WHERE DESC_SUCURSAL = '$sucursalStock' AND A.ARTICULO LIKE '[XO]%'
                 ORDER BY ARTICULO
         ";
 
