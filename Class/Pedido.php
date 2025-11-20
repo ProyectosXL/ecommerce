@@ -388,16 +388,18 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
             
             GVA21.COD_SUCURS AS DEPOSITO_ORIGEN,
 
-            -- NUEVA LÓGICA: Obtenemos el nombre de la sucursal desde la vista RO_V_STA22
             COALESCE(V_STA22.SUCURSAL_ENTREGA, CASE WHEN GVA21.COD_SUCURS = '01' THEN 'CENTRAL' ELSE 'No especificado' END) AS NOMBRE_ORIGEN,
 
+            -- CAMBIO 1: Traemos el artículo original (Faltante real)
+            ISNULL(H.COD_ARTICULO_CAMBIO, 'N/A') as ARTICULO_ORIGINAL,
+
+            -- CAMBIO 2: El artículo actual/reemplazante
             ISNULL(H.COD_ARTICULO, 'Discrepancia General') as COD_ARTICULO
             
         FROM IncidentesAuditoria IA
         INNER JOIN GVA21 ON IA.NRO_ORDEN_ECOMMERCE = GVA21.ORDER_ID_TIENDA COLLATE DATABASE_DEFAULT
         LEFT JOIN GVA38 ON GVA21.NRO_PEDIDO = GVA38.N_COMP AND GVA21.TALON_PED = GVA38.TALONARIO
         LEFT JOIN RO_T_ENC_ECOMMERCE_HISTORIAL_FALT H ON GVA21.ORDER_ID_TIENDA = H.NRO_ORDEN COLLATE DATABASE_DEFAULT
-        -- NUEVO JOIN: Unimos con la vista RO_V_STA22 para obtener el nombre de la sucursal de origen
         LEFT JOIN RO_V_STA22 V_STA22 ON GVA21.COD_SUCURS = V_STA22.COD_SUCURS COLLATE DATABASE_DEFAULT
     ";
     

@@ -117,13 +117,22 @@ try {
                 }
             }
             
-            // Construir el array del incidente con datos SLA
+            $art_original_final = ($item->ARTICULO_ORIGINAL && $item->ARTICULO_ORIGINAL !== 'N/A') 
+                                   ? $item->ARTICULO_ORIGINAL 
+                                   : $item->COD_ARTICULO;
+
+            // Construir el array del incidente
             $incidentes[] = [
                 'nro_pedido' => $item->NRO_PEDIDO,
                 'nro_orden' => $item->NRO_ORDEN,
                 'fecha_incidente' => $fecha_incidente->format('d/m/Y'),
                 'cliente' => $item->CLIENTE,
-                'articulo_faltante' => $item->COD_ARTICULO,
+                
+                // CAMBIO AQUI: Usamos la variable calculada arriba
+                'articulo_original' => $art_original_final,
+                
+                'articulo_reemplazante' => $item->COD_ARTICULO,
+
                 'warehouse' => $item->WAREHOUSE_RECLAMO ?? 'N/A',
                 'deposito_origen' => $item->DEPOSITO_ORIGEN ?? 'N/A',
                 'nombre_origen' => $item->NOMBRE_ORIGEN ?? 'N/A',
@@ -131,7 +140,7 @@ try {
                 'resolucion' => $item->RESOLUCION ?? 'Pendiente',
                 'dias_abierto' => $dias_abierto,
                 'dias_sobre_sla' => $dias_sobre_sla,
-                'estado_sla' => $estado_sla // dentro, riesgo, fuera
+                'estado_sla' => $estado_sla
             ];
 
             // Actualizar ranking de depósitos con métricas SLA

@@ -294,9 +294,10 @@
                             <th>Estado SLA</th>
                             <th>Nro. Pedido</th>
                             <th>Nro. Orden</th>
-                            <th>Fecha Incidente</th>
+                            <th>Fecha de Pedido</th> 
                             <th>Cliente</th>
                             <th>Artículo Faltante</th>
+                            <th>Artículo Reemplazante</th>
                             <th>Depósito Origen</th>
                             <th>Nombre Origen</th>
                             <th>Warehouse Reclamo</th>
