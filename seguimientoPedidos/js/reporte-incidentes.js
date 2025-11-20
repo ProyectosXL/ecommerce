@@ -89,19 +89,7 @@ $(document).ready(function() {
             { "data": "nro_orden" },
             { "data": "fecha_incidente" },
             { "data": "cliente" },
-            // --- CAMBIO AQUÍ: Agregamos 'render' para filtrar 'Discrepancia Ge' ---
-            { 
-                "data": "articulo_original", 
-                "render": function(data) {
-                    // Si dice "Discrepancia" (Ge o General) o es nulo, mostrar N/A
-                    if (!data || data.indexOf('Discrepancia') !== -1) {
-                        return 'N/A';
-                    }
-                    return data;
-                }
-            },
-            // ---------------------------------------------------------------------
-
+            { "data": "articulo_original" },
             { 
                 "data": "articulo_reemplazante",
                 "render": function(data) {

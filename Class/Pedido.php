@@ -345,11 +345,9 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
     $cid = new Conexion();
     $cid_central = $cid->conectarSql("central");
 
-    // CORRECCIÓN: Establecer formato de fecha YMD para SQL Server
     $sqlSetFormat = "SET DATEFORMAT YMD";
     sqlsrv_query($cid_central, $sqlSetFormat);
 
-    // Validar y formatear fechas
     if (!empty($fechaInicio)) {
         $fechaInicio = date('Y-m-d', strtotime($fechaInicio));
     }
@@ -357,13 +355,15 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
         $fechaFin = date('Y-m-d', strtotime($fechaFin));
     }
 
-    // CORRECCIÓN FINAL: Usamos el JOIN a la vista RO_V_STA22, que es la misma que genera el campo "Prepara".
     $sql = "
         SET DATEFORMAT YMD;
         
         WITH IncidentesAuditoria AS (
             SELECT 
-                A.NRO_ORDEN_ECOMMERCE
+                A.NRO_ORDEN_ECOMMERCE,
+                -- NUEVO: Recuperamos el código de artículo que disparó la auditoría.
+                -- Usamos MAX para tomar uno en caso de que haya varios, asegurando que no venga nulo.
+                MAX(A.COD_ARTICULO) AS ARTICULO_AUDITADO
             FROM SOF_AUDITORIA A
             WHERE 
                 A.FECHA_AUDITORIA_1 IS NOT NULL 
@@ -385,15 +385,15 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
             GVA21.NRO_PEDIDO,
             GVA21.ORDER_ID_TIENDA AS NRO_ORDEN,
             CAST(GVA21.FECHA_PEDI AS DATE) AS FECHA_PEDIDO,
-            
             GVA21.COD_SUCURS AS DEPOSITO_ORIGEN,
-
             COALESCE(V_STA22.SUCURSAL_ENTREGA, CASE WHEN GVA21.COD_SUCURS = '01' THEN 'CENTRAL' ELSE 'No especificado' END) AS NOMBRE_ORIGEN,
 
-            -- CAMBIO 1: Traemos el artículo original (Faltante real)
-            ISNULL(H.COD_ARTICULO_CAMBIO, 'N/A') as ARTICULO_ORIGINAL,
+            -- LÓGICA CORREGIDA PARA ARTÍCULO ORIGINAL:
+            -- 1. Si se cargó manualmente un cambio (H.COD_ARTICULO_CAMBIO), usa ese.
+            -- 2. Si no, usa el artículo detectado en la auditoría (IA.ARTICULO_AUDITADO).
+            -- 3. Si falla todo, pone N/A.
+            COALESCE(H.COD_ARTICULO_CAMBIO, IA.ARTICULO_AUDITADO, 'N/A') as ARTICULO_ORIGINAL,
 
-            -- CAMBIO 2: El artículo actual/reemplazante
             ISNULL(H.COD_ARTICULO, 'Discrepancia General') as COD_ARTICULO
             
         FROM IncidentesAuditoria IA
@@ -420,9 +420,6 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
     $stmt = sqlsrv_query($cid_central, $sql, $params);
 
     if ($stmt === false) {
-        $errors = sqlsrv_errors();
-        error_log("Error en getHistorialFaltantesCompleto: " . print_r($errors, true));
-        error_log("Fechas enviadas: Inicio=$fechaInicio, Fin=$fechaFin");
         return [];
     }
 
