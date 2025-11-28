@@ -263,6 +263,8 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
         $modalCodigo = !empty($data['modalCodigo']) ? $data['modalCodigo'] : '';
         $modalCantidad = !empty($data['modalCantidad']) ? $data['modalCantidad'] : '1';
         $sucDespacho = !empty($data['sucursal']) ? $data['sucursal'] : ''; // Sucursal seleccionada en modal
+        $resolucion = !empty($data['resolucion']) ? strtolower(trim($data['resolucion'])) : '';
+        $estado = !empty($data['estado']) ? $data['estado'] : '';
         
         // CORRECCIÓN: Parsear y formatear la fecha correctamente
         $fechaPedido = null;
@@ -299,8 +301,8 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
                     COD_ARTICULO = '$modalCodigo',
                     CANTIDAD = '$modalCantidad',
                     SUC_DESPACHO = '$sucDespacho',
-                    ESTADO = '" . ($data['estado'] ?? '') . "',
-                    RESOLUCION = '" . ($data['resolucion'] ?? '') . "',
+                    ESTADO = '$estado',
+                    RESOLUCION = '$resolucion',
                     COD_ARTICULO_CAMBIO = '" . ($data['articulo'] ?? '') . "',
                     DESCRIPCION = '" . ($data['descripcion'] ?? '') . "',
                     FECHA_ULT_MODIF = GETDATE()
@@ -321,8 +323,8 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
                     '" . ($data['articulo'] ?? '') . "', 
                     '" . ($data['descripcion'] ?? '') . "', 
                     '$modalCantidad', 
-                    '" . ($data['estado'] ?? '') . "', 
-                    '" . ($data['resolucion'] ?? '') . "', 
+                    '$estado', 
+                    '$resolucion', 
                     '$sucDespacho', 
                     '$modalCodigo',
                     GETDATE(),
@@ -331,6 +333,71 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
         }
         
         $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query: " . print_r(sqlsrv_errors(), true)));
+        
+        // NUEVA FUNCIONALIDAD: Si la resolución es "Completado" o "Cambio", marcar el pedido como Controlado
+        if ($result && in_array($resolucion, ['completado', 'cambio'])) {
+            $this->marcarPedidoComoControlado($nro_pedido, $nroOrden);
+        }
+        
+        // NUEVA FUNCIONALIDAD: Si la resolución es "Cancelado", marcar el pedido como cancelado en la tabla de estados
+        if ($result && $resolucion === 'cancelado') {
+            $this->marcarPedidoCancelado($nro_pedido, $nroOrden);
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Marca un pedido como controlado en la tabla RO_T_ESTADO_PEDIDOS_ECOMMERCE
+     * Se ejecuta automáticamente cuando se completa o cambia un artículo
+     */
+    public function marcarPedidoComoControlado($nro_pedido, $nro_orden = null) {
+        $cid = new Conexion();
+        $cid_central = $cid->conectarSql('central');
+        
+        // Actualizar el estado del pedido como controlado
+        $sql = "UPDATE RO_T_ESTADO_PEDIDOS_ECOMMERCE 
+                SET CONTROLADO = 1, FECHA_CONTROLADO = GETDATE(), FECHA_ULT_MODIF = GETDATE()
+                WHERE NRO_PEDIDO = '$nro_pedido'";
+        
+        // Si hay ORDER_ID, agregar la condición
+        if ($nro_orden) {
+            $sql .= " AND ORDER_ID = '$nro_orden'";
+        }
+        
+        $result = sqlsrv_query($cid_central, $sql);
+        
+        if ($result === false) {
+            error_log("Error al marcar pedido como controlado: " . print_r(sqlsrv_errors(), true));
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Marca un pedido como cancelado en la tabla RO_T_ESTADO_PEDIDOS_ECOMMERCE
+     * Se ejecuta automáticamente cuando la resolución es "Cancelado"
+     */
+    public function marcarPedidoCancelado($nro_pedido, $nro_orden = null) {
+        $cid = new Conexion();
+        $cid_central = $cid->conectarSql('central');
+        
+        // Actualizar el estado del pedido como cancelado
+        $sql = "UPDATE RO_T_ESTADO_PEDIDOS_ECOMMERCE 
+                SET CANCELADO = 1, FECHA_ULT_MODIF = GETDATE()
+                WHERE NRO_PEDIDO = '$nro_pedido'";
+        
+        // Si hay ORDER_ID, agregar la condición
+        if ($nro_orden) {
+            $sql .= " AND ORDER_ID = '$nro_orden'";
+        }
+        
+        $result = sqlsrv_query($cid_central, $sql);
+        
+        if ($result === false) {
+            error_log("Error al marcar pedido como cancelado: " . print_r(sqlsrv_errors(), true));
+        }
+        
         return $result;
     }
 

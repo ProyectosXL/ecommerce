@@ -93,6 +93,37 @@ try {
     }
 
     if ($resultado) {
+        // Guardar comentarios si existen
+        if (!empty($dataSecciones) && is_array($dataSecciones)) {
+            $stringParaSql = "";
+            foreach ($dataSecciones as $value) {
+                $comentario = isset($value->comentario) ? addslashes($value->comentario) : '';
+                $tipo_contacto = isset($value->tipo_contacto) ? addslashes($value->tipo_contacto) : '';
+                $agente = isset($value->agente) ? addslashes($value->agente) : '';
+                
+                $stringParaSql .= "('" . $nro_pedido . "', '" . $comentario . "', '" . $tipo_contacto . "', '" . $agente . "', GETDATE()),";
+            }
+            
+            if (!empty(trim($stringParaSql))) {
+                $stringParaSql = substr($stringParaSql, 0, -1);
+                $pedido->guardarReclamoDetalle($stringParaSql);
+            }
+        }
+        
+        // Si la resolución es "completado" o "cambio", agregar comentario automático indicando que se marcó como controlado
+        if (in_array(strtolower($resolucion), ['completado', 'cambio'])) {
+            $comentarioAutomatico = "Pedido marcado como CONTROLADO automáticamente por resolución: " . ucfirst($resolucion);
+            $stringComentarioAuto = "('" . $nro_pedido . "', '" . addslashes($comentarioAutomatico) . "', 'Sistema', 'Sistema Automático', GETDATE())";
+            $pedido->guardarReclamoDetalle($stringComentarioAuto);
+        }
+        
+        // Si la resolución es "cancelado", agregar comentario automático indicando que se marcó como cancelado
+        if (strtolower($resolucion) === 'cancelado') {
+            $comentarioAutomatico = "Pedido marcado como CANCELADO en el sistema automáticamente por resolución: Cancelado";
+            $stringComentarioAuto = "('" . $nro_pedido . "', '" . addslashes($comentarioAutomatico) . "', 'Sistema', 'Sistema Automático', GETDATE())";
+            $pedido->guardarReclamoDetalle($stringComentarioAuto);
+        }
+        
         ob_end_clean();
         header('Content-Type: application/json');
         echo json_encode([
