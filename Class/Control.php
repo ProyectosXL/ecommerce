@@ -150,13 +150,37 @@ class Control {
 
 
     public function traerNcPendPromociones() {
-        $sql = "SELECT MIN(CAST(FECHA AS DATE)) FECHA, COUNT(*) CANT_NC_PROMO, SUM(NC) IMPORTE_NC FROM SJ_NC_ECOMMERCE_PEND WHERE NUM_NC = 'NO'";
+        $sql = "SELECT MIN(CAST(A.FECHA AS DATE)) FECHA, COUNT(*) CANT_NC_PROMO, SUM(A.NC) IMPORTE_NC 
+                FROM SJ_NC_ECOMMERCE_PEND A
+                WHERE A.NUM_NC = 'NO'
+                AND NOT EXISTS (
+                    SELECT 1 
+                    FROM GVA12 B
+                    INNER JOIN GVA53 C ON B.T_COMP = C.T_COMP AND B.N_COMP = C.N_COMP
+                    WHERE B.COD_CLIENT = '000000'
+                    AND B.T_COMP = 'NCR'
+                    AND C.COD_ARTICU = A.COD_ARTICU
+                    AND CAST(B.FECHA_EMIS AS DATE) >= CAST(A.FECHA AS DATE)
+                    AND CAST(B.FECHA_EMIS AS DATE) <= DATEADD(DAY, 15, CAST(A.FECHA AS DATE))
+                )";
         return $this->getDatos($sql);
     }
 
     public function traerDetalleNcPendPromociones() {
-        $sql = "SELECT FECHA, COD_PROMOCION_TARJETA, DESC_PROMOCION_TARJETA, PORC_REINTEGRO, COD_ARTICU, NC 
-                FROM SJ_NC_ECOMMERCE_PEND WHERE NUM_NC = 'NO' ORDER BY FECHA DESC";
+        $sql = "SELECT A.FECHA, A.COD_PROMOCION_TARJETA, A.DESC_PROMOCION_TARJETA, A.PORC_REINTEGRO, A.COD_ARTICU, A.NC 
+                FROM SJ_NC_ECOMMERCE_PEND A
+                WHERE A.NUM_NC = 'NO'
+                AND NOT EXISTS (
+                    SELECT 1 
+                    FROM GVA12 B
+                    INNER JOIN GVA53 C ON B.T_COMP = C.T_COMP AND B.N_COMP = C.N_COMP
+                    WHERE B.COD_CLIENT = '000000'
+                    AND B.T_COMP = 'NCR'
+                    AND C.COD_ARTICU = A.COD_ARTICU
+                    AND CAST(B.FECHA_EMIS AS DATE) >= CAST(A.FECHA AS DATE)
+                    AND CAST(B.FECHA_EMIS AS DATE) <= DATEADD(DAY, 15, CAST(A.FECHA AS DATE))
+                )
+                ORDER BY A.FECHA DESC";
         return $this->getDatosMultiples($sql);
     }
 
