@@ -428,17 +428,21 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
         WITH IncidentesAuditoria AS (
             SELECT 
                 A.NRO_ORDEN_ECOMMERCE,
-                -- NUEVO: Recuperamos el código de artículo que disparó la auditoría.
-                -- Usamos MAX para tomar uno en caso de que haya varios, asegurando que no venga nulo.
-                MAX(A.COD_ARTICULO) AS ARTICULO_AUDITADO
+                -- CORREGIDO: Obtenemos solo los artículos que ACTUALMENTE tienen faltante
+                -- (donde la cantidad auditada es menor que la cantidad a facturar)
+                -- Usamos STRING_AGG para concatenar múltiples artículos faltantes si los hay
+                STRING_AGG(A.COD_ARTICULO, ', ') AS ARTICULO_AUDITADO
             FROM SOF_AUDITORIA A
             WHERE 
                 A.FECHA_AUDITORIA_1 IS NOT NULL 
                 AND A.COD_ARTICULO LIKE '[XO]%'
                 AND CAST(A.FECHA_PEDIDO AS DATE) BETWEEN ? AND ?
+                -- CLAVE: Solo incluir artículos donde actualmente hay faltante
+                AND CAST(A.CANT_AUDITADO AS FLOAT) < CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)
             GROUP BY 
                 A.NRO_ORDEN_ECOMMERCE
             HAVING 
+                -- Verificar que la suma total también tenga discrepancia
                 SUM(CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)) <> SUM(CAST(A.CANT_AUDITADO AS FLOAT))
         )
         SELECT 
@@ -457,7 +461,7 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
 
             -- LÓGICA CORREGIDA PARA ARTÍCULO ORIGINAL:
             -- 1. Si se cargó manualmente un cambio (H.COD_ARTICULO_CAMBIO), usa ese.
-            -- 2. Si no, usa el artículo detectado en la auditoría (IA.ARTICULO_AUDITADO).
+            -- 2. Si no, usa el/los artículo(s) detectado(s) con faltante actual en la auditoría (IA.ARTICULO_AUDITADO).
             -- 3. Si falla todo, pone N/A.
             COALESCE(H.COD_ARTICULO_CAMBIO, IA.ARTICULO_AUDITADO, 'N/A') as ARTICULO_ORIGINAL,
 
