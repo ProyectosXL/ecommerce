@@ -114,6 +114,27 @@
                         ?>
                     </div>
                 </div>
+                <?php if (isset($pedido->REINTEGRADO) && $pedido->REINTEGRADO == 1): ?>
+                <div class="col timeline-step">
+                    <div class="timeline-icon active cancelled">
+                        <i class="fas fa-times icon"></i>
+                    </div>
+                    <div>Cancelado</div>
+                    <div class="timeline-date">
+                        <?php 
+                        echo isset($pedido->FECHA_NCR) && $pedido->FECHA_NCR ? 
+                            ($pedido->FECHA_NCR instanceof DateTime ? 
+                                $pedido->FECHA_NCR->format('d/m/Y H:i') : 
+                                date('d/m/Y H:i', strtotime($pedido->FECHA_NCR))) : 
+                            (isset($pedido->FECHA_PEDI) && $pedido->FECHA_PEDI ?
+                                ($pedido->FECHA_PEDI instanceof DateTime ? 
+                                    $pedido->FECHA_PEDI->format('d/m/Y') : 
+                                    date('d/m/Y', strtotime($pedido->FECHA_PEDI))) : 
+                                'Pendiente'); 
+                        ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

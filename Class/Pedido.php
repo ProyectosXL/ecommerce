@@ -501,4 +501,198 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
 
     return $data;
 }
+
+    /**
+     * Obtener devoluciones/reintegros de un pedido desde RO_T_ESTADO_PEDIDOS_ECOMMERCE
+     * @param string $nroPedido Número de pedido
+     * @param string $nroOrden Número de orden (opcional)
+     * @return array Array con los datos de devoluciones
+     */
+    public function obtenerDevoluciones($nroPedido, $nroOrden = null) {
+        $cid = new Conexion();
+        $cid_central = $cid->conectarSql('central');
+        
+        // Consulta simplificada - RO_T_ESTADO_PEDIDOS_ECOMMERCE solo tiene estado del pedido
+        $sql = "
+        SET DATEFORMAT YMD;
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT 
+            'REINTEGRO_ECOMMERCE' as TIPO,
+            CAST(EP.FECHA_PEDI AS DATE) as FECHA,
+            ISNULL(EP.NCR, 'PENDIENTE') as NUMERO,
+            'PEDIDO_COMPLETO' as COD_ARTICU,
+            'PEDIDO_COMPLETO' as COD_ARTICU_BASE,
+            1 as CANTIDAD,
+            0 as IMPORTE,
+            CASE 
+                WHEN EP.REINTEGRADO = 1 AND (EP.NCR IS NULL OR EP.NCR = '') THEN 'NCR_PENDIENTE'
+                WHEN EP.REINTEGRADO = 1 AND EP.NCR IS NOT NULL AND EP.NCR <> '' THEN 'NCR_EMITIDA'
+                ELSE 'NORMAL'
+            END as ESTADO,
+            'Pedido con reintegro solicitado' as DESCRIPCIO,
+            EP.NRO_PEDIDO as DEBUG_NRO_PEDIDO,
+            EP.ORDER_ID as DEBUG_ORDER_ID,
+            EP.REINTEGRADO as DEBUG_REINTEGRADO,
+            EP.FACTURA as FACTURA
+        FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE EP
+        WHERE RTRIM(LTRIM(EP.NRO_PEDIDO)) = ?
+        AND EP.REINTEGRADO = 1
+        ";
+        
+        $params = array($nroPedido);
+        $stmt = sqlsrv_query($cid_central, $sql, $params);
+        
+        if ($stmt === false) {
+            return [];
+        }
+        
+        $data = [];
+        while ($v = sqlsrv_fetch_object($stmt)) {
+            $data[] = $v;
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Verificar si un pedido está cancelado y si es total o parcial
+     * @param string $nroPedido Número de pedido
+     * @param string $nroOrden Número de orden (opcional)
+     * @return object|null Objeto con información de cancelación
+     */
+    public function verificarCancelacion($nroPedido, $nroOrden = null) {
+        $cid = new Conexion();
+        $cid_central = $cid->conectarSql('central');
+        
+        // Verificar estado de cancelación/reintegro
+        $sql = "SELECT 
+                    EP.REINTEGRADO,
+                    EP.NCR,
+                    EP.FECHA_NCR,
+                    EP.FACTURA,
+                    EP.CANCELADO,
+                    EP.FECHA_PEDI
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE EP
+                WHERE RTRIM(LTRIM(EP.NRO_PEDIDO)) = ?";
+        
+        $params = array($nroPedido);
+        $stmt = sqlsrv_query($cid_central, $sql, $params);
+        
+        if ($stmt === false || !sqlsrv_has_rows($stmt)) {
+            return null;
+        }
+        
+        $estadoPedido = sqlsrv_fetch_object($stmt);
+        
+        if ($estadoPedido->REINTEGRADO != 1) {
+            return null;
+        }
+        
+        // Obtener detalle del pedido para verificar si es cancelación parcial
+        $sqlDetalle = "SELECT 
+                        COUNT(*) as TOTAL_ARTICULOS,
+                        SUM(CAST(DP.CANT_PEDID as INT)) as TOTAL_CANTIDAD
+                    FROM RO_DPEDI01 DP
+                    WHERE RTRIM(LTRIM(DP.NRO_PEDIDO)) = ?";
+        
+        $stmtDetalle = sqlsrv_query($cid_central, $sqlDetalle, $params);
+        $detallePedido = $stmtDetalle ? sqlsrv_fetch_object($stmtDetalle) : null;
+        
+        return (object) [
+            'esta_cancelado' => true,
+            'tiene_ncr' => !empty($estadoPedido->NCR),
+            'numero_ncr' => $estadoPedido->NCR ?? null,
+            'fecha_ncr' => $estadoPedido->FECHA_NCR ?? null,
+            'factura' => $estadoPedido->FACTURA ?? null,
+            'es_parcial' => false, // Por ahora, necesitaríamos más datos para determinarlo
+            'total_articulos' => $detallePedido ? $detallePedido->TOTAL_ARTICULOS : 0,
+            'total_cantidad' => $detallePedido ? $detallePedido->TOTAL_CANTIDAD : 0
+        ];
+    }
+    
+    /**
+     * Obtener resumen de devoluciones agrupadas por tipo
+     * @param string $nroPedido Número de pedido
+     * @param string $nroOrden Número de orden (opcional)
+     * @return object Objeto con el resumen de devoluciones
+     */
+    public function obtenerResumenDevoluciones($nroPedido, $nroOrden = null) {
+        $devoluciones = $this->obtenerDevoluciones($nroPedido, $nroOrden);
+        
+        $resumen = (object)[
+            'total_articulos' => 0,
+            'total_importe' => 0,
+            'tiene_devoluciones' => false,
+            'tiene_ncr_pendiente' => false,
+            'tipos' => []
+        ];
+        
+        foreach ($devoluciones as $dev) {
+            $resumen->tiene_devoluciones = true;
+            $resumen->total_articulos += $dev->CANTIDAD;
+            $resumen->total_importe += ($dev->CANTIDAD * $dev->IMPORTE);
+            
+            // Detectar si hay NCR pendiente
+            if (in_array($dev->ESTADO, ['NCR_PENDIENTE', 'PENDIENTE'])) {
+                $resumen->tiene_ncr_pendiente = true;
+            }
+            
+            // Agrupar por tipo más legible
+            $tipoDisplay = $dev->TIPO;
+            if ($dev->TIPO == 'REINTEGRO_ECOMMERCE') {
+                if ($dev->ESTADO == 'NCR_PENDIENTE') {
+                    $tipoDisplay = 'REINTEGRO (NCR Pendiente)';
+                } else {
+                    $tipoDisplay = 'REINTEGRO';
+                }
+            } else if ($dev->TIPO == 'REFUND_VTEX') {
+                $tipoDisplay = 'REINTEGRO VTEX';
+            }
+            
+            if (!isset($resumen->tipos[$tipoDisplay])) {
+                $resumen->tipos[$tipoDisplay] = (object)[
+                    'cantidad' => 0,
+                    'importe' => 0,
+                    'registros' => []
+                ];
+            }
+            
+            $resumen->tipos[$tipoDisplay]->cantidad += $dev->CANTIDAD;
+            $resumen->tipos[$tipoDisplay]->importe += ($dev->CANTIDAD * $dev->IMPORTE);
+            $resumen->tipos[$tipoDisplay]->registros[] = $dev;
+        }
+        
+        return $resumen;
+    }
+    
+    /**
+     * Verificar si hay artículos con reintegro pero sin NCR emitida
+     * @param string $nroPedido Número de pedido
+     * @param string $nroOrden Número de orden (opcional)
+     * @return array Array con artículos pendientes de NCR
+     */
+    public function verificarNcrPendiente($nroPedido, $nroOrden = null) {
+        $devoluciones = $this->obtenerDevoluciones($nroPedido, $nroOrden);
+        
+        $pendientes = [];
+        
+        // Buscar cualquier devolución con estado NCR_PENDIENTE
+        foreach ($devoluciones as $dev) {
+            if ($dev->ESTADO == 'NCR_PENDIENTE') {
+                $pendientes[] = (object)[
+                    'COD_ARTICU_BASE' => $dev->COD_ARTICU_BASE,
+                    'DESCRIPCIO' => $dev->DESCRIPCIO,
+                    'CANTIDAD_REFUND' => $dev->CANTIDAD,
+                    'CANTIDAD_NCR' => 0,
+                    'CANTIDAD_PENDIENTE' => $dev->CANTIDAD,
+                    'FECHA' => $dev->FECHA,
+                    'NUMERO' => $dev->NUMERO,
+                    'FACTURA' => isset($dev->FACTURA) ? $dev->FACTURA : ''
+                ];
+            }
+        }
+        
+        return $pendientes;
+    }
 }

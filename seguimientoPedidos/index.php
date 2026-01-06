@@ -78,7 +78,17 @@ require_once 'config.php';
                                     $pedido = $row[0];
                                     $detalleReclamo = $pedidos->listarReclamoDetalle($pedido->NRO_PEDIDO);
                                     
+                                    // Cargar información de cancelación/reintegro
+                                    $infoCancelacion = $pedidos->verificarCancelacion(trim($pedido->NRO_PEDIDO), trim($pedido->NRO_ORDEN));
+                                    if ($infoCancelacion) {
+                                        $pedido->REINTEGRADO = 1;
+                                        $pedido->NCR = $infoCancelacion->numero_ncr;
+                                        $pedido->FECHA_NCR = $infoCancelacion->fecha_ncr;
+                                        $pedido->FECHA_PEDI = $pedido->FECHA_PEDIDO;
+                                    }
+                                    
                                     include 'components/pedido-info.php';
+                                    include 'components/devoluciones.php';
                                     include 'components/timeline.php';
                                     include 'components/detalle-pedido.php';
                                     include 'components/modal-historial.php';

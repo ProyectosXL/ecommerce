@@ -32,6 +32,12 @@
     color: white;
 }
 
+.timeline-icon.cancelled {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
 .timeline-date {
     font-size: 0.85rem;
     color: #6c757d;
