@@ -888,7 +888,12 @@ class Control {
     }
 
     public function traerDetallePedidosFlex() {
-        $sql = "SELECT CAST(C.FECHA_SINCRONIZADO AS DATETIME) FECHA_SINCRONIZADO, 
+        $sql = "SELECT COALESCE(CAST(C.FECHA_SINCRONIZADO AS DATETIME), 
+                       DATEADD(SECOND, 
+                           (TRY_CAST(A.HORA_INGRESO AS INT) / 10000) * 3600 + 
+                           ((TRY_CAST(A.HORA_INGRESO AS INT) % 10000) / 100) * 60 + 
+                           (TRY_CAST(A.HORA_INGRESO AS INT) % 100), 
+                           CAST(A.FECHA_PEDI AS DATETIME))) FECHA_SINCRONIZADO, 
                 CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
                     WHEN A.TALON_PED = '99' THEN 'VTEX'	
                 END CANAL,
@@ -899,7 +904,7 @@ class Control {
                 WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= CAST(GETDATE() - 10 AS DATE) AND ((A.FECHA_PEDI = CAST(GETDATE() AS DATE) AND 
                 TRY_CAST(A.HORA_INGRESO AS INT) <= 120000) OR A.FECHA_PEDI < CAST(GETDATE() AS DATE)) AND C.DESPACHADO IS NULL AND C.ENTREGADO IS NULL
                 AND C.CANCELADO IS NULL AND A.COD_SUCURS = '01' AND A.ESTADO != '5'
-                ORDER BY C.FECHA_SINCRONIZADO;
+                ORDER BY COALESCE(C.FECHA_SINCRONIZADO, A.FECHA_PEDI);
         ";
         return $this->getDatosMultiples($sql);
     }

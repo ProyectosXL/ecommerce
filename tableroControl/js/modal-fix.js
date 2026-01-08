@@ -3,6 +3,12 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     
+    // Verificar que Bootstrap esté cargado
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap no está cargado. Los modales no funcionarán correctamente.');
+        return;
+    }
+    
     // Función para inicializar modales de forma segura
     function initializeModals() {
         const modalElements = document.querySelectorAll('.modal');
