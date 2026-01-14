@@ -114,7 +114,10 @@ function exportToExcelFacturas() {
 }
 
 function exportToExcelNcDevoluciones() {
-    exportTableToExcel('#modalNcDevolucionesDetalle table', "NC Pendientes Devoluciones", "nc_pendientes_devoluciones");
+    // En la tabla de NC Devoluciones, las columnas "Nro. Pedido" (índice 1) y "Order ID" (índice 2) deben mantenerse como texto
+    exportTableToExcel('#modalNcDevolucionesDetalle table', "NC Pendientes Devoluciones", "nc_pendientes_devoluciones", false, {
+        textColumns: [1, 2] // Índices 1 y 2 corresponden a "Nro. Pedido" y "Order ID"
+    });
 }
 
 function exportToExcelNcPromociones() {
