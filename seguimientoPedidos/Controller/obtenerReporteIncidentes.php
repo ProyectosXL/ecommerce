@@ -121,6 +121,12 @@ try {
                                    ? $item->ARTICULO_ORIGINAL 
                                    : $item->COD_ARTICULO;
 
+            // Formatear fecha de pedido incompleto si existe
+            $fecha_incompleto = null;
+            if (isset($item->FECHA_INCOMPLETO) && $item->FECHA_INCOMPLETO instanceof DateTime) {
+                $fecha_incompleto = $item->FECHA_INCOMPLETO->format('d/m/Y');
+            }
+
             // Construir el array del incidente
             $incidentes[] = [
                 'nro_pedido' => $item->NRO_PEDIDO,
@@ -140,7 +146,12 @@ try {
                 'resolucion' => $item->RESOLUCION ?? 'Pendiente',
                 'dias_abierto' => $dias_abierto,
                 'dias_sobre_sla' => $dias_sobre_sla,
-                'estado_sla' => $estado_sla
+                'estado_sla' => $estado_sla,
+                
+                // NUEVOS CAMPOS AGREGADOS:
+                'fecha_incompleto' => $fecha_incompleto ?? 'N/A',
+                'descripcion_articulo' => $item->DESCRIPCION_ARTICULO ?? 'N/A',
+                'rubro' => $item->RUBRO ?? 'N/A'
             ];
 
             // Actualizar ranking de depósitos con métricas SLA

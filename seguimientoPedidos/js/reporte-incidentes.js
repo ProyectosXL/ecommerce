@@ -88,8 +88,11 @@ $(document).ready(function() {
             { "data": "nro_pedido" },
             { "data": "nro_orden" },
             { "data": "fecha_incidente" },
+            { "data": "fecha_incompleto" },
             { "data": "cliente" },
             { "data": "articulo_original" },
+            { "data": "descripcion_articulo" },
+            { "data": "rubro" },
             { 
                 "data": "articulo_reemplazante",
                 "render": function(data) {
@@ -112,7 +115,7 @@ $(document).ready(function() {
                 }
             }
         ],
-        "order": [[12, 'desc'], [11, 'desc']], // Ordenar por días sobre SLA, luego días transcurridos
+        "order": [[15, 'desc'], [14, 'desc']], // Ordenar por días sobre SLA, luego días transcurridos
         "dom": "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
                "<'row'<'col-sm-12'tr>>" +
                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
