@@ -53,7 +53,8 @@ try {
     $facturasSinRemito = $control->traerFacturasSinRemito();
     $ordenesPendientesCierre = $control->traerOrdenesPendientesCierre();
     $pedidosPendienteDespacho = $control->traerPedidosPendienteDespacho();
-    $productosMlFull = $control->traerResumenProductosMlFull();
+    // $productosMlFull = $control->traerResumenProductosMlFull();  // COMENTADO: Usa linked server que no está disponible
+    $productosMlFull = null;
     $pedidosDespachados = $control->traerPedidosDespachados();
     $pedidosPendientesControl = $control->traerResumenPedidosPendientesControl();
     $pedidosRecibidosNoEntregados = $control->traerPedidosRecibidosNoEntregados();

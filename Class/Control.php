@@ -1,7 +1,11 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/Class/Conexion.php';
+require_once __DIR__ . '/Conexion.php';
 
-class Control {
+class Control extends Conexion {
+
+    public function __construct() {
+        parent::__construct();
+    }
 
     public function traerRemitosSinIntegrar() {
         $sql = "DECLARE @FechaLimite DATE = DATEADD(DAY, -60, CAST(GETDATE() AS DATE));
@@ -38,8 +42,7 @@ class Control {
             RP.N_COMP DESC;
         ";
 
-        $cid = new Conexion();
-        $cid_central = $cid->conectarSql('central');
+        $cid_central = $this->conectarSql('central');
         
         if ($cid_central === false) {
             throw new Exception("Error de conexión a la base de datos");
@@ -59,42 +62,18 @@ class Control {
         }
         
         sqlsrv_free_stmt($result);
+        sqlsrv_close($cid_central);
         return $rows;
-    }
-
-    public function conectarSql($nameServer = null) {
-        try {
-            $serverDB = $this->servidor($nameServer);
-            $pass = ($nameServer == 'locales') ? $this->pass_locales : $this->pass;
-    
-            $params = array( 
-                "Database" => $serverDB[1], 
-                "UID" => $this->user, 
-                "PWD" => $pass, 
-                "CharacterSet" => $this->character
-            );
-    
-            $cid = sqlsrv_connect($serverDB[0], $params);
-            
-            if ($cid === false) {
-                $errors = sqlsrv_errors();
-                throw new Exception("Error de conexión: " . $errors[0]['message']);
-            }
-    
-            return $cid;
-            
-        } catch (Exception $e) {
-            throw new Exception("Error en la conexión: " . $e->getMessage());
-        }
     }
 
     private function getDatos($sql) {
         try {
-            $cid = new Conexion();
-            $cid_central = $cid->conectarSql('central');
+            $cid_central = $this->conectarSql('central');
             
             if ($cid_central === false) {
-                throw new Exception("Error de conexión a la base de datos");
+                $errors = sqlsrv_errors();
+                $error_msg = !empty($errors) ? $errors[0]['message'] : "Conexión rechazada";
+                throw new Exception("Error conexion BD: " . $error_msg);
             }
             
             ini_set('max_execution_time', 300);
@@ -102,7 +81,9 @@ class Control {
             
             if ($result === false) {
                 $errors = sqlsrv_errors();
-                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+                $error_detail = !empty($errors) ? $errors[0]['message'] : "Error desconocido";
+                error_log("SQL Error - SQL: " . substr($sql, 0, 100) . " - Errors: " . json_encode($errors));
+                throw new Exception("Error consulta: " . $error_detail);
             }
             
             $row = sqlsrv_fetch_object($result);
@@ -118,8 +99,7 @@ class Control {
     
     private function getDatosMultiples($sql) {
         try {
-            $cid = new Conexion();
-            $cid_central = $cid->conectarSql('central');
+            $cid_central = $this->conectarSql('central');
             
             if ($cid_central === false) {
                 throw new Exception("Error de conexión a la base de datos");
@@ -289,8 +269,8 @@ class Control {
                 ";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -341,8 +321,8 @@ class Control {
                 ORDER BY FECHA_HORA DESC";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -377,8 +357,8 @@ class Control {
 ;
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -411,8 +391,8 @@ class Control {
 ;
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -453,8 +433,8 @@ class Control {
                 ) A";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -491,8 +471,8 @@ class Control {
                 ORDER BY A.FECHA_PEDI ASC";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -530,8 +510,8 @@ class Control {
                 ) A";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -563,8 +543,8 @@ class Control {
                 ORDER BY FECHA_ULTIMA_SINCRONIZACION";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -606,8 +586,8 @@ class Control {
                 ) A";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -643,8 +623,8 @@ class Control {
                 ORDER BY FECHA_ORDER ASC";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -690,8 +670,8 @@ class Control {
                 AND D.CANCELADO IS NULL";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -745,8 +725,8 @@ class Control {
             ORDER BY A.FECHA_PEDI DESC";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -787,8 +767,8 @@ class Control {
                 AND B.COD_SUCURS LIKE 'U%'";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");
@@ -843,8 +823,8 @@ class Control {
                 ORDER BY A.FECHA_FACTURADO DESC";
         
         try {
-            $cid = new Conexion();
-            $cid_uruguay = $cid->conectarSql('uy');
+            $cid_central = $this;
+            $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
                 throw new Exception("Error de conexión a la base de datos de Uruguay");

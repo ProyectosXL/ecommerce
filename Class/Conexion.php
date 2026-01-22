@@ -4,18 +4,18 @@
 class Conexion{
     
     // Propiedades de la clase
-    private $envVars;
-    private $host_central;
-    private $database_central;
-    private $host_locales;
-    private $database_locales;
-    private $user;
-    private $pass;
-    private $pass_locales;
-    private $character;
-    private $host_mongo;
-    private $database_mongo;
-    private $database_uy;
+    protected $envVars;
+    protected $host_central;
+    protected $database_central;
+    protected $host_locales;
+    protected $database_locales;
+    protected $user;
+    protected $pass;
+    protected $pass_locales;
+    protected $character;
+    protected $host_mongo;
+    protected $database_mongo;
+    protected $database_uy;
     
     function __construct(){
 
@@ -48,7 +48,7 @@ class Conexion{
 
     }
 
-    private function servidor($nameServer) {
+    protected function servidor($nameServer) {
         
         if($nameServer == 'central'){
             return array($this->host_central, $this->database_central);
@@ -70,6 +70,10 @@ class Conexion{
 
             $pass = ($nameServer == 'locales') ? $this->pass_locales : $this->pass;
 
+            // Forzar TCP/IP explícitamente para evitar Named Pipes
+            // Formato: tcp:serverName,port
+            $serverWithPort = 'tcp:' . $serverDB[0] . ',1433';
+
             $params = array( 
                 "Database" => $serverDB[1], 
                 "UID" => $this->user, 
@@ -77,7 +81,7 @@ class Conexion{
                 "CharacterSet" => $this->character
             );
 
-            $cid = sqlsrv_connect($serverDB[0], $params);
+            $cid = sqlsrv_connect($serverWithPort, $params);
 
             return $cid;
             
