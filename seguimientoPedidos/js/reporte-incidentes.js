@@ -87,8 +87,38 @@ $(document).ready(function() {
             },
             { "data": "nro_pedido" },
             { "data": "nro_orden" },
-            { "data": "fecha_incidente" },
-            { "data": "fecha_incompleto" },
+            { 
+                "data": "fecha_incidente",
+                "render": function(data, type, row) {
+                    if (type === 'sort') {
+                        // Convert DD/MM/YYYY to YYYY-MM-DD for sorting
+                        if (data && data !== 'N/A') {
+                            const parts = data.split('/');
+                            if (parts.length === 3) {
+                                return parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
+                            }
+                        }
+                        return data;
+                    }
+                    return data;
+                }
+            },
+            { 
+                "data": "fecha_incompleto",
+                "render": function(data, type, row) {
+                    if (type === 'sort') {
+                        // Convert DD/MM/YYYY to YYYY-MM-DD for sorting
+                        if (data && data !== 'N/A') {
+                            const parts = data.split('/');
+                            if (parts.length === 3) {
+                                return parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
+                            }
+                        }
+                        return data;
+                    }
+                    return data;
+                }
+            },
             { "data": "cliente" },
             { "data": "articulo_original" },
             { "data": "descripcion_articulo" },
