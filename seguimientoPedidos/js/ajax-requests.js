@@ -2,7 +2,8 @@
 const guardarComentario = (div) => {
     let seccion = div.parentElement.parentElement;
     const nroPedido = $('#nroPedido').text().trim();
-    const nroOrden = $('#nroOrden').text().trim(); // <-- SE AÑADE ESTA LÍNEA
+    const nroOrden = $('#nroOrden').text().trim();
+    const pais = window.paisSeleccionado || 'AR'; // Obtener país desde variable global
 
     let dataSecciones = [];
 
@@ -20,7 +21,8 @@ const guardarComentario = (div) => {
         data: {
             dataSecciones: dataSecciones,
             nroPedido: nroPedido,
-            nroOrden: nroOrden, // <-- SE AÑADE ESTA LÍNEA
+            nroOrden: nroOrden,
+            pais: pais // Enviar país
         },
         success: function(response) {
             response = JSON.parse(response);
@@ -78,6 +80,7 @@ function guardarReclamo(estado = 'abierto') {
     const modalCantidad = $('#modalCantidad').text().trim();
     const modalCodigo = $('#modalCodigo').text().trim().replace('Código:', '').trim();
     const warehouse = $('#prepara').text().trim(); // WAREHOUSE viene del campo "Prepara"
+    const pais = window.paisSeleccionado || 'AR'; // Obtener país desde variable global
 
     // Debug temporal - mostrar qué datos se están obteniendo
     console.log('Datos obtenidos del DOM:', {
@@ -126,7 +129,8 @@ function guardarReclamo(estado = 'abierto') {
             prepara: prepara,
             modalCantidad: modalCantidad,
             modalCodigo: modalCodigo,
-            warehouse: warehouse
+            warehouse: warehouse,
+            pais: pais // Enviar país
         },
         success: function(response) {
             try {

@@ -1,6 +1,24 @@
 <div id="reporte-container">
+    <!-- Overlay de Carga -->
+    <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="text-align: center; color: white;">
+            <div class="spinner-border text-light" role="status" style="width: 4rem; height: 4rem; border-width: 0.4rem;">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <h4 class="mt-3" id="loading-text">Cargando datos...</h4>
+            <p id="loading-country" class="mb-0"></p>
+        </div>
+    </div>
+    
     <div class="d-flex justify-content-between align-items-start mb-4">
-        <h4 class="mb-0">Dashboard de Incidentes por Faltantes</h4>
+        <div>
+            <h4 class="mb-2">Dashboard de Incidentes por Faltantes</h4>
+            <!-- Indicador de País Activo -->
+            <div id="pais-indicator" class="badge bg-info" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                <span id="pais-flag" class="me-2"></span>
+                <span id="pais-nombre">Consultando: Argentina</span>
+            </div>
+        </div>
         
         <!-- Info SLA -->
         <div class="alert alert-info mb-0 p-2 px-3" style="max-width: 600px;">
@@ -17,12 +35,56 @@
     <!-- Filtros -->
     <div class="card search-container mb-4">
         <div class="card-body">
+            <style>
+                /* Estilos personalizados para los botones del toggle de país */
+                /* Argentina = Celeste cuando está activo */
+                #pais-ar:checked + label {
+                    background-color: #0dcaf0 !important;
+                    border-color: #0dcaf0 !important;
+                    color: white !important;
+                }
+                
+                /* Uruguay = Azul cuando está activo */
+                #pais-uy:checked + label {
+                    background-color: #0d6efd !important;
+                    border-color: #0d6efd !important;
+                    color: white !important;
+                }
+                
+                /* Hover states */
+                label[for="pais-ar"]:hover {
+                    background-color: rgba(13, 202, 240, 0.1);
+                    border-color: #0dcaf0;
+                }
+                
+                label[for="pais-uy"]:hover {
+                    background-color: rgba(13, 110, 253, 0.1);
+                    border-color: #0d6efd;
+                }
+            </style>
             <div class="row g-3 align-items-end">
-                <div class="col-md-3">
+                <!-- NUEVO: Toggle de País con Banderas -->
+                <div class="col-md-2">
+                    <label class="form-label d-block">País</label>
+                    <div class="btn-group w-100" role="group" aria-label="Selector de país">
+                        <input type="radio" class="btn-check" name="reporte-pais" id="pais-ar" value="AR" autocomplete="off" checked>
+                        <label class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2" for="pais-ar" style="height: 38px;">
+                            <img src="https://flagcdn.com/w20/ar.png" srcset="https://flagcdn.com/w40/ar.png 2x" width="20" alt="Argentina">
+                            <span>AR</span>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="reporte-pais" id="pais-uy" value="UY" autocomplete="off">
+                        <label class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2" for="pais-uy" style="height: 38px;">
+                            <img src="https://flagcdn.com/w20/uy.png" srcset="https://flagcdn.com/w40/uy.png 2x" width="20" alt="Uruguay">
+                            <span>UY</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-2">
                     <label for="reporte-desde" class="form-label">Desde</label>
                     <input type="date" id="reporte-desde" class="form-control">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="reporte-hasta" class="form-label">Hasta</label>
                     <input type="date" id="reporte-hasta" class="form-control">
                 </div>

@@ -713,4 +713,265 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
         
         return $pendientes;
     }
+
+    // ===== MÉTODOS PARA URUGUAY =====
+
+    /**
+     * Obtiene historial de faltantes/incidentes para Uruguay (TASKY_SA)
+     * IMPORTANTE: Usa la misma lógica que Argentina pero con tablas de Uruguay
+     */
+    public function getHistorialFaltantesCompletoUY($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '') {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql("uy");
+
+        if (!$cid_uruguay) {
+            error_log("Error: No se pudo conectar a la base de datos de Uruguay");
+            return [];
+        }
+
+        $sqlSetFormat = "SET DATEFORMAT YMD";
+        sqlsrv_query($cid_uruguay, $sqlSetFormat);
+
+        if (!empty($fechaInicio)) {
+            $fechaInicio = date('Y-m-d', strtotime($fechaInicio));
+        }
+        if (!empty($fechaFin)) {
+            $fechaFin = date('Y-m-d', strtotime($fechaFin));
+        }
+
+        $sql = "
+            SET DATEFORMAT YMD;
+            
+            WITH IncidentesAuditoria AS (
+                SELECT 
+                    A.NRO_ORDEN_ECOMMERCE,
+                    STRING_AGG(A.COD_ARTICULO, ', ') AS ARTICULO_AUDITADO
+                FROM SOF_AUDITORIA A
+                WHERE 
+                    A.FECHA_AUDITORIA_1 IS NOT NULL 
+                    AND A.COD_ARTICULO LIKE '[XO]%'
+                    AND CAST(A.FECHA_PEDIDO AS DATE) BETWEEN ? AND ?
+                    AND CAST(A.CANT_AUDITADO AS FLOAT) < CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)
+                GROUP BY 
+                    A.NRO_ORDEN_ECOMMERCE
+                HAVING 
+                    SUM(CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)) <> SUM(CAST(A.CANT_AUDITADO AS FLOAT))
+            )
+            SELECT 
+                ISNULL(H.ESTADO, 'abierto') as ESTADO,
+                ISNULL(H.RESOLUCION, 'Pendiente') as RESOLUCION,
+                ISNULL(H.CLIENTE, GVA38.RAZON_SOCI) as CLIENTE,
+                ISNULL(H.WAREHOUSE, H.SUC_DESPACHO) as WAREHOUSE_RECLAMO,
+                H.FECHA_ULT_MODIF,
+                H.FECHA_ALTA,
+                
+                GVA21.NRO_PEDIDO,
+                GVA21.ORDER_ID_TIENDA AS NRO_ORDEN,
+                CAST(GVA21.FECHA_PEDI AS DATE) AS FECHA_PEDIDO,
+                GVA21.COD_SUCURS AS DEPOSITO_ORIGEN,
+                COALESCE(V_STA22.NOMBRE_SUC COLLATE DATABASE_DEFAULT, CASE WHEN GVA21.COD_SUCURS = '01' THEN 'CENTRAL' COLLATE DATABASE_DEFAULT ELSE 'No especificado' COLLATE DATABASE_DEFAULT END) AS NOMBRE_ORIGEN,
+
+                COALESCE(H.COD_ARTICULO_CAMBIO COLLATE DATABASE_DEFAULT, IA.ARTICULO_AUDITADO COLLATE DATABASE_DEFAULT, 'N/A') as ARTICULO_ORIGINAL,
+                ISNULL(H.COD_ARTICULO, 'Discrepancia General') as COD_ARTICULO,
+                
+                NULL as FECHA_INCOMPLETO,
+                COALESCE(CTA.DESC_CTA_ARTICULO COLLATE DATABASE_DEFAULT, CTA2.DESC_CTA_ARTICULO COLLATE DATABASE_DEFAULT, RUBRO1.DESCRIPCION COLLATE DATABASE_DEFAULT, RUBRO2.DESCRIPCION COLLATE DATABASE_DEFAULT) as DESCRIPCION_ARTICULO,
+                COALESCE(RUBRO1.RUBRO COLLATE DATABASE_DEFAULT, RUBRO2.RUBRO COLLATE DATABASE_DEFAULT) as RUBRO
+                
+            FROM IncidentesAuditoria IA
+            INNER JOIN GVA21 ON IA.NRO_ORDEN_ECOMMERCE = GVA21.ORDER_ID_TIENDA COLLATE DATABASE_DEFAULT
+            LEFT JOIN GVA38 ON GVA21.NRO_PEDIDO = GVA38.N_COMP AND GVA21.TALON_PED = GVA38.TALONARIO
+            LEFT JOIN FT_T_ENC_ECOMMERCE_HISTORIAL_FALT H ON GVA21.ORDER_ID_TIENDA = H.NRO_ORDEN COLLATE DATABASE_DEFAULT
+            LEFT JOIN SJ_VIEW_STA22 V_STA22 ON GVA21.COD_SUCURS = V_STA22.COD_SUCURS COLLATE DATABASE_DEFAULT
+            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE EP ON GVA21.NRO_PEDIDO = EP.NRO_PEDIDO
+            LEFT JOIN CTA_ARTICULO CTA ON H.COD_ARTICULO_CAMBIO = CTA.COD_ARTICULO COLLATE DATABASE_DEFAULT
+            LEFT JOIN CTA_ARTICULO CTA2 ON 
+                SUBSTRING(IA.ARTICULO_AUDITADO, 1, CASE WHEN CHARINDEX(',', IA.ARTICULO_AUDITADO) > 0 
+                                                         THEN CHARINDEX(',', IA.ARTICULO_AUDITADO) - 1 
+                                                         ELSE LEN(IA.ARTICULO_AUDITADO) END) = CTA2.COD_ARTICULO COLLATE DATABASE_DEFAULT
+            LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA RUBRO1 ON H.COD_ARTICULO_CAMBIO = RUBRO1.COD_ARTICU COLLATE DATABASE_DEFAULT
+            LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA RUBRO2 ON 
+                SUBSTRING(IA.ARTICULO_AUDITADO, 1, CASE WHEN CHARINDEX(',', IA.ARTICULO_AUDITADO) > 0 
+                                                         THEN CHARINDEX(',', IA.ARTICULO_AUDITADO) - 1 
+                                                         ELSE LEN(IA.ARTICULO_AUDITADO) END) = RUBRO2.COD_ARTICU COLLATE DATABASE_DEFAULT
+        ";
+        
+        $params = array($fechaInicio, $fechaFin);
+
+        $whereConditions = [];
+        if (!empty($estado)) {
+            $whereConditions[] = "ISNULL(H.ESTADO, 'abierto') = ?";
+            array_push($params, $estado);
+        }
+        
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(' AND ', $whereConditions);
+        }
+
+        $sql .= " ORDER BY GVA21.FECHA_PEDI DESC;";
+
+        error_log("=== SQL URUGUAY DEBUG ===");
+        error_log("Fechas: $fechaInicio a $fechaFin");
+        error_log("SQL Query: " . $sql);
+        error_log("Params: " . print_r($params, true));
+        
+        $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
+
+        if ($stmt === false) {
+            $errors = sqlsrv_errors();
+            error_log("❌ ERROR en query UY: " . print_r($errors, true));
+            error_log("SQL completo: " . $sql);
+            return [];
+        }
+
+        $data = [];
+        while ($v = sqlsrv_fetch_object($stmt)) {
+            $data[] = array($v);
+        }
+
+        error_log("✓ Registros obtenidos de UY: " . count($data));
+        return $data;
+    }
+
+    /**
+     * Método wrapper que decide qué método llamar según el país
+     */
+    public function getHistorialFaltantesCompletoPorPais($pais, $fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '') {
+        if (strtoupper($pais) === 'UY') {
+            return $this->getHistorialFaltantesCompletoUY($fechaInicio, $fechaFin, $warehouse, $estado, $resolucion);
+        } else {
+            // Método original de Argentina (NO MODIFICAR)
+            return $this->getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehouse, $estado, $resolucion);
+        }
+    }
+
+    /**
+     * Guarda detalle de reclamo para Uruguay
+     */
+    public function guardarReclamoDetalleUY($stringValues) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        $sql = "INSERT INTO FT_T_DET_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, COMENTARIOS, TIPO_CONTACTO, AGENTE, FECHA_PEDIDO) 
+                VALUES $stringValues";
+
+        $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY: " . print_r(sqlsrv_errors(), true)));
+        return $result;
+    }
+
+    /**
+     * Guarda o actualiza historial de reclamo para Uruguay
+     */
+    public function guardarHistorialReclamoUY($data) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        // Establecer formato de fecha
+        sqlsrv_query($cid_uruguay, "SET DATEFORMAT YMD");
+        
+        // Parsear y formatear la fecha correctamente
+        $fechaPedido = null;
+        if (!empty($data['fechaHora'])) {
+            $fechaTexto = trim($data['fechaHora']);
+            
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})/', $fechaTexto, $matches)) {
+                $fechaPedido = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+            } 
+            else if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $fechaTexto)) {
+                $fechaPedido = substr($fechaTexto, 0, 10);
+            }
+            else {
+                $timestamp = strtotime($fechaTexto);
+                if ($timestamp !== false) {
+                    $fechaPedido = date('Y-m-d', $timestamp);
+                }
+            }
+        }
+        
+        $fechaPedidoSQL = $fechaPedido ? "'$fechaPedido'" : "GETDATE()";
+        
+        // Verificar si ya existe el reclamo
+        $checkSql = "SELECT ID FROM FT_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_ORDEN = '{$data['nroOrden']}'";
+        $checkResult = sqlsrv_query($cid_uruguay, $checkSql);
+        
+        if ($checkResult && $existing = sqlsrv_fetch_object($checkResult)) {
+            // UPDATE
+            $sql = "UPDATE FT_T_ENC_ECOMMERCE_HISTORIAL_FALT 
+                    SET RESOLUCION = '{$data['resolucion']}',
+                        SUC_DESPACHO = '{$data['sucursal']}',
+                        COD_ARTICULO_CAMBIO = '{$data['articulo']}',
+                        DESCRIPCION = '{$data['descripcion']}',
+                        ESTADO = '{$data['estado']}',
+                        FECHA_ULT_MODIF = GETDATE()
+                    WHERE NRO_ORDEN = '{$data['nroOrden']}'";
+        } else {
+            // INSERT
+            $sql = "INSERT INTO FT_T_ENC_ECOMMERCE_HISTORIAL_FALT 
+                    (FECHA_PEDIDO, NRO_ORDEN, NRO_PEDIDO, CLIENTE, WAREHOUSE, COD_ARTICULO, DESCRIPCION, CANTIDAD, ESTADO, RESOLUCION, SUC_DESPACHO, COD_ARTICULO_CAMBIO, FECHA_ALTA, FECHA_ULT_MODIF)
+                    VALUES (
+                        $fechaPedidoSQL,
+                        '{$data['nroOrden']}',
+                        '{$data['nro_pedido']}',
+                        '{$data['cliente']}',
+                        '{$data['warehouse']}',
+                        '{$data['modalCodigo']}',
+                        '{$data['descripcion']}',
+                        {$data['modalCantidad']},
+                        '{$data['estado']}',
+                        '{$data['resolucion']}',
+                        '{$data['sucursal']}',
+                        '{$data['articulo']}',
+                        GETDATE(),
+                        GETDATE()
+                    )";
+        }
+        
+        $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY: " . print_r(sqlsrv_errors(), true)));
+        return $result;
+    }
+
+    /**
+     * Actualiza estado de reclamo para Uruguay
+     */
+    public function actualizarEstadoReclamoUY($nro_pedido, $estado, $nro_orden = null) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        // Verificar si existe un registro en la tabla de historial
+        $sqlCheck = "SELECT COUNT(*) as count FROM FT_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
+        $resultCheck = sqlsrv_query($cid_uruguay, $sqlCheck);
+        $row = sqlsrv_fetch_array($resultCheck, SQLSRV_FETCH_ASSOC);
+
+        $nroOrdenSQL = $nro_orden ? "'$nro_orden'" : "NULL";
+        
+        if ($row['count'] > 0) {
+            $updateNroOrdenSQL = $nro_orden ? ", NRO_ORDEN = $nroOrdenSQL" : "";
+            $sql = "UPDATE FT_T_ENC_ECOMMERCE_HISTORIAL_FALT 
+                    SET ESTADO = '$estado', FECHA_ULT_MODIF = GETDATE() $updateNroOrdenSQL
+                    WHERE NRO_PEDIDO = '$nro_pedido' AND (NRO_ORDEN IS NULL OR NRO_ORDEN = '')";
+        } else {
+            $sql = "INSERT INTO FT_T_ENC_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, NRO_ORDEN, ESTADO, FECHA_PEDIDO, FECHA_ALTA, FECHA_ULT_MODIF) 
+                    VALUES ('$nro_pedido', $nroOrdenSQL, '$estado', GETDATE(), GETDATE(), GETDATE())";
+        }
+        
+        $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY: " . print_r(sqlsrv_errors(), true)));
+        return $result;
+    }
+
+    /**
+     * Lista detalle de reclamos para Uruguay
+     */
+    public function listarReclamoDetalleUY($nro_pedido) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        $sql = "SELECT * FROM FT_T_DET_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
+
+        $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY"));
+
+        $data = [];
+        while($v = sqlsrv_fetch_object($result)){
+            $data[] = array($v);
+        }
+        return $data;
+    }
 }

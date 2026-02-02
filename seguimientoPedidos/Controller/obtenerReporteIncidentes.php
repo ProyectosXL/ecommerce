@@ -1,5 +1,9 @@
 <?php
 header('Content-Type: application/json');
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // No mostrar errores en producción
+ini_set('log_errors', 1);
+
 require_once '../../Class/Conexion.php';
 require_once '../../Class/Pedido.php';
 
@@ -7,16 +11,25 @@ try {
     $desde = $_GET['desde'] ?? date('Y-m-d', strtotime('-30 days'));
     $hasta = $_GET['hasta'] ?? date('Y-m-d');
     $estado = $_GET['estado'] ?? '';
+    $pais = $_GET['pais'] ?? 'AR'; // NUEVO: Default Argentina
 
     if(empty($desde)) $desde = date('Y-m-d', strtotime('-30 days'));
     if(empty($hasta)) $hasta = date('Y-m-d');
+
+    // Log para debug
+    error_log("Obteniendo reporte para país: $pais, desde: $desde, hasta: $hasta");
 
     // Constante SLA: 10 días
     define('SLA_DIAS', 10); // SLA de 10 días
     define('DIAS_RIESGO', 1); // Alerta cuando queda 1 día o menos
 
     $pedido = new Pedido();
-    $incidentesData = $pedido->getHistorialFaltantesCompleto($desde, $hasta, '', $estado, '');
+    // MODIFICADO: Usar método wrapper que detecta el país
+    $incidentesData = $pedido->getHistorialFaltantesCompletoPorPais($pais, $desde, $hasta, '', $estado, '');
+    
+    if ($incidentesData === false || $incidentesData === null) {
+        throw new Exception("Error al obtener datos de incidentes para país: $pais");
+    }
     
     $incidentes = [];
     $total_dias_resolucion = 0;
@@ -307,6 +320,15 @@ try {
 
     echo json_encode([
         'success' => true,
+        'pais' => $pais,
+        'metadata' => [
+            'pais_nombre' => $pais === 'UY' ? 'Uruguay (TASKY_SA)' : 'Argentina (LAKER_SA)',
+            'base_datos' => $pais === 'UY' ? 'TASKY_SA' : 'LAKER_SA',
+            'tabla_auditoria' => 'SOF_AUDITORIA',
+            'tabla_reclamos' => $pais === 'UY' ? 'FT_T_ENC_ECOMMERCE_HISTORIAL_FALT' : 'RO_T_ENC_ECOMMERCE_HISTORIAL_FALT',
+            'total_registros' => count($incidentes),
+            'fecha_consulta' => date('Y-m-d H:i:s')
+        ],
         'kpis' => $kpis,
         'sla_metrics' => $sla_metrics,
         'sla_config' => [
@@ -315,8 +337,8 @@ try {
         ],
         'tablaData' => $incidentes,
         'desgloseResolucion' => $desglose_resolucion,
-        'rankingDepositos' => $ranking_depositos, // Ordenado por % incumplimiento
-        'rankingIncidencias' => $ranking_incidencias, // Ordenado por cantidad
+        'rankingDepositos' => $ranking_depositos,
+        'rankingIncidencias' => $ranking_incidencias,
         'contadores_riesgo' => $contadores_riesgo,
         'contadores_riesgo_pct' => $contadores_riesgo_pct,
         'insight' => $insight

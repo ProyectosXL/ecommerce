@@ -195,13 +195,38 @@ $(document).ready(function() {
         const desde = $('#reporte-desde').val();
         const hasta = $('#reporte-hasta').val();
         const estado = $('#reporte-estado').val();
+        const pais = $('input[name="reporte-pais"]:checked').val() || 'AR';
 
+        // Actualizar indicador visual de país
+        actualizarIndicadorPais(pais);
+
+        // Mostrar overlay de carga
+        mostrarSpinnerCarga(pais);
         if (typeof showSpinner === 'function') showSpinner();
 
         $.ajax({
-            url: 'Controller/obtenerReporteIncidentes.php', type: 'GET', data: { desde, hasta, estado },
+            url: 'Controller/obtenerReporteIncidentes.php', type: 'GET', data: { desde, hasta, estado, pais },
             success: function(response) {
                 if (response.success) {
+                    // Mostrar confirmación de país en consola
+                    console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: blue; font-weight: bold;');
+                    console.log('%c✓ DATOS CARGADOS EXITOSAMENTE', 'color: green; font-weight: bold; font-size: 14px;');
+                    console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: blue; font-weight: bold;');
+                    
+                    if (response.metadata) {
+                        console.log('%c📊 INFORMACIÓN DE CONSULTA:', 'color: purple; font-weight: bold;');
+                        console.table(response.metadata);
+                        console.log('%cPaís:', 'font-weight: bold;', response.metadata.pais_nombre);
+                        console.log('%cBase de Datos:', 'font-weight: bold;', response.metadata.base_datos);
+                        console.log('%cTabla de Auditoría:', 'font-weight: bold;', response.metadata.tabla_auditoria);
+                        console.log('%cTabla de Reclamos:', 'font-weight: bold;', response.metadata.tabla_reclamos);
+                        console.log('%cTotal de Registros:', 'font-weight: bold;', response.metadata.total_registros);
+                    } else {
+                        console.log('País consultado:', response.pais || pais);
+                        console.log('Total de registros:', response.tablaData ? response.tablaData.length : 0);
+                    }
+                    console.log('Rango de fechas:', desde, 'a', hasta);
+                    console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: blue; font-weight: bold;');
                     // --- ACTUALIZAR INFO DE SLA DINÁMICAMENTE ---
                     if (response.sla_config) {
                         const slaDias = response.sla_config.sla_dias;
@@ -530,11 +555,29 @@ $(document).ready(function() {
                     }
 
                 } else {
-                    Swal.fire('Error', 'No se pudieron cargar los datos del reporte.', 'error');
+                    const errorMsg = response.error || 'No se pudieron cargar los datos del reporte.';
+                    console.error('Error en respuesta:', response);
+                    Swal.fire('Error', errorMsg, 'error');
                 }
             },
-            error: function() { Swal.fire('Error', 'Ocurrió un error en la comunicación con el servidor.', 'error'); },
-            complete: function() { if (typeof hideSpinner === 'function') hideSpinner(); }
+            error: function(xhr, status, error) { 
+                console.error('Error AJAX:', { xhr, status, error });
+                console.error('Response text:', xhr.responseText);
+                let errorMsg = 'Ocurrió un error en la comunicación con el servidor.';
+                if (xhr.responseText) {
+                    try {
+                        const errData = JSON.parse(xhr.responseText);
+                        errorMsg += '\n' + (errData.error || errData.message || '');
+                    } catch(e) {
+                        errorMsg += '\n' + xhr.responseText.substring(0, 200);
+                    }
+                }
+                Swal.fire('Error', errorMsg, 'error');
+            },
+            complete: function() { 
+                ocultarSpinnerCarga();
+                if (typeof hideSpinner === 'function') hideSpinner(); 
+            }
         });
     }
 
@@ -629,6 +672,38 @@ $(document).ready(function() {
         aplicarFiltrosLeyenda();
     });
 
+    // Función para mostrar el spinner de carga
+    function mostrarSpinnerCarga(pais) {
+        const paisNombre = pais === 'UY' ? 'Uruguay' : 'Argentina';
+        const paisFlag = pais === 'UY' 
+            ? '<img src="https://flagcdn.com/w20/uy.png" width="20" alt="Uruguay">' 
+            : '<img src="https://flagcdn.com/w20/ar.png" width="20" alt="Argentina">';
+        
+        $('#loading-country').html(paisFlag + ' ' + paisNombre);
+        $('#loading-overlay').css('display', 'flex');
+    }
+    
+    // Función para ocultar el spinner de carga
+    function ocultarSpinnerCarga() {
+        $('#loading-overlay').fadeOut(300);
+    }
+    
+    // Función para actualizar el indicador visual de país
+    function actualizarIndicadorPais(pais) {
+        const paisNombre = pais === 'UY' ? 'Uruguay' : 'Argentina';
+        const paisFlag = pais === 'UY' 
+            ? '<img src="https://flagcdn.com/w20/uy.png" width="16" alt="Uruguay">' 
+            : '<img src="https://flagcdn.com/w20/ar.png" width="16" alt="Argentina">';
+        
+        $('#pais-nombre').text('Consultando: ' + paisNombre);
+        $('#pais-flag').html(paisFlag);
+        
+        // Cambiar color del badge según país (INVERTIDO: AR=celeste, UY=azul)
+        const indicator = $('#pais-indicator');
+        indicator.removeClass('bg-primary bg-info');
+        indicator.addClass(pais === 'UY' ? 'bg-primary' : 'bg-info');
+    }
+
     const hoy = new Date();
     const hace30Dias = new Date();
     hace30Dias.setDate(hoy.getDate() - 30);
@@ -641,5 +716,9 @@ $(document).ready(function() {
     }
     reporteTab.on('shown.bs.tab', function() { cargarReporte(); });
     $('#btn-aplicar-filtros').on('click', cargarReporte);
+    $('input[name="reporte-pais"]').on('change', function() {
+        window.paisSeleccionado = $(this).val(); // Actualizar variable global
+        cargarReporte();
+    });
     $('#kpi-card-finalizados').on('click', function() { $('#grafico-resolucion-container').slideToggle(); });
 });
