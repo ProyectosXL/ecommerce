@@ -34,7 +34,11 @@ class Pedido{
         return $array;
     }
 
-    public function traerWarehouse(){
+    public function traerWarehouse($pais = 'AR'){
+        if (strtoupper($pais) === 'UY') {
+            return $this->traerWarehouseUY();
+        }
+        
         $sql = "SELECT WAREHOUSE FROM
                 (
                 SELECT REPLACE(A.NOMBRE_SUC, 'RT - SUC - ', '') WAREHOUSE FROM STA22 A
@@ -50,7 +54,11 @@ class Pedido{
         return $array;
     }
 
-    public function buscarPedido($desde, $hasta, $orden){
+    public function buscarPedido($desde, $hasta, $orden, $pais = 'AR'){
+        if (strtoupper($pais) === 'UY') {
+            return $this->buscarPedidoUY($desde, $hasta, $orden);
+        }
+        
         $sql = "
         SET DATEFORMAT YMD
         EXEC RO_SP_ECOMMERCE_PEDIDOS_FLUJO '$desde', '$hasta', '$orden'
@@ -59,7 +67,12 @@ class Pedido{
         return $array;
     }
 
-    public function buscarDetallePedido($desde, $hasta, $orden){
+    public function buscarDetallePedido($desde, $hasta, $orden, $pais = 'AR'){
+        if (strtoupper($pais) === 'UY') {
+            // Uruguay: el SP de búsqueda ya trae el detalle incluido
+            return $this->buscarPedidoUY($desde, $hasta, $orden);
+        }
+        
         $sql = "
         SET DATEFORMAT YMD
         EXEC RO_SP_ECOMMERCE_PEDIDOS_FLUJO_DETALLE '$desde', '$hasta', '$orden'
@@ -69,7 +82,11 @@ class Pedido{
         return $array;
     }
 
-    public function buscarStockArticulo($sucursal){
+    public function buscarStockArticulo($sucursal, $pais = 'AR'){
+        if (strtoupper($pais) === 'UY') {
+            return $this->buscarStockArticuloUY($sucursal);
+        }
+        
         // Mapeo de nombres de sucursales entre warehouse y tabla de stock
         $mapeoSucursales = [
             'PILAR' => 'PALMAS DEL PILAR',
@@ -526,7 +543,11 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
      * @param string $nroOrden Número de orden (opcional)
      * @return array Array con los datos de devoluciones
      */
-    public function obtenerDevoluciones($nroPedido, $nroOrden = null) {
+    public function obtenerDevoluciones($nroPedido, $nroOrden = null, $pais = 'AR') {
+        if (strtoupper($pais) === 'UY') {
+            return $this->obtenerDevolucionesUY($nroPedido, $nroOrden);
+        }
+        
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
         
@@ -579,7 +600,11 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
      * @param string $nroOrden Número de orden (opcional)
      * @return object|null Objeto con información de cancelación
      */
-    public function verificarCancelacion($nroPedido, $nroOrden = null) {
+    public function verificarCancelacion($nroPedido, $nroOrden = null, $pais = 'AR') {
+        if (strtoupper($pais) === 'UY') {
+            return $this->verificarCancelacionUY($nroPedido, $nroOrden);
+        }
+        
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
         
@@ -927,6 +952,17 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
         }
         
         $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY: " . print_r(sqlsrv_errors(), true)));
+        
+        // NUEVA FUNCIONALIDAD: Si la resolución es "Completado" o "Cambio", marcar el pedido como Controlado
+        if ($result && in_array(strtolower($data['resolucion']), ['completado', 'cambio'])) {
+            $this->marcarPedidoComoControladoUY($data['nro_pedido'], $data['nroOrden']);
+        }
+        
+        // NUEVA FUNCIONALIDAD: Si la resolución es "Cancelado", marcar el pedido como cancelado
+        if ($result && strtolower($data['resolucion']) === 'cancelado') {
+            $this->marcarPedidoCanceladoUY($data['nro_pedido'], $data['nroOrden']);
+        }
+        
         return $result;
     }
 
@@ -974,4 +1010,380 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
         }
         return $data;
     }
+
+    /**
+     * Obtiene historial completo de un reclamo en Uruguay
+     */
+    public function traerHistorialReclamoUY($nro_pedido) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        $sql = "SELECT * FROM FT_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
+       
+        $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY"));
+
+        $data = [];
+        while($v = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)){
+            $data[] = array($v);
+        }
+        if(count($data) == 0){
+            return false;
+        }
+        return $data[0];
+    }
+
+    /**
+     * Marca un pedido como controlado en Uruguay (RO_T_ESTADO_PEDIDOS_ECOMMERCE)
+     * Se ejecuta automáticamente cuando se completa o cambia un artículo
+     */
+    public function marcarPedidoComoControladoUY($nro_pedido, $nro_orden = null) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        // NOTA: CONTROLADO es varchar en UY, usar '1' como string
+        $sql = "UPDATE RO_T_ESTADO_PEDIDOS_ECOMMERCE 
+                SET CONTROLADO = '1', FECHA_CONTROLADO = GETDATE(), ULT_ACTUALIZACION = GETDATE()
+                WHERE NRO_PEDIDO = '$nro_pedido'";
+        
+        // Si hay ORDER_ID, agregar la condición
+        if ($nro_orden) {
+            $sql .= " AND ORDER_ID = '$nro_orden'";
+        }
+        
+        $result = sqlsrv_query($cid_uruguay, $sql);
+        
+        if ($result === false) {
+            error_log("Error al marcar pedido UY como controlado: " . print_r(sqlsrv_errors(), true));
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Marca un pedido como cancelado en Uruguay (RO_T_ESTADO_PEDIDOS_ECOMMERCE)
+     * Se ejecuta automáticamente cuando la resolución es "Cancelado"
+     */
+    public function marcarPedidoCanceladoUY($nro_pedido, $nro_orden = null) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        // Actualizar el estado del pedido como cancelado
+        $sql = "UPDATE RO_T_ESTADO_PEDIDOS_ECOMMERCE 
+                SET CANCELADO = 1, ULT_ACTUALIZACION = GETDATE()
+                WHERE NRO_PEDIDO = '$nro_pedido'";
+        
+        // Si hay ORDER_ID, agregar la condición
+        if ($nro_orden) {
+            $sql .= " AND ORDER_ID = '$nro_orden'";
+        }
+        
+        $result = sqlsrv_query($cid_uruguay, $sql);
+        
+        if ($result === false) {
+            error_log("Error al marcar pedido UY como cancelado: " . print_r(sqlsrv_errors(), true));
+        }
+        
+        return $result;
+    }
+
+    // ===== METODOS NUEVOS PARA SEGUIMIENTO DE PEDIDOS - URUGUAY =====
+
+    /**
+     * Busca pedidos en Uruguay usando SP especifico
+     */
+    public function buscarPedidoUY($desde, $hasta, $orden) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        if (!$cid_uruguay) {
+            error_log("Error: No se pudo conectar a la base de datos de Uruguay");
+            return [];
+        }
+        
+        // Determinar tienda según formato del ORDER_ID
+        $tienda = '%'; // Buscar en todas por defecto
+        if (!empty($orden) && $orden != '%') {
+            if (strpos($orden, '-') !== false) {
+                $tienda = 'VTEX';
+            } elseif (is_numeric($orden)) {
+                // Si es solo numérico, podría ser NRO_PEDIDO, buscar en todas
+                $tienda = '%';
+            }
+        }
+        
+        $sql = "SET DATEFORMAT YMD;
+                EXEC RO_SP_ECOMMERCE_PEDIDOS_URUGUAY ?, ?, ?";
+        
+        $params = array($desde, $hasta, $tienda);
+        $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
+        
+        if ($stmt === false) {
+            error_log("Error buscarPedidoUY: " . print_r(sqlsrv_errors(), true));
+            return [];
+        }
+        
+        $data = [];
+        $pedidosVistos = [];
+        
+        // Normalizar búsqueda
+        $ordenBusqueda = trim($orden);
+        $buscarTodos = (empty($ordenBusqueda) || $ordenBusqueda == '%');
+        
+        // Si es numérico, preparar para comparación flexible
+        $esNumerico = is_numeric($ordenBusqueda);
+        $ordenNumerico = $esNumerico ? intval($ordenBusqueda) : null;
+        
+        while ($v = sqlsrv_fetch_object($stmt)) {
+            $coincide = false;
+            
+            if ($buscarTodos) {
+                $coincide = true;
+            } else {
+                $orderIdTienda = trim($v->ORDER_ID_TIENDA ?? '');
+                $nroPedido = trim($v->NRO_PEDIDO ?? '');
+                $factura = trim($v->FACTURA ?? '');
+                
+                // ESTRATEGIA 1: ORDER_ID_TIENDA
+                if (stripos($orderIdTienda, $ordenBusqueda) !== false) {
+                    $coincide = true;
+                }
+                
+                // ESTRATEGIA 2: NRO_PEDIDO
+                if (!$coincide) {
+                    // Búsqueda textual exacta
+                    if ($nroPedido === $ordenBusqueda) {
+                        $coincide = true;
+                    }
+                    // Búsqueda textual parcial
+                    else if (stripos($nroPedido, $ordenBusqueda) !== false) {
+                        $coincide = true;
+                    }
+                    // Comparación numérica (ignora ceros)
+                    else if ($esNumerico && $ordenNumerico !== null) {
+                        $nroPedidoNumerico = intval($nroPedido);
+                        if ($nroPedidoNumerico == $ordenNumerico) {
+                            $coincide = true;
+                        }
+                    }
+                }
+                
+                // ESTRATEGIA 3: FACTURA
+                if (!$coincide && !empty($factura)) {
+                    if (stripos($factura, $ordenBusqueda) !== false) {
+                        $coincide = true;
+                    }
+                }
+            }
+            
+            if ($coincide) {
+                $nroPedidoKey = $v->NRO_PEDIDO ?? '';
+                if (!isset($pedidosVistos[$nroPedidoKey])) {
+                    $pedidosVistos[$nroPedidoKey] = true;
+                    $data[] = array($v);
+                }
+            }
+        }
+        
+        return $data;
+    }
+
+    /**
+     * Trae warehouses/sucursales de Uruguay
+     */
+    public function traerWarehouseUY() {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        if (!$cid_uruguay) {
+            error_log("Error: No se pudo conectar a la base de datos de Uruguay");
+            return [];
+        }
+        
+        $sql = "SELECT REPLACE(NOMBRE_SUC, 'RT - SUC - ', '') AS WAREHOUSE
+                FROM STA22
+                WHERE NOMBRE_SUC LIKE 'RT - SUC - %'
+                UNION ALL
+                SELECT 'CENTRAL' AS WAREHOUSE
+                ORDER BY 1";
+        
+        $result = sqlsrv_query($cid_uruguay, $sql);
+        
+        if ($result === false) {
+            error_log("Error traerWarehouseUY: " . print_r(sqlsrv_errors(), true));
+            return [];
+        }
+        
+        $data = [];
+        while ($v = sqlsrv_fetch_object($result)) {
+            $data[] = array($v);
+        }
+        
+        return $data;
+    }
+
+    /**
+     * Busca stock de artículos por sucursal en Uruguay
+     */
+    public function buscarStockArticuloUY($sucursal) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        if (!$cid_uruguay) {
+            error_log("Error: No se pudo conectar a la base de datos de Uruguay");
+            return [];
+        }
+        
+        // Mapeo de nombres de sucursales Uruguay
+        $mapeoSucursales = [
+            'MONTEVIDEO' => 'RT - SUC - MONTEVIDEO',
+            'NUEVOCENTRO' => 'RT - SUC - NUEVOCENTRO',
+            'NUEVO CENTRO' => 'RT - SUC - NUEVOCENTRO',
+            'TRES CRUCES' => 'RT - SUC - TRES CRUCES',
+            'CENTRAL' => 'CASA CENTRAL'
+        ];
+        
+        $sucursalUpper = strtoupper(trim($sucursal));
+        $sucursalStock = $mapeoSucursales[$sucursalUpper] ?? $sucursal;
+        
+        $sql = "SELECT 
+                    S22.COD_SUCURS AS NRO_SUCURSAL,
+                    S22.NOMBRE_SUC AS DESC_SUCURSAL,
+                    S19.COD_ARTICU AS ARTICULO,
+                    CTA.DESC_CTA_ARTICULO,
+                    S19.CANT_STOCK
+                FROM STA19 S19
+                INNER JOIN STA22 S22 ON S19.COD_DEPOSI = S22.COD_SUCURS COLLATE DATABASE_DEFAULT
+                LEFT JOIN CTA_ARTICULO CTA ON S19.COD_ARTICU = CTA.COD_ARTICULO COLLATE DATABASE_DEFAULT
+                WHERE S22.NOMBRE_SUC = ?
+                  AND S19.COD_ARTICU LIKE '[XO]%'
+                  AND S19.CANT_STOCK > 0
+                ORDER BY S19.COD_ARTICU";
+        
+        $params = array($sucursalStock);
+        $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
+        
+        if ($stmt === false) {
+            error_log("Error buscarStockArticuloUY: " . print_r(sqlsrv_errors(), true));
+            return [];
+        }
+        
+        $data = [];
+        while ($v = sqlsrv_fetch_object($stmt)) {
+            $data[] = array($v);
+        }
+        
+        return $data;
+    }
+
+    /**
+     * Obtiene devoluciones para Uruguay (usa CANCELADO en lugar de REINTEGRADO)
+     */
+    public function obtenerDevolucionesUY($nroPedido, $nroOrden = null) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        if (!$cid_uruguay) {
+            return [];
+        }
+        
+        // DIFERENCIA CLAVE: Uruguay usa CANCELADO en lugar de REINTEGRADO
+        $sql = "
+        SET DATEFORMAT YMD;
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT 
+            'REINTEGRO_ECOMMERCE' as TIPO,
+            CAST(EP.FECHA_PEDI AS DATE) as FECHA,
+            ISNULL(EP.NCR, 'PENDIENTE') as NUMERO,
+            'PEDIDO_COMPLETO' as COD_ARTICU,
+            'PEDIDO_COMPLETO' as COD_ARTICU_BASE,
+            1 as CANTIDAD,
+            0 as IMPORTE,
+            CASE 
+                WHEN EP.CANCELADO = 1 AND (EP.NCR IS NULL OR EP.NCR = '') THEN 'NCR_PENDIENTE'
+                WHEN EP.CANCELADO = 1 AND EP.NCR IS NOT NULL AND EP.NCR <> '' THEN 'NCR_EMITIDA'
+                ELSE 'NORMAL'
+            END as ESTADO,
+            'Pedido cancelado' as DESCRIPCIO,
+            EP.NRO_PEDIDO as DEBUG_NRO_PEDIDO,
+            EP.ORDER_ID as DEBUG_ORDER_ID,
+            EP.CANCELADO as DEBUG_CANCELADO,
+            EP.FACTURA as FACTURA
+        FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE EP
+        WHERE RTRIM(LTRIM(EP.NRO_PEDIDO)) = ?
+        AND EP.CANCELADO = 1
+        ";
+        
+        $params = array($nroPedido);
+        $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
+        
+        if ($stmt === false) {
+            return [];
+        }
+        
+        $data = [];
+        while ($v = sqlsrv_fetch_object($stmt)) {
+            $data[] = $v;
+        }
+        
+        return $data;
+    }
+
+    /**
+     * Verifica cancelación de pedido en Uruguay
+     */
+    public function verificarCancelacionUY($nroPedido, $nroOrden = null) {
+        $cid = new Conexion();
+        $cid_uruguay = $cid->conectarSql('uy');
+        
+        if (!$cid_uruguay) {
+            return null;
+        }
+        
+        // CAMBIO CLAVE: Uruguay usa CANCELADO en lugar de REINTEGRADO
+        $sql = "SELECT 
+                    EP.CANCELADO,
+                    EP.NCR,
+                    EP.FECHA_NCR,
+                    EP.FACTURA,
+                    EP.FECHA_PEDI,
+                    EP.CONTROLADO
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE EP
+                WHERE RTRIM(LTRIM(EP.NRO_PEDIDO)) = ?";
+        
+        $params = array($nroPedido);
+        $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
+        
+        if ($stmt === false || !sqlsrv_has_rows($stmt)) {
+            return null;
+        }
+        
+        $estadoPedido = sqlsrv_fetch_object($stmt);
+        
+        if ($estadoPedido->CANCELADO != 1) {
+            return null;
+        }
+        
+        // Obtener detalle del pedido
+        $sqlDetalle = "SELECT 
+                        COUNT(*) as TOTAL_ARTICULOS,
+                        SUM(CAST(DP.CANT_PEDID as INT)) as TOTAL_CANTIDAD
+                    FROM RO_DPEDI01 DP
+                    WHERE RTRIM(LTRIM(DP.NRO_PEDIDO)) = ?";
+        
+        $stmtDetalle = sqlsrv_query($cid_uruguay, $sqlDetalle, $params);
+        $detallePedido = $stmtDetalle ? sqlsrv_fetch_object($stmtDetalle) : null;
+        
+        return (object) [
+            'esta_cancelado' => true,
+            'tiene_ncr' => !empty($estadoPedido->NCR),
+            'numero_ncr' => $estadoPedido->NCR ?? null,
+            'fecha_ncr' => $estadoPedido->FECHA_NCR ?? null,
+            'factura' => $estadoPedido->FACTURA ?? null,
+            'es_parcial' => false,
+            'total_articulos' => $detallePedido ? $detallePedido->TOTAL_ARTICULOS : 0,
+            'total_cantidad' => $detallePedido ? $detallePedido->TOTAL_CANTIDAD : 0
+        ];
+    }
+
+
 }

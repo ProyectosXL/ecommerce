@@ -45,6 +45,28 @@ require_once 'config.php';
     <div class="container py-4">
         <div class="card">
             <div class="card-header">
+                <!-- NUEVO: Toggle de país a nivel global -->
+                <div class="d-flex justify-content-end align-items-center mb-3">
+                    <label class="me-2 fw-bold">País:</label>
+                    <div class="btn-group" role="group" id="country-selector-global">
+                        <?php 
+                        // CORRECCIÓN: Preservar país seleccionado después de búsqueda
+                        $paisActual = isset($_POST['pais']) ? strtoupper(trim($_POST['pais'])) : 'AR';
+                        ?>
+                        <input type="radio" class="btn-check" name="country-global" id="country-ar-global" value="AR" <?php echo $paisActual === 'AR' ? 'checked' : ''; ?> autocomplete="off">
+                        <label class="btn btn-outline-primary d-flex align-items-center gap-2" for="country-ar-global">
+                            <img src="https://flagcdn.com/w20/ar.png" srcset="https://flagcdn.com/w40/ar.png 2x" width="20" alt="Argentina">
+                            Argentina
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="country-global" id="country-uy-global" value="UY" <?php echo $paisActual === 'UY' ? 'checked' : ''; ?> autocomplete="off">
+                        <label class="btn btn-outline-primary d-flex align-items-center gap-2" for="country-uy-global">
+                            <img src="https://flagcdn.com/w20/uy.png" srcset="https://flagcdn.com/w40/uy.png 2x" width="20" alt="Uruguay">
+                            Uruguay
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Pestañas de Navegación -->
                 <ul class="nav nav-tabs card-header-tabs" id="main-tabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -65,21 +87,30 @@ require_once 'config.php';
                     <div class="tab-pane fade show active" id="seguimiento-content" role="tabpanel" aria-labelledby="seguimiento-tab">
                         <?php include 'components/search-form.php'; ?>
 
+                        <div id="search-results-container">
                         <?php
                         if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['numero'])) {
                             $numero = trim($_POST['numero']);
                             $desde = isset($_POST['desde']) ? $_POST['desde'] : date('Y-m-d', strtotime('-30 days'));
                             $hasta = isset($_POST['hasta']) ? $_POST['hasta'] : date('Y-m-d');
+                            $pais = isset($_POST['pais']) ? strtoupper(trim($_POST['pais'])) : 'AR';
                             
-                            $resultado = $pedidos->buscarPedido($desde, $hasta, $numero);
+                            $resultado = $pedidos->buscarPedido($desde, $hasta, $numero, $pais);
                             
                             if ($resultado && !empty($resultado)) {
                                 foreach($resultado as $row) {
                                     $pedido = $row[0];
-                                    $detalleReclamo = $pedidos->listarReclamoDetalle($pedido->NRO_PEDIDO);
+                                    
+                                    // Usar método según país
+                                    if ($pais === 'UY') {
+                                        $detalleReclamo = $pedidos->listarReclamoDetalleUY($pedido->NRO_PEDIDO);
+                                    } else {
+                                        $detalleReclamo = $pedidos->listarReclamoDetalle($pedido->NRO_PEDIDO);
+                                    }
                                     
                                     // Cargar información de cancelación/reintegro
-                                    $infoCancelacion = $pedidos->verificarCancelacion(trim($pedido->NRO_PEDIDO), trim($pedido->NRO_ORDEN));
+                                    $nroOrden = isset($pedido->NRO_ORDEN) ? $pedido->NRO_ORDEN : ($pedido->ORDER_ID_TIENDA ?? '');
+                                    $infoCancelacion = $pedidos->verificarCancelacion(trim($pedido->NRO_PEDIDO), trim($nroOrden), $pais);
                                     if ($infoCancelacion) {
                                         $pedido->REINTEGRADO = 1;
                                         $pedido->NCR = $infoCancelacion->numero_ncr;
@@ -98,6 +129,7 @@ require_once 'config.php';
                             }
                         }
                         ?>
+                        </div>
                     </div>
                     <!-- Contenido de la Pestaña de Reportes -->
                     <div class="tab-pane fade" id="reporte-content" role="tabpanel" aria-labelledby="reporte-tab">
@@ -125,6 +157,9 @@ require_once 'config.php';
     <script src="js/reporte-incidentes.js"></script>
     
     <script>
+        // CORRECCIÓN: Sincronizar país seleccionado con valor del servidor
+        window.paisSeleccionado = '<?php echo $paisActual ?? 'AR'; ?>';
+        
         window.addEventListener('load', function() {
             hideSpinner();
         });

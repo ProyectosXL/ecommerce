@@ -35,56 +35,12 @@
     <!-- Filtros -->
     <div class="card search-container mb-4">
         <div class="card-body">
-            <style>
-                /* Estilos personalizados para los botones del toggle de país */
-                /* Argentina = Celeste cuando está activo */
-                #pais-ar:checked + label {
-                    background-color: #0dcaf0 !important;
-                    border-color: #0dcaf0 !important;
-                    color: white !important;
-                }
-                
-                /* Uruguay = Azul cuando está activo */
-                #pais-uy:checked + label {
-                    background-color: #0d6efd !important;
-                    border-color: #0d6efd !important;
-                    color: white !important;
-                }
-                
-                /* Hover states */
-                label[for="pais-ar"]:hover {
-                    background-color: rgba(13, 202, 240, 0.1);
-                    border-color: #0dcaf0;
-                }
-                
-                label[for="pais-uy"]:hover {
-                    background-color: rgba(13, 110, 253, 0.1);
-                    border-color: #0d6efd;
-                }
-            </style>
             <div class="row g-3 align-items-end">
-                <!-- NUEVO: Toggle de País con Banderas -->
-                <div class="col-md-2">
-                    <label class="form-label d-block">País</label>
-                    <div class="btn-group w-100" role="group" aria-label="Selector de país">
-                        <input type="radio" class="btn-check" name="reporte-pais" id="pais-ar" value="AR" autocomplete="off" checked>
-                        <label class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2" for="pais-ar" style="height: 38px;">
-                            <img src="https://flagcdn.com/w20/ar.png" srcset="https://flagcdn.com/w40/ar.png 2x" width="20" alt="Argentina">
-                            <span>AR</span>
-                        </label>
-                        
-                        <input type="radio" class="btn-check" name="reporte-pais" id="pais-uy" value="UY" autocomplete="off">
-                        <label class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2" for="pais-uy" style="height: 38px;">
-                            <img src="https://flagcdn.com/w20/uy.png" srcset="https://flagcdn.com/w40/uy.png 2x" width="20" alt="Uruguay">
-                            <span>UY</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label for="reporte-desde" class="form-label">Desde</label>
                     <input type="date" id="reporte-desde" class="form-control">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label for="reporte-hasta" class="form-label">Hasta</label>
                     <input type="date" id="reporte-hasta" class="form-control">
                 </div>

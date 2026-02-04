@@ -38,6 +38,8 @@ try {
     $cliente = $_POST['cliente'] ?? '';
     $prepara = $_POST['prepara'] ?? '';
     $modalCantidad = $_POST['modalCantidad'] ?? '';
+    // NUEVO: Obtener país seleccionado
+    $pais = isset($_POST['pais']) ? strtoupper(trim($_POST['pais'])) : 'AR';
     $modalCodigo = $_POST['modalCodigo'] ?? '';
     $warehouse = $_POST['warehouse'] ?? ''; // Warehouse del pedido original
     $pais = $_POST['pais'] ?? 'AR'; // NUEVO: Default Argentina

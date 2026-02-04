@@ -195,7 +195,7 @@ $(document).ready(function() {
         const desde = $('#reporte-desde').val();
         const hasta = $('#reporte-hasta').val();
         const estado = $('#reporte-estado').val();
-        const pais = $('input[name="reporte-pais"]:checked').val() || 'AR';
+        const pais = $('input[name="country-global"]:checked').val() || window.paisSeleccionado || 'AR';
 
         // Actualizar indicador visual de país
         actualizarIndicadorPais(pais);
@@ -716,9 +716,10 @@ $(document).ready(function() {
     }
     reporteTab.on('shown.bs.tab', function() { cargarReporte(); });
     $('#btn-aplicar-filtros').on('click', cargarReporte);
-    $('input[name="reporte-pais"]').on('change', function() {
-        window.paisSeleccionado = $(this).val(); // Actualizar variable global
-        cargarReporte();
-    });
+    
+    // El toggle de país ahora es global y se maneja en main.js
+    // Exponer cargarReporte globalmente para que pueda ser llamado cuando cambia el país
+    window.cargarReportePorCambioPais = cargarReporte;
+    
     $('#kpi-card-finalizados').on('click', function() { $('#grafico-resolucion-container').slideToggle(); });
 });
