@@ -424,7 +424,7 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
      */
 // Reemplaza esta función completa en Class/Pedido.php
 
-public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '')
+public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '')
 {
     $cid = new Conexion();
     $cid_central = $cid->conectarSql("central");
@@ -746,116 +746,107 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
      * IMPORTANTE: Usa la misma lógica que Argentina pero con tablas de Uruguay
      */
     public function getHistorialFaltantesCompletoUY($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '') {
-        $cid = new Conexion();
-        $cid_uruguay = $cid->conectarSql("uy");
+        try {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql("uy");
 
-        if (!$cid_uruguay) {
-            error_log("Error: No se pudo conectar a la base de datos de Uruguay");
-            return [];
-        }
+            if (!$cid_uruguay) {
+                error_log("Error: No se pudo conectar a la base de datos de Uruguay");
+                return [];
+            }
 
-        $sqlSetFormat = "SET DATEFORMAT YMD";
-        sqlsrv_query($cid_uruguay, $sqlSetFormat);
+            $sqlSetFormat = "SET DATEFORMAT YMD";
+            sqlsrv_query($cid_uruguay, $sqlSetFormat);
 
-        if (!empty($fechaInicio)) {
-            $fechaInicio = date('Y-m-d', strtotime($fechaInicio));
-        }
-        if (!empty($fechaFin)) {
-            $fechaFin = date('Y-m-d', strtotime($fechaFin));
-        }
+            if (!empty($fechaInicio)) {
+                $fechaInicio = date('Y-m-d', strtotime($fechaInicio));
+            }
+            if (!empty($fechaFin)) {
+                $fechaFin = date('Y-m-d', strtotime($fechaFin));
+            }
 
-        $sql = "
-            SET DATEFORMAT YMD;
+            // Construir condiciones WHERE base
+            $whereConditions = ["EP.INCOMPLETO = 1"];
+            $whereConditions[] = "CAST(EP.FECHA_PEDI AS DATE) BETWEEN ? AND ?";
+            $params = array($fechaInicio, $fechaFin);
             
-            WITH IncidentesAuditoria AS (
+            // Filtros adicionales
+            if (!empty($warehouse)) {
+                $whereConditions[] = "(H.WAREHOUSE LIKE ? OR GVA21.COD_SUCURS LIKE ?)";
+                $params[] = "%$warehouse%";
+                $params[] = "%$warehouse%";
+            }
+            
+            if (!empty($estado)) {
+                $whereConditions[] = "CASE 
+                    WHEN H.NRO_PEDIDO IS NULL THEN 'abierto'
+                    WHEN H.ESTADO = 'resuelto' THEN 'resuelto'
+                    ELSE 'proceso'
+                END = ?";
+                $params[] = $estado;
+            }
+            
+            if (!empty($resolucion)) {
+                $whereConditions[] = "H.RESOLUCION = ?";
+                $params[] = $resolucion;
+            }
+            
+            $whereClause = implode(" AND ", $whereConditions);
+            
+            $sql = "
+                SET DATEFORMAT YMD;
+                
                 SELECT 
-                    A.NRO_ORDEN_ECOMMERCE,
-                    STRING_AGG(A.COD_ARTICULO, ', ') AS ARTICULO_AUDITADO
-                FROM SOF_AUDITORIA A
-                WHERE 
-                    A.FECHA_AUDITORIA_1 IS NOT NULL 
-                    AND A.COD_ARTICULO LIKE '[XO]%'
-                    AND CAST(A.FECHA_PEDIDO AS DATE) BETWEEN ? AND ?
-                    AND CAST(A.CANT_AUDITADO AS FLOAT) < CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)
-                GROUP BY 
-                    A.NRO_ORDEN_ECOMMERCE
-                HAVING 
-                    SUM(CAST(A.CANTIDAD_A_FACTURAR AS FLOAT)) <> SUM(CAST(A.CANT_AUDITADO AS FLOAT))
-            )
-            SELECT 
-                ISNULL(H.ESTADO, 'abierto') as ESTADO,
-                ISNULL(H.RESOLUCION, 'Pendiente') as RESOLUCION,
-                ISNULL(H.CLIENTE, GVA38.RAZON_SOCI) as CLIENTE,
-                ISNULL(H.WAREHOUSE, H.SUC_DESPACHO) as WAREHOUSE_RECLAMO,
-                H.FECHA_ULT_MODIF,
-                H.FECHA_ALTA,
-                
-                GVA21.NRO_PEDIDO,
-                GVA21.ORDER_ID_TIENDA AS NRO_ORDEN,
-                CAST(GVA21.FECHA_PEDI AS DATE) AS FECHA_PEDIDO,
-                GVA21.COD_SUCURS AS DEPOSITO_ORIGEN,
-                COALESCE(V_STA22.NOMBRE_SUC COLLATE DATABASE_DEFAULT, CASE WHEN GVA21.COD_SUCURS = '01' THEN 'CENTRAL' COLLATE DATABASE_DEFAULT ELSE 'No especificado' COLLATE DATABASE_DEFAULT END) AS NOMBRE_ORIGEN,
+                    EP.NRO_PEDIDO,
+                    EP.ORDER_ID AS NRO_ORDEN,
+                    CAST(EP.FECHA_PEDI AS DATE) AS FECHA_PEDIDO,
+                    EP.FECHA_INCOMPLETO,
+                    COALESCE(GVA38.RAZON_SOCI, '') AS CLIENTE,
+                    COALESCE(H.COD_ARTICULO_CAMBIO, '') AS ARTICULO_ORIGINAL,
+                    COALESCE(H.COD_ARTICULO, '') AS COD_ARTICULO,
+                    COALESCE(STA11.DESCRIPCIO, '') AS DESCRIPCION_ARTICULO,
+                    '' AS RUBRO,
+                    COALESCE(H.WAREHOUSE, '') AS WAREHOUSE_RECLAMO,
+                    COALESCE(GVA21.COD_SUCURS, '') AS DEPOSITO_ORIGEN,
+                    '' AS NOMBRE_ORIGEN,
+                    CASE 
+                        WHEN H.NRO_PEDIDO IS NULL THEN 'abierto'
+                        WHEN H.ESTADO = 'resuelto' THEN 'resuelto'
+                        ELSE 'proceso'
+                    END AS ESTADO,
+                    COALESCE(H.RESOLUCION, '') AS RESOLUCION,
+                    H.FECHA_ALTA,
+                    H.FECHA_ULT_MODIF
+                FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE EP
+                INNER JOIN GVA21 ON EP.NRO_PEDIDO = GVA21.NRO_PEDIDO COLLATE DATABASE_DEFAULT
+                LEFT JOIN GVA38 ON GVA21.NRO_PEDIDO = GVA38.N_COMP COLLATE DATABASE_DEFAULT AND GVA21.TALON_PED = GVA38.TALONARIO
+                LEFT JOIN FT_T_ENC_ECOMMERCE_HISTORIAL_FALT H ON EP.NRO_PEDIDO = H.NRO_PEDIDO COLLATE DATABASE_DEFAULT
+                LEFT JOIN STA11 ON H.COD_ARTICULO = STA11.COD_ARTICU COLLATE DATABASE_DEFAULT
+                WHERE $whereClause
+                ORDER BY EP.FECHA_PEDI DESC, EP.NRO_PEDIDO DESC
+            ";
+            
+            $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
 
-                COALESCE(H.COD_ARTICULO_CAMBIO COLLATE DATABASE_DEFAULT, IA.ARTICULO_AUDITADO COLLATE DATABASE_DEFAULT, 'N/A') as ARTICULO_ORIGINAL,
-                ISNULL(H.COD_ARTICULO, 'Discrepancia General') as COD_ARTICULO,
-                
-                NULL as FECHA_INCOMPLETO,
-                COALESCE(CTA.DESC_CTA_ARTICULO COLLATE DATABASE_DEFAULT, CTA2.DESC_CTA_ARTICULO COLLATE DATABASE_DEFAULT, RUBRO1.DESCRIPCION COLLATE DATABASE_DEFAULT, RUBRO2.DESCRIPCION COLLATE DATABASE_DEFAULT) as DESCRIPCION_ARTICULO,
-                COALESCE(RUBRO1.RUBRO COLLATE DATABASE_DEFAULT, RUBRO2.RUBRO COLLATE DATABASE_DEFAULT) as RUBRO
-                
-            FROM IncidentesAuditoria IA
-            INNER JOIN GVA21 ON IA.NRO_ORDEN_ECOMMERCE = GVA21.ORDER_ID_TIENDA COLLATE DATABASE_DEFAULT
-            LEFT JOIN GVA38 ON GVA21.NRO_PEDIDO = GVA38.N_COMP AND GVA21.TALON_PED = GVA38.TALONARIO
-            LEFT JOIN FT_T_ENC_ECOMMERCE_HISTORIAL_FALT H ON GVA21.ORDER_ID_TIENDA = H.NRO_ORDEN COLLATE DATABASE_DEFAULT
-            LEFT JOIN SJ_VIEW_STA22 V_STA22 ON GVA21.COD_SUCURS = V_STA22.COD_SUCURS COLLATE DATABASE_DEFAULT
-            LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE EP ON GVA21.NRO_PEDIDO = EP.NRO_PEDIDO
-            LEFT JOIN CTA_ARTICULO CTA ON H.COD_ARTICULO_CAMBIO = CTA.COD_ARTICULO COLLATE DATABASE_DEFAULT
-            LEFT JOIN CTA_ARTICULO CTA2 ON 
-                SUBSTRING(IA.ARTICULO_AUDITADO, 1, CASE WHEN CHARINDEX(',', IA.ARTICULO_AUDITADO) > 0 
-                                                         THEN CHARINDEX(',', IA.ARTICULO_AUDITADO) - 1 
-                                                         ELSE LEN(IA.ARTICULO_AUDITADO) END) = CTA2.COD_ARTICULO COLLATE DATABASE_DEFAULT
-            LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA RUBRO1 ON H.COD_ARTICULO_CAMBIO = RUBRO1.COD_ARTICU COLLATE DATABASE_DEFAULT
-            LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA RUBRO2 ON 
-                SUBSTRING(IA.ARTICULO_AUDITADO, 1, CASE WHEN CHARINDEX(',', IA.ARTICULO_AUDITADO) > 0 
-                                                         THEN CHARINDEX(',', IA.ARTICULO_AUDITADO) - 1 
-                                                         ELSE LEN(IA.ARTICULO_AUDITADO) END) = RUBRO2.COD_ARTICU COLLATE DATABASE_DEFAULT
-        ";
-        
-        $params = array($fechaInicio, $fechaFin);
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("❌ ERROR en query UY: " . print_r($errors, true));
+                error_log("SQL completo: " . $sql);
+                error_log("Params: " . print_r($params, true));
+                return [];
+            }
 
-        $whereConditions = [];
-        if (!empty($estado)) {
-            $whereConditions[] = "ISNULL(H.ESTADO, 'abierto') = ?";
-            array_push($params, $estado);
-        }
-        
-        if (!empty($whereConditions)) {
-            $sql .= " WHERE " . implode(' AND ', $whereConditions);
-        }
+            $data = [];
+            while ($v = sqlsrv_fetch_object($stmt)) {
+                $data[] = array($v);
+            }
 
-        $sql .= " ORDER BY GVA21.FECHA_PEDI DESC;";
-
-        error_log("=== SQL URUGUAY DEBUG ===");
-        error_log("Fechas: $fechaInicio a $fechaFin");
-        error_log("SQL Query: " . $sql);
-        error_log("Params: " . print_r($params, true));
-        
-        $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
-
-        if ($stmt === false) {
-            $errors = sqlsrv_errors();
-            error_log("❌ ERROR en query UY: " . print_r($errors, true));
-            error_log("SQL completo: " . $sql);
+            return $data;
+            
+        } catch (Exception $e) {
+            error_log("Error en getHistorialFaltantesCompletoUY: " . $e->getMessage());
             return [];
         }
-
-        $data = [];
-        while ($v = sqlsrv_fetch_object($stmt)) {
-            $data[] = array($v);
-        }
-
-        error_log("✓ Registros obtenidos de UY: " . count($data));
-        return $data;
     }
 
     /**
@@ -865,8 +856,7 @@ public function getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehous
         if (strtoupper($pais) === 'UY') {
             return $this->getHistorialFaltantesCompletoUY($fechaInicio, $fechaFin, $warehouse, $estado, $resolucion);
         } else {
-            // Método original de Argentina (NO MODIFICAR)
-            return $this->getHistorialFaltantesCompleto($fechaInicio, $fechaFin, $warehouse, $estado, $resolucion);
+            return $this->getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $warehouse, $estado, $resolucion);
         }
     }
 
