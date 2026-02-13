@@ -1112,7 +1112,6 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
         }
         
         $data = [];
-        $pedidosVistos = [];
         
         // Normalizar búsqueda
         $ordenBusqueda = trim($orden);
@@ -1122,7 +1121,10 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
         $esNumerico = is_numeric($ordenBusqueda);
         $ordenNumerico = $esNumerico ? intval($ordenBusqueda) : null;
         
+        $pedidosProcessados = [];
+        
         while ($v = sqlsrv_fetch_object($stmt)) {
+            $nroPedidoKey = trim($v->NRO_PEDIDO ?? '');
             $coincide = false;
             
             if ($buscarTodos) {
@@ -1165,15 +1167,133 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
             }
             
             if ($coincide) {
-                $nroPedidoKey = $v->NRO_PEDIDO ?? '';
-                if (!isset($pedidosVistos[$nroPedidoKey])) {
-                    $pedidosVistos[$nroPedidoKey] = true;
+                // Enriquecer el objeto ORIGINAL sin reemplazarlo
+                $this->enriquecerPedidoUY($v);
+                
+                // Para evitar duplicados, solo agregar si NO lo hemos visto
+                if (!isset($pedidosProcessados[$nroPedidoKey])) {
+                    $pedidosProcessados[$nroPedidoKey] = true;
                     $data[] = array($v);
                 }
             }
         }
         
         return $data;
+    }
+
+    /**
+     * Enriquece el objeto pedido de Uruguay DIRECTAMENTE
+     * Adds mapeadas y enriquecidas sin crear un nuevo objeto
+     * El objeto se modifica in-place
+     */
+    private function enriquecerPedidoUY(&$pedido) {
+        // Mapear campos que vienen del SP pero con nombres diferentes
+        // ORIGEN → MARKETPLACE y MARKETPLACE
+        if (isset($pedido->ORIGEN) && !isset($pedido->MARKETPLACE)) {
+            $pedido->MARKETPLACE = $pedido->ORIGEN;
+        }
+        
+        // ORDER_ID_TIENDA → NRO_ORDEN (si no existe)
+        if (isset($pedido->ORDER_ID_TIENDA) && !isset($pedido->NRO_ORDEN)) {
+            $pedido->NRO_ORDEN = $pedido->ORDER_ID_TIENDA;
+        }
+        
+        // RECEIVER_NAME → CLIENTE (si no existe)
+        if (isset($pedido->RECEIVER_NAME) && !isset($pedido->CLIENTE)) {
+            $pedido->CLIENTE = trim($pedido->RECEIVER_NAME);
+        }
+        
+        // Mapear RAZON_SOCI (para compatibilidad con Argentina)
+        if (!isset($pedido->RAZON_SOCI) && isset($pedido->CLIENTE)) {
+            $pedido->RAZON_SOCI = $pedido->CLIENTE;
+        }
+        
+        // DEPARTAMENTO → DIRECCION_ENTREGA y LUGAR_ENTREGA (si están vacíos)
+        if (isset($pedido->DEPARTAMENTO)) {
+            if (!isset($pedido->DIRECCION_ENTREGA) || empty($pedido->DIRECCION_ENTREGA)) {
+                $pedido->DIRECCION_ENTREGA = $pedido->DEPARTAMENTO;
+            }
+            if (!isset($pedido->LUGAR_ENTREGA) || empty($pedido->LUGAR_ENTREGA)) {
+                $pedido->LUGAR_ENTREGA = $pedido->DEPARTAMENTO;
+            }
+        }
+        
+        // Si DEPARTAMENTO es código corto (1-2 chars), intentar buscar nombre completo
+        if (isset($pedido->DEPARTAMENTO) && strlen(trim($pedido->DEPARTAMENTO)) <= 2) {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay) {
+                $sqlDept = "SELECT NOMBRE FROM STA01 WHERE CODIGO = ?";
+                $paramsDept = array(trim($pedido->DEPARTAMENTO));
+                $stmtDept = sqlsrv_query($cid_uruguay, $sqlDept, $paramsDept);
+                
+                if ($stmtDept && ($deptRow = sqlsrv_fetch_object($stmtDept))) {
+                    $deptNombre = trim($deptRow->NOMBRE ?? '');
+                    if (!empty($deptNombre)) {
+                        $pedido->DEPARTAMENTO = $deptNombre;
+                        $pedido->DIRECCION_ENTREGA = $deptNombre;
+                        $pedido->LUGAR_ENTREGA = $deptNombre;
+                    }
+                }
+                if ($stmtDept) sqlsrv_free_stmt($stmtDept);
+            }
+        }
+        
+        // Intentar obtener información adicional de la tabla RO_T_ESTADO_PEDIDOS_ECOMMERCE
+        if (!empty($pedido->NRO_PEDIDO)) {
+            $cid = new Conexion();
+            $cid_uruguay = $cid->conectarSql('uy');
+            
+            if ($cid_uruguay) {
+                $nroPedido = trim($pedido->NRO_PEDIDO);
+                
+                $sqlEstado = "
+                    SELECT TOP 1
+                        WAREHOUSE,
+                        METODO_ENVIO,
+                        SUCURSAL_ENTREGA
+                    FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE
+                    WHERE NRO_PEDIDO = ?
+                    ORDER BY ULT_ACTUALIZACION DESC
+                ";
+                
+                $paramsEstado = array($nroPedido);
+                $stmtEstado = sqlsrv_query($cid_uruguay, $sqlEstado, $paramsEstado);
+                
+                if ($stmtEstado && ($estadoRow = sqlsrv_fetch_object($stmtEstado))) {
+                    // Enriquecer si el campo no existe
+                    if (!isset($pedido->WAREHOUSE) && !empty($estadoRow->WAREHOUSE)) {
+                        $pedido->WAREHOUSE = trim($estadoRow->WAREHOUSE);
+                    }
+                    if (!isset($pedido->PREPARA) && !empty($estadoRow->WAREHOUSE)) {
+                        $pedido->PREPARA = trim($estadoRow->WAREHOUSE);
+                    }
+                    if (!isset($pedido->METODO_ENVIO) && !empty($estadoRow->METODO_ENVIO)) {
+                        $pedido->METODO_ENVIO = trim($estadoRow->METODO_ENVIO);
+                    }
+                    if (!isset($pedido->SUCURSAL_ENTREGA) && !empty($estadoRow->SUCURSAL_ENTREGA)) {
+                        $pedido->SUCURSAL_ENTREGA = trim($estadoRow->SUCURSAL_ENTREGA);
+                    }
+                    
+                    sqlsrv_free_stmt($stmtEstado);
+                }
+            }
+        }
+        
+        // Asegurar que campos necesarios tengan algún valor
+        if (!isset($pedido->PREPARA)) {
+            $pedido->PREPARA = null;
+        }
+        if (!isset($pedido->WAREHOUSE)) {
+            $pedido->WAREHOUSE = null;
+        }
+        if (!isset($pedido->SUCURSAL_ENTREGA)) {
+            $pedido->SUCURSAL_ENTREGA = null;
+        }
+        if (!isset($pedido->METODO_ENVIO)) {
+            $pedido->METODO_ENVIO = null;
+        }
     }
 
     /**
