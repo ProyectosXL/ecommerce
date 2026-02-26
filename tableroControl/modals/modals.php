@@ -2,33 +2,33 @@
 <!-- modals.php -->
 
 <!-- Todos los modales -->
-<?php include 'modal-nc-promociones.php'; ?>
-<?php include 'modal-nc-devoluciones.php'; ?>
-<?php include 'modal-ordenes-sin-integrar.php'; ?>
-<?php include 'modal-remitos-sin-integrar.php'; ?>
-<?php include 'modal-pedidos-flex-pendientes.php'; ?>
-<?php include 'modal-pedidos-pendientes-preparar.php'; ?>
-<?php include 'modal-facturas-sin-remito.php'; ?>
-<?php include 'modal-ordenes-pendiente-cierre.php'; ?>
-<?php include 'modal-pedidos-pendiente-despacho.php'; ?>
-<?php include 'modal-productos-ml-full.php'; ?>
-<?php include 'modal-pedidos-despachados.php'; ?>
-<?php include 'modal-pedidos-pendiente-control.php'; ?>
-<?php include 'modal-ranking-pedidos-control.php'; ?>
-<?php include 'modal-pedidos-recibidos-no-entregados.php'; ?>
-<?php include 'modal-pedidos-retiro-tienda.php'; ?>
+<?php ob_start(); try { include 'modal-nc-promociones.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-nc-devoluciones.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-ordenes-sin-integrar.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-remitos-sin-integrar.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-flex-pendientes.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-pendientes-preparar.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-facturas-sin-remito.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-ordenes-pendiente-cierre.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-pendiente-despacho.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-productos-ml-full.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-despachados.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-pendiente-control.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-ranking-pedidos-control.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-recibidos-no-entregados.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-retiro-tienda.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <!-- Nuevos modales para control separado -->
-<?php include 'modal-pedidos-pendiente-control-central.php'; ?>
-<?php include 'modal-pedidos-pendiente-control-sucursales.php'; ?>
-<?php include 'modal-ranking-pedidos-control-sucursales.php'; ?>
+<?php ob_start(); try { include 'modal-pedidos-pendiente-control-central.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-pendiente-control-sucursales.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-ranking-pedidos-control-sucursales.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <!-- Modales para pedidos incompletos -->
-<?php include 'modal-pedidos-incompletos-central.php'; ?>
-<?php include 'modal-pedidos-incompletos-sucursales.php'; ?>
+<?php ob_start(); try { include 'modal-pedidos-incompletos-central.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-incompletos-sucursales.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <!-- Modal para Uruguay -->
-<?php include 'modal-pedidos-sin-facturar-uruguay.php'; ?>
-<?php include 'modal-pedidos-sin-remito-uruguay.php'; ?>
-<?php include 'modal-nc-devoluciones-uruguay.php'; ?>
-<?php include 'modal-ordenes-sin-integrar-uruguay.php'; ?>
-<?php include 'modal-ordenes-pendiente-cierre-uruguay.php'; ?>
-<?php include 'modal-pedidos-retiro-tienda-uruguay.php'; ?>
-<?php include 'modal-pedidos-pendiente-control-sucursales-uruguay.php'; ?>
+<?php ob_start(); try { include 'modal-pedidos-sin-facturar-uruguay.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-sin-remito-uruguay.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-nc-devoluciones-uruguay.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-ordenes-sin-integrar-uruguay.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-ordenes-pendiente-cierre-uruguay.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-retiro-tienda-uruguay.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-pedidos-pendiente-control-sucursales-uruguay.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>

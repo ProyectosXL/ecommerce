@@ -153,7 +153,9 @@ function exportToExcelPedidosDespachados() {
 }
 
 function exportToExcelPedidosControl() {
-    exportTableToExcel('#tablaPedidosControl', "Pedidos Pendientes Control", "pedidos_pendientes_control");
+    exportTableToExcel('#tablaPedidosControl', "Pedidos Pendientes Control", "pedidos_pendientes_control", false, {
+        textColumns: [2, 3] // Nro. Pedido (2) y Order ID (3) como texto
+    });
 }
 
 function exportToExcelMlFull() {
@@ -308,19 +310,24 @@ function exportToExcelPedidosRecibidosNoEntregados() {
 }
 // Función para exportar pedidos de retiro en tienda a Excel
 function exportToExcelPedidosRetiroTienda() {
-    // En la tabla de Pedidos de Retiro en Tienda, la columna "Order ID" es la columna 3 (índice 3, 0-based)
     exportTableToExcel('#modalPedidosRetiroTienda table', "Pedidos Retiro en Tienda", "pedidos_retiro_tienda", true, {
-        textColumns: [3] // El índice 3 corresponde a la columna "Order ID"
+        textColumns: [2, 3] // Nro. Pedido (2) y Order ID (3) como texto
     });
 }
 
 // Funciones para los nuevos modales de control separado
 function exportToExcelPedidosControlCentral() {
-    exportTableToExcel('#tablaPedidosControlCentral', "Pedidos Pendientes Control Central", "pedidos_pendientes_control_central");
+    // Sheet name máx 31 chars (límite Excel)
+    exportTableToExcel('#tablaPedidosControlCentral', "Pedidos Control Central", "pedidos_pendientes_control_central", false, {
+        textColumns: [2, 3] // Nro. Pedido (2) y Order ID (3) como texto
+    });
 }
 
 function exportToExcelPedidosControlSucursales() {
-    exportTableToExcel('#tablaPedidosControlSucursales', "Pedidos Pendientes Control Sucursales", "pedidos_pendientes_control_sucursales");
+    // Sheet name máx 31 chars (límite Excel)
+    exportTableToExcel('#tablaPedidosControlSucursales', "Pedidos Control Sucursales", "pedidos_pendientes_control_sucursales", false, {
+        textColumns: [2, 3] // Nro. Pedido (2) y Order ID (3) como texto
+    });
 }
 
 // ============================================
@@ -362,14 +369,14 @@ function exportToExcelOrdenesPendientesCierreUruguay() {
 
 // Función para exportar pedidos de retiro en tienda de Uruguay
 function exportToExcelPedidosRetiroTiendaUruguay() {
-    exportTableToExcel('#tablePedidosRetiroTiendaUruguay', "Pedidos Retiro en Tienda Uruguay", "pedidos_retiro_tienda_uruguay", true, {
+    exportTableToExcel('#tablePedidosRetiroTiendaUruguay', "Retiro en Tienda Uruguay", "pedidos_retiro_tienda_uruguay", true, {
         textColumns: [3] // El índice 3 corresponde a la columna "Order ID"
     });
 }
 
 // Función para exportar pedidos pendientes de control de sucursales de Uruguay
 function exportToExcelPedidosControlSucursalesUruguay() {
-    exportTableToExcel('#tablePedidosControlSucursalesUruguay', "Pedidos Pendientes Control Sucursales Uruguay", "pedidos_pendientes_control_sucursales_uruguay", false, {
+    exportTableToExcel('#tablePedidosControlSucursalesUruguay', "Control Sucursales Uruguay", "pedidos_pendientes_control_sucursales_uruguay", false, {
         textColumns: [3] // El índice 3 corresponde a la columna "Order ID"
     });
 }
