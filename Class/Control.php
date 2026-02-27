@@ -433,11 +433,13 @@ class Control extends Conexion {
                 ) A";
         
         try {
-            $cid_central = $this;
             $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
-                throw new Exception("Error de conexión a la base de datos de Uruguay");
+                $errors = sqlsrv_errors();
+                $error_detail = !empty($errors) ? json_encode($errors) : 'Conexión rechazada';
+                error_log("Error conexión BD Uruguay (traerNcPendDevolucionesUruguay): " . $error_detail);
+                throw new Exception("Error de conexión a la base de datos de Uruguay: " . $error_detail);
             }
             
             ini_set('max_execution_time', 300);
@@ -445,23 +447,30 @@ class Control extends Conexion {
             
             if ($result === false) {
                 $errors = sqlsrv_errors();
-                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+                $error_detail = !empty($errors) ? json_encode($errors) : 'Error desconocido';
+                error_log("Error consulta traerNcPendDevolucionesUruguay: " . $error_detail);
+                sqlsrv_close($cid_uruguay);
+                throw new Exception("Error en la consulta NC Devoluciones Uruguay: " . $error_detail);
             }
             
             $row = sqlsrv_fetch_object($result);
             sqlsrv_free_stmt($result);
             sqlsrv_close($cid_uruguay);
             
+            // Log para depuración
+            error_log("traerNcPendDevolucionesUruguay - Resultado: " . json_encode($row));
+            
             return $row ? $row : null;
             
         } catch (Exception $e) {
+            error_log("Exception en traerNcPendDevolucionesUruguay: " . $e->getMessage());
             throw new Exception($e->getMessage());
         }
     }
 
     public function traerDetalleNcPendDevolucionesUruguay() {
         $sql = "SELECT CAST(A.FECHA_PEDI AS DATE) FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, UPPER(E.RAZON_SOCI) CLIENTE,
-                D.COD_SUCURS, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
+                D.COD_SUCURS, A.COD_SUCURS AS SUCURSAL, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
                 LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
@@ -471,11 +480,13 @@ class Control extends Conexion {
                 ORDER BY A.FECHA_PEDI ASC";
         
         try {
-            $cid_central = $this;
             $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
-                throw new Exception("Error de conexión a la base de datos de Uruguay");
+                $errors = sqlsrv_errors();
+                $error_detail = !empty($errors) ? json_encode($errors) : 'Conexión rechazada';
+                error_log("Error conexión BD Uruguay (traerDetalleNcPendDevolucionesUruguay): " . $error_detail);
+                throw new Exception("Error de conexión a la base de datos de Uruguay: " . $error_detail);
             }
             
             ini_set('max_execution_time', 300);
@@ -483,7 +494,10 @@ class Control extends Conexion {
             
             if ($result === false) {
                 $errors = sqlsrv_errors();
-                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+                $error_detail = !empty($errors) ? json_encode($errors) : 'Error desconocido';
+                error_log("Error consulta traerDetalleNcPendDevolucionesUruguay: " . $error_detail);
+                sqlsrv_close($cid_uruguay);
+                throw new Exception("Error en la consulta detalle NC Devoluciones Uruguay: " . $error_detail);
             }
             
             $rows = array();
@@ -494,9 +508,13 @@ class Control extends Conexion {
             sqlsrv_free_stmt($result);
             sqlsrv_close($cid_uruguay);
             
+            // Log para depuración
+            error_log("traerDetalleNcPendDevolucionesUruguay - Total registros: " . count($rows));
+            
             return $rows;
             
         } catch (Exception $e) {
+            error_log("Exception en traerDetalleNcPendDevolucionesUruguay: " . $e->getMessage());
             throw new Exception($e->getMessage());
         }
     }
