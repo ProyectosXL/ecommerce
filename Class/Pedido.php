@@ -1,44 +1,52 @@
 <?php
 
-require_once $_SERVER['DOCUMENT_ROOT']. '/ecommerce/Class/Conexion.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/Class/Conexion.php';
 
-class Pedido{
-    
-    private function getDatos($sql){
+class Pedido
+{
+
+    private function getDatos($sql)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
 
         ini_set('max_execution_time', 300);
-        $result=sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query"));
+        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query"));
 
         $data = [];
-        while($v=sqlsrv_fetch_object($result)){
+        while ($v = sqlsrv_fetch_object($result)) {
             $data[] = array($v);
-        };
+        }
+        ;
         return $data;
     }
-    
-    public function traerPedidos($desde, $hasta, $tienda, $warehouse, $estado = null, $orden = '%'){
-        
+
+    public function traerPedidos($desde, $hasta, $tienda, $warehouse, $estado = null, $orden = '%', $pagina = 1, $porPagina = 100, $metodoEnvio = '')
+    {
+
         // Manejar el estado: si es null, pasar NULL sin comillas al SQL
         $estadoSQL = ($estado === null || $estado === '') ? 'NULL' : "'$estado'";
-            
+        $metodoEnvioSQL = ($metodoEnvio === null || $metodoEnvio === '') ? 'NULL' : "'$metodoEnvio'";
+        $paginaInt = max(1, intval($pagina));
+        $porPaginaInt = max(1, intval($porPagina));
+
         $sql = "
         SET DATEFORMAT YMD;
         SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
-        EXEC RO_ECOMMERCE_PEDIDOS '$desde', '$hasta', '$tienda', '$warehouse', $estadoSQL, '$orden'
+        EXEC RO_ECOMMERCE_PEDIDOS '$desde', '$hasta', '$tienda', '$warehouse', $estadoSQL, '$orden', $paginaInt, $porPaginaInt, $metodoEnvioSQL
         ";
-        
+
         $array = $this->getDatos($sql);
-        
+
         return $array;
     }
 
-    public function traerWarehouse($pais = 'AR'){
+    public function traerWarehouse($pais = 'AR')
+    {
         if (strtoupper($pais) === 'UY') {
             return $this->traerWarehouseUY();
         }
-        
+
         $sql = "SELECT WAREHOUSE FROM
                 (
                 SELECT REPLACE(A.NOMBRE_SUC, 'RT - SUC - ', '') WAREHOUSE FROM STA22 A
@@ -50,43 +58,56 @@ class Pedido{
                 ORDER BY 1
         ";
 
-        $array = $this->getDatos($sql);    
+        $array = $this->getDatos($sql);
         return $array;
     }
 
-    public function buscarPedido($desde, $hasta, $orden, $pais = 'AR'){
+    public function traerMetodosEnvio()
+    {
+        $sql = "SELECT DISTINCT METODO_ENVIO 
+                FROM RO_V_WAREHOUSE_METODO_ENVIO_VTEX 
+                WHERE METODO_ENVIO IS NOT NULL AND METODO_ENVIO <> ''
+                ORDER BY METODO_ENVIO";
+        $array = $this->getDatos($sql);
+        return $array;
+    }
+
+    public function buscarPedido($desde, $hasta, $orden, $pais = 'AR')
+    {
         if (strtoupper($pais) === 'UY') {
             return $this->buscarPedidoUY($desde, $hasta, $orden);
         }
-        
+
         $sql = "
         SET DATEFORMAT YMD
         EXEC RO_SP_ECOMMERCE_PEDIDOS_FLUJO '$desde', '$hasta', '$orden'
         ";
-        $array = $this->getDatos($sql);    
+        $array = $this->getDatos($sql);
         return $array;
     }
 
-    public function buscarDetallePedido($desde, $hasta, $orden, $pais = 'AR'){
+    public function buscarDetallePedido($desde, $hasta, $orden, $pais = 'AR')
+    {
         if (strtoupper($pais) === 'UY') {
             // Uruguay: el SP de búsqueda ya trae el detalle incluido
             return $this->buscarPedidoUY($desde, $hasta, $orden);
         }
-        
+
         $sql = "
         SET DATEFORMAT YMD
         EXEC RO_SP_ECOMMERCE_PEDIDOS_FLUJO_DETALLE '$desde', '$hasta', '$orden'
         ";
 
-        $array = $this->getDatos($sql);    
+        $array = $this->getDatos($sql);
         return $array;
     }
 
-    public function buscarStockArticulo($sucursal, $pais = 'AR'){
+    public function buscarStockArticulo($sucursal, $pais = 'AR')
+    {
         if (strtoupper($pais) === 'UY') {
             return $this->buscarStockArticuloUY($sucursal);
         }
-        
+
         // Mapeo de nombres de sucursales entre warehouse y tabla de stock
         $mapeoSucursales = [
             'PILAR' => 'PALMAS DEL PILAR',
@@ -114,44 +135,45 @@ class Pedido{
             'SAN JUSTO' => 'SAN JUSTO',
             'CENTRAL' => 'CASA CENTRAL'
         ];
-        
+
         // Buscar en el mapeo (case-insensitive)
         $sucursalUpper = strtoupper(trim($sucursal));
         $sucursalStock = $sucursal;
-        
+
         foreach ($mapeoSucursales as $key => $value) {
             if (strtoupper($key) === $sucursalUpper) {
                 $sucursalStock = $value;
                 break;
             }
         }
-        
+
         $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL, ARTICULO, DESC_CTA_ARTICULO, CANT_STOCK FROM [LAKERBIS].LOCALES_LAKERS.DBO.RO_STOCK_LAKERS A
                 INNER JOIN [LAKERBIS].LOCALES_LAKERS.DBO.CTA_ARTICULO B ON A.ARTICULO = B.COD_ARTICULO
                 WHERE DESC_SUCURSAL = '$sucursalStock' AND A.ARTICULO LIKE '[XO]%'
                 ORDER BY ARTICULO
         ";
 
-        $array = $this->getDatos($sql);    
+        $array = $this->getDatos($sql);
         return $array;
     }
 
-    public function guardarHistorialReclamo($data) {
+    public function guardarHistorialReclamo($data)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
-        
+
         // Establecer formato de fecha
         sqlsrv_query($cid_central, "SET DATEFORMAT YMD");
-        
+
         // Parsear y formatear la fecha correctamente
         $fechaPedido = null;
         if (!empty($data['fechaHora'])) {
             $fechaTexto = trim($data['fechaHora']);
-            
+
             // Formato: "31/10/2025 10:30:45" o "31/10/2025"
             if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})/', $fechaTexto, $matches)) {
                 $fechaPedido = $matches[3] . '-' . $matches[2] . '-' . $matches[1]; // YYYY-MM-DD
-            } 
+            }
             // Formato: "2025-10-31 10:30:45" o "2025-10-31"
             else if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $fechaTexto)) {
                 $fechaPedido = substr($fechaTexto, 0, 10);
@@ -164,77 +186,85 @@ class Pedido{
                 }
             }
         }
-        
+
         $fechaPedidoSQL = $fechaPedido ? "'$fechaPedido'" : "GETDATE()";
-    
+
         $sql = "SET DATEFORMAT YMD;
                 INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (FECHA_PEDIDO, NRO_ORDEN, NRO_PEDIDO, CLIENTE, WAREHOUSE, COD_ARTICULO_CAMBIO, DESCRIPCION, CANTIDAD, ESTADO, RESOLUCION, SUC_DESPACHO, COD_ARTICULO)
-                VALUES ($fechaPedidoSQL, '".$data['nroOrden']."', '".$data['nro_pedido']."', '".$data['cliente']."', '".$data['sucursal']."', '".$data['articulo']."', '".$data['descripcion']."', '".$data['modalCantidad']."', '".$data['estado']."', '".$data['resolucion']."', '".$data['sucursal']."', '".$data['modalCodigo']."')
+                VALUES ($fechaPedidoSQL, '" . $data['nroOrden'] . "', '" . $data['nro_pedido'] . "', '" . $data['cliente'] . "', '" . $data['sucursal'] . "', '" . $data['articulo'] . "', '" . $data['descripcion'] . "', '" . $data['modalCantidad'] . "', '" . $data['estado'] . "', '" . $data['resolucion'] . "', '" . $data['sucursal'] . "', '" . $data['modalCodigo'] . "')
         ";
 
-        $result=sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query: " . print_r(sqlsrv_errors(), true)));
+        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query: " . print_r(sqlsrv_errors(), true)));
         return $result;
     }
 
-    public function traerHistorialReclamo($nro_pedido){
+    public function traerHistorialReclamo($nro_pedido)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
         $sql = "SELECT * FROM RO_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
-       
-        $result = sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query"));
+
+        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query"));
 
         $data = [];
-        while($v=sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)){
+        while ($v = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
             $data[] = array($v);
-        };
-        if(count($data) == 0){
+        }
+        ;
+        if (count($data) == 0) {
             return false;
         }
         return $data[0];
     }
 
-    public function guardarReclamoDetalle ($stringValues){
+    public function guardarReclamoDetalle($stringValues)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
         $sql = "INSERT INTO RO_T_DET_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, COMENTARIOS, TIPO_CONTACTO, AGENTE, FECHA_PEDIDO) VALUES $stringValues";
 
-        $result=sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query"));
+        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query"));
         return $result;
     }
-    
-    public function listarReclamoDetalle($nro_pedido) {
+
+    public function listarReclamoDetalle($nro_pedido)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
         $sql = "SELECT * FROM RO_T_DET_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
 
-        $result=sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query"));
+        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query"));
 
         $data = [];
-        while($v=sqlsrv_fetch_object($result)){
+        while ($v = sqlsrv_fetch_object($result)) {
             $data[] = array($v);
-        };
+        }
+        ;
         return $data;
     }
 
-    public function consultarEstado ($nroOrden) {
+    public function consultarEstado($nroOrden)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
         $sql = "SELECT ESTADO FROM RO_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_ORDEN = '$nroOrden'";
 
-        $result=sqlsrv_query($cid_central,$sql)or die(exit("Error en sqlsrv_query"));
+        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query"));
 
         $data = '';
-        while($v=sqlsrv_fetch_object($result)){
+        while ($v = sqlsrv_fetch_object($result)) {
             // retorna solo el estado 
             $data = $v->ESTADO;
-        };
+        }
+        ;
         return $data;
     }
 
-public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null) {
+    public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
-        
+
         // Verificar si existe un registro en la tabla de historial
         $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
         $resultCheck = sqlsrv_query($cid_central, $sqlCheck);
@@ -242,7 +272,7 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
 
         // Preparar el Nro de Orden para la consulta SQL
         $nroOrdenSQL = $nro_orden ? "'$nro_orden'" : "NULL";
-        
+
         if ($row['count'] > 0) {
             // Actualizar registro existente - solo estado y fecha de última modificación
             // También actualizamos el NRO_ORDEN si viene, para asegurar consistencia.
@@ -255,12 +285,13 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
             $sql = "INSERT INTO RO_T_ENC_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, NRO_ORDEN, ESTADO, FECHA_PEDIDO, FECHA_ALTA, FECHA_ULT_MODIF) 
                     VALUES ('$nro_pedido', $nroOrdenSQL, '$estado', GETDATE(), GETDATE(), GETDATE())";
         }
-        
+
         $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query: " . print_r(sqlsrv_errors(), true)));
         return $result;
     }
 
-    public function guardarHistorialReclamoConUpsert($data) {
+    public function guardarHistorialReclamoConUpsert($data)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
 
@@ -272,7 +303,7 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
         $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
         $resultCheck = sqlsrv_query($cid_central, $sqlCheck);
         $row = sqlsrv_fetch_array($resultCheck, SQLSRV_FETCH_ASSOC);
-        
+
         // Mapping correcto de campos:
         $nroOrden = !empty($data['nroOrden']) ? $data['nroOrden'] : '';
         $cliente = !empty($data['cliente']) ? $data['cliente'] : '';
@@ -282,17 +313,17 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
         $sucDespacho = !empty($data['sucursal']) ? $data['sucursal'] : ''; // Sucursal seleccionada en modal
         $resolucion = !empty($data['resolucion']) ? strtolower(trim($data['resolucion'])) : '';
         $estado = !empty($data['estado']) ? $data['estado'] : '';
-        
+
         // CORRECCIÓN: Parsear y formatear la fecha correctamente
         $fechaPedido = null;
         if (!empty($data['fechaHora'])) {
             // Intentar parsear diferentes formatos de fecha
             $fechaTexto = trim($data['fechaHora']);
-            
+
             // Formato: "31/10/2025 10:30:45" o "31/10/2025"
             if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})/', $fechaTexto, $matches)) {
                 $fechaPedido = $matches[3] . '-' . $matches[2] . '-' . $matches[1]; // Convertir a YYYY-MM-DD
-            } 
+            }
             // Formato: "2025-10-31 10:30:45" o "2025-10-31"
             else if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $fechaTexto)) {
                 $fechaPedido = substr($fechaTexto, 0, 10); // Extraer solo la fecha
@@ -305,10 +336,10 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
                 }
             }
         }
-        
+
         // Si no se pudo parsear la fecha, usar GETDATE()
         $fechaPedidoSQL = $fechaPedido ? "'$fechaPedido'" : "GETDATE()";
-        
+
         if ($row['count'] > 0) {
             // UPDATE - Actualizar registro existente
             $sql = "UPDATE RO_T_ENC_ECOMMERCE_HISTORIAL_FALT SET 
@@ -348,19 +379,19 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
                     GETDATE()
                     )";
         }
-        
+
         $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query: " . print_r(sqlsrv_errors(), true)));
-        
+
         // NUEVA FUNCIONALIDAD: Si la resolución es "Completado" o "Cambio", marcar el pedido como Controlado
         if ($result && in_array($resolucion, ['completado', 'cambio'])) {
             $this->marcarPedidoComoControlado($nro_pedido, $nroOrden);
         }
-        
+
         // NUEVA FUNCIONALIDAD: Si la resolución es "Cancelado", marcar el pedido como cancelado en la tabla de estados
         if ($result && $resolucion === 'cancelado') {
             $this->marcarPedidoCancelado($nro_pedido, $nroOrden);
         }
-        
+
         return $result;
     }
 
@@ -368,26 +399,27 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
      * Marca un pedido como controlado en la tabla RO_T_ESTADO_PEDIDOS_ECOMMERCE
      * Se ejecuta automáticamente cuando se completa o cambia un artículo
      */
-    public function marcarPedidoComoControlado($nro_pedido, $nro_orden = null) {
+    public function marcarPedidoComoControlado($nro_pedido, $nro_orden = null)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
-        
+
         // Actualizar el estado del pedido como controlado
         $sql = "UPDATE RO_T_ESTADO_PEDIDOS_ECOMMERCE 
                 SET CONTROLADO = 1, FECHA_CONTROLADO = GETDATE(), FECHA_ULT_MODIF = GETDATE()
                 WHERE NRO_PEDIDO = '$nro_pedido'";
-        
+
         // Si hay ORDER_ID, agregar la condición
         if ($nro_orden) {
             $sql .= " AND ORDER_ID = '$nro_orden'";
         }
-        
+
         $result = sqlsrv_query($cid_central, $sql);
-        
+
         if ($result === false) {
             error_log("Error al marcar pedido como controlado: " . print_r(sqlsrv_errors(), true));
         }
-        
+
         return $result;
     }
 
@@ -395,26 +427,27 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
      * Marca un pedido como cancelado en la tabla RO_T_ESTADO_PEDIDOS_ECOMMERCE
      * Se ejecuta automáticamente cuando la resolución es "Cancelado"
      */
-    public function marcarPedidoCancelado($nro_pedido, $nro_orden = null) {
+    public function marcarPedidoCancelado($nro_pedido, $nro_orden = null)
+    {
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
-        
+
         // Actualizar el estado del pedido como cancelado
         $sql = "UPDATE RO_T_ESTADO_PEDIDOS_ECOMMERCE 
                 SET CANCELADO = 1, FECHA_ULT_MODIF = GETDATE()
                 WHERE NRO_PEDIDO = '$nro_pedido'";
-        
+
         // Si hay ORDER_ID, agregar la condición
         if ($nro_orden) {
             $sql .= " AND ORDER_ID = '$nro_orden'";
         }
-        
+
         $result = sqlsrv_query($cid_central, $sql);
-        
+
         if ($result === false) {
             error_log("Error al marcar pedido como cancelado: " . print_r(sqlsrv_errors(), true));
         }
-        
+
         return $result;
     }
 
@@ -422,24 +455,24 @@ public function actualizarEstadoReclamo($nro_pedido, $estado, $nro_orden = null)
      * Obtiene el historial completo de incidentes por faltantes, con filtros.
      * Este es el nuevo método para el dashboard de reportes.
      */
-// Reemplaza esta función completa en Class/Pedido.php
+    // Reemplaza esta función completa en Class/Pedido.php
 
-public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '')
-{
-    $cid = new Conexion();
-    $cid_central = $cid->conectarSql("central");
+    public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '')
+    {
+        $cid = new Conexion();
+        $cid_central = $cid->conectarSql("central");
 
-    $sqlSetFormat = "SET DATEFORMAT YMD";
-    sqlsrv_query($cid_central, $sqlSetFormat);
+        $sqlSetFormat = "SET DATEFORMAT YMD";
+        sqlsrv_query($cid_central, $sqlSetFormat);
 
-    if (!empty($fechaInicio)) {
-        $fechaInicio = date('Y-m-d', strtotime($fechaInicio));
-    }
-    if (!empty($fechaFin)) {
-        $fechaFin = date('Y-m-d', strtotime($fechaFin));
-    }
+        if (!empty($fechaInicio)) {
+            $fechaInicio = date('Y-m-d', strtotime($fechaInicio));
+        }
+        if (!empty($fechaFin)) {
+            $fechaFin = date('Y-m-d', strtotime($fechaFin));
+        }
 
-    $sql = "
+        $sql = "
         SET DATEFORMAT YMD;
         
         WITH IncidentesAuditoria AS (
@@ -508,34 +541,34 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                                                      THEN CHARINDEX(',', IA.ARTICULO_AUDITADO) - 1 
                                                      ELSE LEN(IA.ARTICULO_AUDITADO) END) = RUBRO2.COD_ARTICU
     ";
-    
-    $params = array($fechaInicio, $fechaFin);
 
-    $whereConditions = [];
-    if (!empty($estado)) {
-        $whereConditions[] = "ISNULL(H.ESTADO, 'abierto') = ?";
-        array_push($params, $estado);
+        $params = array($fechaInicio, $fechaFin);
+
+        $whereConditions = [];
+        if (!empty($estado)) {
+            $whereConditions[] = "ISNULL(H.ESTADO, 'abierto') = ?";
+            array_push($params, $estado);
+        }
+
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(' AND ', $whereConditions);
+        }
+
+        $sql .= " ORDER BY GVA21.FECHA_PEDI DESC;";
+
+        $stmt = sqlsrv_query($cid_central, $sql, $params);
+
+        if ($stmt === false) {
+            return [];
+        }
+
+        $data = [];
+        while ($v = sqlsrv_fetch_object($stmt)) {
+            $data[] = array($v);
+        }
+
+        return $data;
     }
-    
-    if (!empty($whereConditions)) {
-        $sql .= " WHERE " . implode(' AND ', $whereConditions);
-    }
-
-    $sql .= " ORDER BY GVA21.FECHA_PEDI DESC;";
-
-    $stmt = sqlsrv_query($cid_central, $sql, $params);
-
-    if ($stmt === false) {
-        return [];
-    }
-
-    $data = [];
-    while ($v = sqlsrv_fetch_object($stmt)) {
-        $data[] = array($v);
-    }
-
-    return $data;
-}
 
     /**
      * Obtener devoluciones/reintegros de un pedido desde RO_T_ESTADO_PEDIDOS_ECOMMERCE
@@ -543,14 +576,15 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
      * @param string $nroOrden Número de orden (opcional)
      * @return array Array con los datos de devoluciones
      */
-    public function obtenerDevoluciones($nroPedido, $nroOrden = null, $pais = 'AR') {
+    public function obtenerDevoluciones($nroPedido, $nroOrden = null, $pais = 'AR')
+    {
         if (strtoupper($pais) === 'UY') {
             return $this->obtenerDevolucionesUY($nroPedido, $nroOrden);
         }
-        
+
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
-        
+
         // Consulta simplificada - RO_T_ESTADO_PEDIDOS_ECOMMERCE solo tiene estado del pedido
         $sql = "
         SET DATEFORMAT YMD;
@@ -578,36 +612,37 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
         WHERE RTRIM(LTRIM(EP.NRO_PEDIDO)) = ?
         AND EP.REINTEGRADO = 1
         ";
-        
+
         $params = array($nroPedido);
         $stmt = sqlsrv_query($cid_central, $sql, $params);
-        
+
         if ($stmt === false) {
             return [];
         }
-        
+
         $data = [];
         while ($v = sqlsrv_fetch_object($stmt)) {
             $data[] = $v;
         }
-        
+
         return $data;
     }
-    
+
     /**
      * Verificar si un pedido está cancelado y si es total o parcial
      * @param string $nroPedido Número de pedido
      * @param string $nroOrden Número de orden (opcional)
      * @return object|null Objeto con información de cancelación
      */
-    public function verificarCancelacion($nroPedido, $nroOrden = null, $pais = 'AR') {
+    public function verificarCancelacion($nroPedido, $nroOrden = null, $pais = 'AR')
+    {
         if (strtoupper($pais) === 'UY') {
             return $this->verificarCancelacionUY($nroPedido, $nroOrden);
         }
-        
+
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
-        
+
         // Verificar estado de cancelación/reintegro
         $sql = "SELECT 
                     EP.REINTEGRADO,
@@ -618,30 +653,30 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                     EP.FECHA_PEDI
                 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE EP
                 WHERE RTRIM(LTRIM(EP.NRO_PEDIDO)) = ?";
-        
+
         $params = array($nroPedido);
         $stmt = sqlsrv_query($cid_central, $sql, $params);
-        
+
         if ($stmt === false || !sqlsrv_has_rows($stmt)) {
             return null;
         }
-        
+
         $estadoPedido = sqlsrv_fetch_object($stmt);
-        
+
         if ($estadoPedido->REINTEGRADO != 1) {
             return null;
         }
-        
+
         // Obtener detalle del pedido para verificar si es cancelación parcial
         $sqlDetalle = "SELECT 
                         COUNT(*) as TOTAL_ARTICULOS,
                         SUM(CAST(DP.CANT_PEDID as INT)) as TOTAL_CANTIDAD
                     FROM RO_DPEDI01 DP
                     WHERE RTRIM(LTRIM(DP.NRO_PEDIDO)) = ?";
-        
+
         $stmtDetalle = sqlsrv_query($cid_central, $sqlDetalle, $params);
         $detallePedido = $stmtDetalle ? sqlsrv_fetch_object($stmtDetalle) : null;
-        
+
         return (object) [
             'esta_cancelado' => true,
             'tiene_ncr' => !empty($estadoPedido->NCR),
@@ -653,34 +688,35 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
             'total_cantidad' => $detallePedido ? $detallePedido->TOTAL_CANTIDAD : 0
         ];
     }
-    
+
     /**
      * Obtener resumen de devoluciones agrupadas por tipo
      * @param string $nroPedido Número de pedido
      * @param string $nroOrden Número de orden (opcional)
      * @return object Objeto con el resumen de devoluciones
      */
-    public function obtenerResumenDevoluciones($nroPedido, $nroOrden = null) {
+    public function obtenerResumenDevoluciones($nroPedido, $nroOrden = null)
+    {
         $devoluciones = $this->obtenerDevoluciones($nroPedido, $nroOrden);
-        
-        $resumen = (object)[
+
+        $resumen = (object) [
             'total_articulos' => 0,
             'total_importe' => 0,
             'tiene_devoluciones' => false,
             'tiene_ncr_pendiente' => false,
             'tipos' => []
         ];
-        
+
         foreach ($devoluciones as $dev) {
             $resumen->tiene_devoluciones = true;
             $resumen->total_articulos += $dev->CANTIDAD;
             $resumen->total_importe += ($dev->CANTIDAD * $dev->IMPORTE);
-            
+
             // Detectar si hay NCR pendiente
             if (in_array($dev->ESTADO, ['NCR_PENDIENTE', 'PENDIENTE'])) {
                 $resumen->tiene_ncr_pendiente = true;
             }
-            
+
             // Agrupar por tipo más legible
             $tipoDisplay = $dev->TIPO;
             if ($dev->TIPO == 'REINTEGRO_ECOMMERCE') {
@@ -692,38 +728,39 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
             } else if ($dev->TIPO == 'REFUND_VTEX') {
                 $tipoDisplay = 'REINTEGRO VTEX';
             }
-            
+
             if (!isset($resumen->tipos[$tipoDisplay])) {
-                $resumen->tipos[$tipoDisplay] = (object)[
+                $resumen->tipos[$tipoDisplay] = (object) [
                     'cantidad' => 0,
                     'importe' => 0,
                     'registros' => []
                 ];
             }
-            
+
             $resumen->tipos[$tipoDisplay]->cantidad += $dev->CANTIDAD;
             $resumen->tipos[$tipoDisplay]->importe += ($dev->CANTIDAD * $dev->IMPORTE);
             $resumen->tipos[$tipoDisplay]->registros[] = $dev;
         }
-        
+
         return $resumen;
     }
-    
+
     /**
      * Verificar si hay artículos con reintegro pero sin NCR emitida
      * @param string $nroPedido Número de pedido
      * @param string $nroOrden Número de orden (opcional)
      * @return array Array con artículos pendientes de NCR
      */
-    public function verificarNcrPendiente($nroPedido, $nroOrden = null) {
+    public function verificarNcrPendiente($nroPedido, $nroOrden = null)
+    {
         $devoluciones = $this->obtenerDevoluciones($nroPedido, $nroOrden);
-        
+
         $pendientes = [];
-        
+
         // Buscar cualquier devolución con estado NCR_PENDIENTE
         foreach ($devoluciones as $dev) {
             if ($dev->ESTADO == 'NCR_PENDIENTE') {
-                $pendientes[] = (object)[
+                $pendientes[] = (object) [
                     'COD_ARTICU_BASE' => $dev->COD_ARTICU_BASE,
                     'DESCRIPCIO' => $dev->DESCRIPCIO,
                     'CANTIDAD_REFUND' => $dev->CANTIDAD,
@@ -735,7 +772,7 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                 ];
             }
         }
-        
+
         return $pendientes;
     }
 
@@ -745,7 +782,8 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
      * Obtiene historial de faltantes/incidentes para Uruguay (TASKY_SA)
      * IMPORTANTE: Usa la misma lógica que Argentina pero con tablas de Uruguay
      */
-    public function getHistorialFaltantesCompletoUY($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '') {
+    public function getHistorialFaltantesCompletoUY($fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '')
+    {
         try {
             $cid = new Conexion();
             $cid_uruguay = $cid->conectarSql("uy");
@@ -769,14 +807,14 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
             $whereConditions = ["EP.INCOMPLETO = 1"];
             $whereConditions[] = "CAST(EP.FECHA_PEDI AS DATE) BETWEEN ? AND ?";
             $params = array($fechaInicio, $fechaFin);
-            
+
             // Filtros adicionales
             if (!empty($warehouse)) {
                 $whereConditions[] = "(H.WAREHOUSE LIKE ? OR GVA21.COD_SUCURS LIKE ?)";
                 $params[] = "%$warehouse%";
                 $params[] = "%$warehouse%";
             }
-            
+
             if (!empty($estado)) {
                 $whereConditions[] = "CASE 
                     WHEN H.NRO_PEDIDO IS NULL THEN 'abierto'
@@ -785,14 +823,14 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                 END = ?";
                 $params[] = $estado;
             }
-            
+
             if (!empty($resolucion)) {
                 $whereConditions[] = "H.RESOLUCION = ?";
                 $params[] = $resolucion;
             }
-            
+
             $whereClause = implode(" AND ", $whereConditions);
-            
+
             $sql = "
                 SET DATEFORMAT YMD;
                 
@@ -825,7 +863,7 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                 WHERE $whereClause
                 ORDER BY EP.FECHA_PEDI DESC, EP.NRO_PEDIDO DESC
             ";
-            
+
             $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
 
             if ($stmt === false) {
@@ -842,7 +880,7 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
             }
 
             return $data;
-            
+
         } catch (Exception $e) {
             error_log("Error en getHistorialFaltantesCompletoUY: " . $e->getMessage());
             return [];
@@ -852,7 +890,8 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
     /**
      * Método wrapper que decide qué método llamar según el país
      */
-    public function getHistorialFaltantesCompletoPorPais($pais, $fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '') {
+    public function getHistorialFaltantesCompletoPorPais($pais, $fechaInicio, $fechaFin, $warehouse = '', $estado = '', $resolucion = '')
+    {
         if (strtoupper($pais) === 'UY') {
             return $this->getHistorialFaltantesCompletoUY($fechaInicio, $fechaFin, $warehouse, $estado, $resolucion);
         } else {
@@ -863,10 +902,11 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
     /**
      * Guarda detalle de reclamo para Uruguay
      */
-    public function guardarReclamoDetalleUY($stringValues) {
+    public function guardarReclamoDetalleUY($stringValues)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         $sql = "INSERT INTO FT_T_DET_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, COMENTARIOS, TIPO_CONTACTO, AGENTE, FECHA_PEDIDO) 
                 VALUES $stringValues";
 
@@ -877,38 +917,37 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
     /**
      * Guarda o actualiza historial de reclamo para Uruguay
      */
-    public function guardarHistorialReclamoUY($data) {
+    public function guardarHistorialReclamoUY($data)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         // Establecer formato de fecha
         sqlsrv_query($cid_uruguay, "SET DATEFORMAT YMD");
-        
+
         // Parsear y formatear la fecha correctamente
         $fechaPedido = null;
         if (!empty($data['fechaHora'])) {
             $fechaTexto = trim($data['fechaHora']);
-            
+
             if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})/', $fechaTexto, $matches)) {
                 $fechaPedido = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
-            } 
-            else if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $fechaTexto)) {
+            } else if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $fechaTexto)) {
                 $fechaPedido = substr($fechaTexto, 0, 10);
-            }
-            else {
+            } else {
                 $timestamp = strtotime($fechaTexto);
                 if ($timestamp !== false) {
                     $fechaPedido = date('Y-m-d', $timestamp);
                 }
             }
         }
-        
+
         $fechaPedidoSQL = $fechaPedido ? "'$fechaPedido'" : "GETDATE()";
-        
+
         // Verificar si ya existe el reclamo
         $checkSql = "SELECT ID FROM FT_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_ORDEN = '{$data['nroOrden']}'";
         $checkResult = sqlsrv_query($cid_uruguay, $checkSql);
-        
+
         if ($checkResult && $existing = sqlsrv_fetch_object($checkResult)) {
             // UPDATE
             $sql = "UPDATE FT_T_ENC_ECOMMERCE_HISTORIAL_FALT 
@@ -940,36 +979,37 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                         GETDATE()
                     )";
         }
-        
+
         $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY: " . print_r(sqlsrv_errors(), true)));
-        
+
         // NUEVA FUNCIONALIDAD: Si la resolución es "Completado" o "Cambio", marcar el pedido como Controlado
         if ($result && in_array(strtolower($data['resolucion']), ['completado', 'cambio'])) {
             $this->marcarPedidoComoControladoUY($data['nro_pedido'], $data['nroOrden']);
         }
-        
+
         // NUEVA FUNCIONALIDAD: Si la resolución es "Cancelado", marcar el pedido como cancelado
         if ($result && strtolower($data['resolucion']) === 'cancelado') {
             $this->marcarPedidoCanceladoUY($data['nro_pedido'], $data['nroOrden']);
         }
-        
+
         return $result;
     }
 
     /**
      * Actualiza estado de reclamo para Uruguay
      */
-    public function actualizarEstadoReclamoUY($nro_pedido, $estado, $nro_orden = null) {
+    public function actualizarEstadoReclamoUY($nro_pedido, $estado, $nro_orden = null)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         // Verificar si existe un registro en la tabla de historial
         $sqlCheck = "SELECT COUNT(*) as count FROM FT_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
         $resultCheck = sqlsrv_query($cid_uruguay, $sqlCheck);
         $row = sqlsrv_fetch_array($resultCheck, SQLSRV_FETCH_ASSOC);
 
         $nroOrdenSQL = $nro_orden ? "'$nro_orden'" : "NULL";
-        
+
         if ($row['count'] > 0) {
             $updateNroOrdenSQL = $nro_orden ? ", NRO_ORDEN = $nroOrdenSQL" : "";
             $sql = "UPDATE FT_T_ENC_ECOMMERCE_HISTORIAL_FALT 
@@ -979,7 +1019,7 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
             $sql = "INSERT INTO FT_T_ENC_ECOMMERCE_HISTORIAL_FALT (NRO_PEDIDO, NRO_ORDEN, ESTADO, FECHA_PEDIDO, FECHA_ALTA, FECHA_ULT_MODIF) 
                     VALUES ('$nro_pedido', $nroOrdenSQL, '$estado', GETDATE(), GETDATE(), GETDATE())";
         }
-        
+
         $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY: " . print_r(sqlsrv_errors(), true)));
         return $result;
     }
@@ -987,7 +1027,8 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
     /**
      * Lista detalle de reclamos para Uruguay
      */
-    public function listarReclamoDetalleUY($nro_pedido) {
+    public function listarReclamoDetalleUY($nro_pedido)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
         $sql = "SELECT * FROM FT_T_DET_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
@@ -995,7 +1036,7 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
         $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY"));
 
         $data = [];
-        while($v = sqlsrv_fetch_object($result)){
+        while ($v = sqlsrv_fetch_object($result)) {
             $data[] = array($v);
         }
         return $data;
@@ -1004,18 +1045,19 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
     /**
      * Obtiene historial completo de un reclamo en Uruguay
      */
-    public function traerHistorialReclamoUY($nro_pedido) {
+    public function traerHistorialReclamoUY($nro_pedido)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
         $sql = "SELECT * FROM FT_T_ENC_ECOMMERCE_HISTORIAL_FALT WHERE NRO_PEDIDO = '$nro_pedido'";
-       
+
         $result = sqlsrv_query($cid_uruguay, $sql) or die(exit("Error en sqlsrv_query UY"));
 
         $data = [];
-        while($v = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)){
+        while ($v = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
             $data[] = array($v);
         }
-        if(count($data) == 0){
+        if (count($data) == 0) {
             return false;
         }
         return $data[0];
@@ -1025,26 +1067,27 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
      * Marca un pedido como controlado en Uruguay (RO_T_ESTADO_PEDIDOS_ECOMMERCE)
      * Se ejecuta automáticamente cuando se completa o cambia un artículo
      */
-    public function marcarPedidoComoControladoUY($nro_pedido, $nro_orden = null) {
+    public function marcarPedidoComoControladoUY($nro_pedido, $nro_orden = null)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         // NOTA: CONTROLADO es varchar en UY, usar '1' como string
         $sql = "UPDATE RO_T_ESTADO_PEDIDOS_ECOMMERCE 
                 SET CONTROLADO = '1', FECHA_CONTROLADO = GETDATE(), ULT_ACTUALIZACION = GETDATE()
                 WHERE NRO_PEDIDO = '$nro_pedido'";
-        
+
         // Si hay ORDER_ID, agregar la condición
         if ($nro_orden) {
             $sql .= " AND ORDER_ID = '$nro_orden'";
         }
-        
+
         $result = sqlsrv_query($cid_uruguay, $sql);
-        
+
         if ($result === false) {
             error_log("Error al marcar pedido UY como controlado: " . print_r(sqlsrv_errors(), true));
         }
-        
+
         return $result;
     }
 
@@ -1052,26 +1095,27 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
      * Marca un pedido como cancelado en Uruguay (RO_T_ESTADO_PEDIDOS_ECOMMERCE)
      * Se ejecuta automáticamente cuando la resolución es "Cancelado"
      */
-    public function marcarPedidoCanceladoUY($nro_pedido, $nro_orden = null) {
+    public function marcarPedidoCanceladoUY($nro_pedido, $nro_orden = null)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         // Actualizar el estado del pedido como cancelado
         $sql = "UPDATE RO_T_ESTADO_PEDIDOS_ECOMMERCE 
                 SET CANCELADO = 1, ULT_ACTUALIZACION = GETDATE()
                 WHERE NRO_PEDIDO = '$nro_pedido'";
-        
+
         // Si hay ORDER_ID, agregar la condición
         if ($nro_orden) {
             $sql .= " AND ORDER_ID = '$nro_orden'";
         }
-        
+
         $result = sqlsrv_query($cid_uruguay, $sql);
-        
+
         if ($result === false) {
             error_log("Error al marcar pedido UY como cancelado: " . print_r(sqlsrv_errors(), true));
         }
-        
+
         return $result;
     }
 
@@ -1080,15 +1124,16 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
     /**
      * Busca pedidos en Uruguay usando SP especifico
      */
-    public function buscarPedidoUY($desde, $hasta, $orden) {
+    public function buscarPedidoUY($desde, $hasta, $orden)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         if (!$cid_uruguay) {
             error_log("Error: No se pudo conectar a la base de datos de Uruguay");
             return [];
         }
-        
+
         // Determinar tienda según formato del ORDER_ID
         $tienda = '%'; // Buscar en todas por defecto
         if (!empty($orden) && $orden != '%') {
@@ -1099,46 +1144,46 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                 $tienda = '%';
             }
         }
-        
+
         $sql = "SET DATEFORMAT YMD;
                 EXEC RO_SP_ECOMMERCE_PEDIDOS_URUGUAY ?, ?, ?";
-        
+
         $params = array($desde, $hasta, $tienda);
         $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
-        
+
         if ($stmt === false) {
             error_log("Error buscarPedidoUY: " . print_r(sqlsrv_errors(), true));
             return [];
         }
-        
+
         $data = [];
-        
+
         // Normalizar búsqueda
         $ordenBusqueda = trim($orden);
         $buscarTodos = (empty($ordenBusqueda) || $ordenBusqueda == '%');
-        
+
         // Si es numérico, preparar para comparación flexible
         $esNumerico = is_numeric($ordenBusqueda);
         $ordenNumerico = $esNumerico ? intval($ordenBusqueda) : null;
-        
+
         $pedidosProcessados = [];
-        
+
         while ($v = sqlsrv_fetch_object($stmt)) {
             $nroPedidoKey = trim($v->NRO_PEDIDO ?? '');
             $coincide = false;
-            
+
             if ($buscarTodos) {
                 $coincide = true;
             } else {
                 $orderIdTienda = trim($v->ORDER_ID_TIENDA ?? '');
                 $nroPedido = trim($v->NRO_PEDIDO ?? '');
                 $factura = trim($v->FACTURA ?? '');
-                
+
                 // ESTRATEGIA 1: ORDER_ID_TIENDA
                 if (stripos($orderIdTienda, $ordenBusqueda) !== false) {
                     $coincide = true;
                 }
-                
+
                 // ESTRATEGIA 2: NRO_PEDIDO
                 if (!$coincide) {
                     // Búsqueda textual exacta
@@ -1157,7 +1202,7 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                         }
                     }
                 }
-                
+
                 // ESTRATEGIA 3: FACTURA
                 if (!$coincide && !empty($factura)) {
                     if (stripos($factura, $ordenBusqueda) !== false) {
@@ -1165,11 +1210,11 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                     }
                 }
             }
-            
+
             if ($coincide) {
                 // Enriquecer el objeto ORIGINAL sin reemplazarlo
                 $this->enriquecerPedidoUY($v);
-                
+
                 // Para evitar duplicados, solo agregar si NO lo hemos visto
                 if (!isset($pedidosProcessados[$nroPedidoKey])) {
                     $pedidosProcessados[$nroPedidoKey] = true;
@@ -1177,7 +1222,7 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                 }
             }
         }
-        
+
         return $data;
     }
 
@@ -1186,28 +1231,29 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
      * Adds mapeadas y enriquecidas sin crear un nuevo objeto
      * El objeto se modifica in-place
      */
-    private function enriquecerPedidoUY(&$pedido) {
+    private function enriquecerPedidoUY(&$pedido)
+    {
         // Mapear campos que vienen del SP pero con nombres diferentes
         // ORIGEN → MARKETPLACE y MARKETPLACE
         if (isset($pedido->ORIGEN) && !isset($pedido->MARKETPLACE)) {
             $pedido->MARKETPLACE = $pedido->ORIGEN;
         }
-        
+
         // ORDER_ID_TIENDA → NRO_ORDEN (si no existe)
         if (isset($pedido->ORDER_ID_TIENDA) && !isset($pedido->NRO_ORDEN)) {
             $pedido->NRO_ORDEN = $pedido->ORDER_ID_TIENDA;
         }
-        
+
         // RECEIVER_NAME → CLIENTE (si no existe)
         if (isset($pedido->RECEIVER_NAME) && !isset($pedido->CLIENTE)) {
             $pedido->CLIENTE = trim($pedido->RECEIVER_NAME);
         }
-        
+
         // Mapear RAZON_SOCI (para compatibilidad con Argentina)
         if (!isset($pedido->RAZON_SOCI) && isset($pedido->CLIENTE)) {
             $pedido->RAZON_SOCI = $pedido->CLIENTE;
         }
-        
+
         // DEPARTAMENTO → DIRECCION_ENTREGA y LUGAR_ENTREGA (si están vacíos)
         if (isset($pedido->DEPARTAMENTO)) {
             if (!isset($pedido->DIRECCION_ENTREGA) || empty($pedido->DIRECCION_ENTREGA)) {
@@ -1217,17 +1263,17 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                 $pedido->LUGAR_ENTREGA = $pedido->DEPARTAMENTO;
             }
         }
-        
+
         // Si DEPARTAMENTO es código corto (1-2 chars), intentar buscar nombre completo
         if (isset($pedido->DEPARTAMENTO) && strlen(trim($pedido->DEPARTAMENTO)) <= 2) {
             $cid = new Conexion();
             $cid_uruguay = $cid->conectarSql('uy');
-            
+
             if ($cid_uruguay) {
                 $sqlDept = "SELECT NOMBRE FROM STA01 WHERE CODIGO = ?";
                 $paramsDept = array(trim($pedido->DEPARTAMENTO));
                 $stmtDept = sqlsrv_query($cid_uruguay, $sqlDept, $paramsDept);
-                
+
                 if ($stmtDept && ($deptRow = sqlsrv_fetch_object($stmtDept))) {
                     $deptNombre = trim($deptRow->NOMBRE ?? '');
                     if (!empty($deptNombre)) {
@@ -1236,18 +1282,19 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                         $pedido->LUGAR_ENTREGA = $deptNombre;
                     }
                 }
-                if ($stmtDept) sqlsrv_free_stmt($stmtDept);
+                if ($stmtDept)
+                    sqlsrv_free_stmt($stmtDept);
             }
         }
-        
+
         // Intentar obtener información adicional de la tabla RO_T_ESTADO_PEDIDOS_ECOMMERCE
         if (!empty($pedido->NRO_PEDIDO)) {
             $cid = new Conexion();
             $cid_uruguay = $cid->conectarSql('uy');
-            
+
             if ($cid_uruguay) {
                 $nroPedido = trim($pedido->NRO_PEDIDO);
-                
+
                 $sqlEstado = "
                     SELECT TOP 1
                         WAREHOUSE,
@@ -1257,10 +1304,10 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                     WHERE NRO_PEDIDO = ?
                     ORDER BY ULT_ACTUALIZACION DESC
                 ";
-                
+
                 $paramsEstado = array($nroPedido);
                 $stmtEstado = sqlsrv_query($cid_uruguay, $sqlEstado, $paramsEstado);
-                
+
                 if ($stmtEstado && ($estadoRow = sqlsrv_fetch_object($stmtEstado))) {
                     // Enriquecer si el campo no existe
                     if (!isset($pedido->WAREHOUSE) && !empty($estadoRow->WAREHOUSE)) {
@@ -1275,12 +1322,12 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                     if (!isset($pedido->SUCURSAL_ENTREGA) && !empty($estadoRow->SUCURSAL_ENTREGA)) {
                         $pedido->SUCURSAL_ENTREGA = trim($estadoRow->SUCURSAL_ENTREGA);
                     }
-                    
+
                     sqlsrv_free_stmt($stmtEstado);
                 }
             }
         }
-        
+
         // Asegurar que campos necesarios tengan algún valor
         if (!isset($pedido->PREPARA)) {
             $pedido->PREPARA = null;
@@ -1299,49 +1346,51 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
     /**
      * Trae warehouses/sucursales de Uruguay
      */
-    public function traerWarehouseUY() {
+    public function traerWarehouseUY()
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         if (!$cid_uruguay) {
             error_log("Error: No se pudo conectar a la base de datos de Uruguay");
             return [];
         }
-        
+
         $sql = "SELECT REPLACE(NOMBRE_SUC, 'RT - SUC - ', '') AS WAREHOUSE
                 FROM STA22
                 WHERE NOMBRE_SUC LIKE 'RT - SUC - %'
                 UNION ALL
                 SELECT 'CENTRAL' AS WAREHOUSE
                 ORDER BY 1";
-        
+
         $result = sqlsrv_query($cid_uruguay, $sql);
-        
+
         if ($result === false) {
             error_log("Error traerWarehouseUY: " . print_r(sqlsrv_errors(), true));
             return [];
         }
-        
+
         $data = [];
         while ($v = sqlsrv_fetch_object($result)) {
             $data[] = array($v);
         }
-        
+
         return $data;
     }
 
     /**
      * Busca stock de artículos por sucursal en Uruguay
      */
-    public function buscarStockArticuloUY($sucursal) {
+    public function buscarStockArticuloUY($sucursal)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         if (!$cid_uruguay) {
             error_log("Error: No se pudo conectar a la base de datos de Uruguay");
             return [];
         }
-        
+
         // Mapeo de nombres de sucursales Uruguay
         $mapeoSucursales = [
             'MONTEVIDEO' => 'RT - SUC - MONTEVIDEO',
@@ -1350,10 +1399,10 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
             'TRES CRUCES' => 'RT - SUC - TRES CRUCES',
             'CENTRAL' => 'CASA CENTRAL'
         ];
-        
+
         $sucursalUpper = strtoupper(trim($sucursal));
         $sucursalStock = $mapeoSucursales[$sucursalUpper] ?? $sucursal;
-        
+
         $sql = "SELECT 
                     S22.COD_SUCURS AS NRO_SUCURSAL,
                     S22.NOMBRE_SUC AS DESC_SUCURSAL,
@@ -1367,34 +1416,35 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                   AND S19.COD_ARTICU LIKE '[XO]%'
                   AND S19.CANT_STOCK > 0
                 ORDER BY S19.COD_ARTICU";
-        
+
         $params = array($sucursalStock);
         $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
-        
+
         if ($stmt === false) {
             error_log("Error buscarStockArticuloUY: " . print_r(sqlsrv_errors(), true));
             return [];
         }
-        
+
         $data = [];
         while ($v = sqlsrv_fetch_object($stmt)) {
             $data[] = array($v);
         }
-        
+
         return $data;
     }
 
     /**
      * Obtiene devoluciones para Uruguay (usa CANCELADO en lugar de REINTEGRADO)
      */
-    public function obtenerDevolucionesUY($nroPedido, $nroOrden = null) {
+    public function obtenerDevolucionesUY($nroPedido, $nroOrden = null)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         if (!$cid_uruguay) {
             return [];
         }
-        
+
         // DIFERENCIA CLAVE: Uruguay usa CANCELADO en lugar de REINTEGRADO
         $sql = "
         SET DATEFORMAT YMD;
@@ -1422,33 +1472,34 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
         WHERE RTRIM(LTRIM(EP.NRO_PEDIDO)) = ?
         AND EP.CANCELADO = 1
         ";
-        
+
         $params = array($nroPedido);
         $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
-        
+
         if ($stmt === false) {
             return [];
         }
-        
+
         $data = [];
         while ($v = sqlsrv_fetch_object($stmt)) {
             $data[] = $v;
         }
-        
+
         return $data;
     }
 
     /**
      * Verifica cancelación de pedido en Uruguay
      */
-    public function verificarCancelacionUY($nroPedido, $nroOrden = null) {
+    public function verificarCancelacionUY($nroPedido, $nroOrden = null)
+    {
         $cid = new Conexion();
         $cid_uruguay = $cid->conectarSql('uy');
-        
+
         if (!$cid_uruguay) {
             return null;
         }
-        
+
         // CAMBIO CLAVE: Uruguay usa CANCELADO en lugar de REINTEGRADO
         $sql = "SELECT 
                     EP.CANCELADO,
@@ -1459,30 +1510,30 @@ public function getHistorialFaltantesCompletoAR($fechaInicio, $fechaFin, $wareho
                     EP.CONTROLADO
                 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE EP
                 WHERE RTRIM(LTRIM(EP.NRO_PEDIDO)) = ?";
-        
+
         $params = array($nroPedido);
         $stmt = sqlsrv_query($cid_uruguay, $sql, $params);
-        
+
         if ($stmt === false || !sqlsrv_has_rows($stmt)) {
             return null;
         }
-        
+
         $estadoPedido = sqlsrv_fetch_object($stmt);
-        
+
         if ($estadoPedido->CANCELADO != 1) {
             return null;
         }
-        
+
         // Obtener detalle del pedido
         $sqlDetalle = "SELECT 
                         COUNT(*) as TOTAL_ARTICULOS,
                         SUM(CAST(DP.CANT_PEDID as INT)) as TOTAL_CANTIDAD
                     FROM RO_DPEDI01 DP
                     WHERE RTRIM(LTRIM(DP.NRO_PEDIDO)) = ?";
-        
+
         $stmtDetalle = sqlsrv_query($cid_uruguay, $sqlDetalle, $params);
         $detallePedido = $stmtDetalle ? sqlsrv_fetch_object($stmtDetalle) : null;
-        
+
         return (object) [
             'esta_cancelado' => true,
             'tiene_ncr' => !empty($estadoPedido->NCR),

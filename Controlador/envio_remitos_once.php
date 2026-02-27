@@ -1,30 +1,7 @@
 <?php
 
-
-
-
-function remitos_buscar_once(){
-
-require_once 'Class/Conexion.php';
-$cid = new Conexion();
-$cid_central = $cid->conectarSql('central');
-
-$sql = "SELECT * FROM STA14 WHERE COD_PRO_CL IN ('GTMELI') AND EXPORTADO = 0 AND ESTADO_MOV != 'A'";
-
-$result=sqlsrv_query($cid_central,$sql);
-
-while($v=sqlsrv_fetch_object($result)){	
-	$rem[] = $v->N_COMP;
-	$cliente[] = $v -> COD_PRO_CL;
-}
-
-
-
-function insertarRemitosOnce($remito){
-
-	require_once 'Class/Conexion.php';
-	$cid = new Conexion();
-	$cid_central = $cid->conectarSql('central');
+function insertarRemitosOnce($remito, $cid_central)
+{
 
 	$sql2 = "
 	SET DATEFORMAT YMD
@@ -32,7 +9,7 @@ function insertarRemitosOnce($remito){
 	INSERT INTO CTA115 (
 	[FILLER],[TCOMP_IN_S],[NCOMP_IN_S],[NRO_SUCURS],[COD_PRO_CL],[COTIZ],[T_COMP],[N_COMP],[N_REMITO],
 	[ESTADO_MOV],[EXPORTADO],[ESTADO],[EXP_STOCK],[FECHA_ANU],[FECHA_MOV],
-	[HORA],[ID_CARPETA],[LISTA_REM],[LOTE],[LOTE_ANU],[MON_CTE],[MOTIVO_REM],[NCOMP_ORIG],[OBSERVACIO],[SUC_ORIG],[TALONARIO],[TCOMP_ORIG],[USUARIO]
+	[HORA],[ID_CARPETA],[LISTA_REM],[LOTE],[LOTE_ANU],[MON_CTE],[MOTIVO_REM],[NCOMP_ORIG],[OBSERVACIO],[SUC_ORIG],[TALONARIO],[T_COMP_ORIG],[USUARIO]
 	,[COD_TRANSP],[HORA_COMP],[ID_A_RENTA],[DOC_ELECTR],[COD_CLASIF],[AUDIT_IMP],[IMP_IVA],[IMP_OTIMP],[IMPORTE_BO],[IMPORTE_TO],[DIFERENCIA],[SUC_DESTIN]
 	)
 	SELECT 
@@ -71,28 +48,38 @@ function insertarRemitosOnce($remito){
 	AND NCOMP_IN_S = (SELECT NCOMP_IN_S FROM STA14 WHERE T_COMP = 'REM' AND N_COMP = '$remito')
 	
 	
+	
 	UPDATE STA14 SET EXPORTADO = 1 WHERE COD_PRO_CL IN ('GTMELI') AND N_COMP = '$remito'
 	
 	
 	";
 
-	sqlsrv_query($cid_central,$sql2);
+	sqlsrv_query($cid_central, $sql2);
 }
 
-if(!isset($rem)){
-	$rem[0] = 0;
+function remitos_buscar_once()
+{
+
+	require_once 'Class/Conexion.php';
+	$cid = new Conexion();
+	$cid_central = $cid->conectarSql('central');
+
+	$sql = "SELECT N_COMP FROM STA14 WHERE COD_PRO_CL IN ('GTMELI') AND EXPORTADO = 0 AND ESTADO_MOV != 'A'";
+
+	$result = sqlsrv_query($cid_central, $sql);
+
+	$rem = [];
+	if ($result) {
+		while ($v = sqlsrv_fetch_object($result)) {
+			$rem[] = $v->N_COMP;
+		}
+	}
+
+	if (count($rem) > 0) {
+		foreach ($rem as $ncomp) {
+			insertarRemitosOnce($ncomp, $cid_central);
+		}
+	}
 }
 
-
-for($i=0;$i<count($rem);$i++){
-	insertarRemitosOnce($rem[$i]);
-}
-
-
-}
-	
 ?>
-
-
-
-
