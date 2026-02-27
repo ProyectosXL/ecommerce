@@ -100,7 +100,7 @@
                 </div>
                 <?php endif; ?>
                 <div class="col timeline-step">
-                    <div class="timeline-icon <?php echo ($pedido->ENTREGADO ?? 0) ? 'active' : ''; ?>">
+                    <div class="timeline-icon <?php echo (($pedido->ENTREGADO ?? 0) && !($pedido->REINTEGRADO ?? 0) && !($pedido->CANCELADO ?? 0)) ? 'active' : ''; ?>">
                         <i class="fas fa-check icon"></i>
                     </div>
                     <div>Entregado</div>
