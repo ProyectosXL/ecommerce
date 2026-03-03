@@ -539,6 +539,13 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
 
 
 
+	<!-- Overlay de exportación -->
+	<div id="exportOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:rgba(255,255,255,0.88); flex-direction:column; align-items:center; justify-content:center;">
+		<div class="spinner-border text-success" style="width:3.5rem; height:3.5rem;" role="status"></div>
+		<p style="margin-top:1.2rem; font-size:1.2rem; font-weight:600; color:#333;"><i class="bi bi-file-earmark-excel-fill" style="color:#28a745;"></i> Preparando archivo&hellip;</p>
+		<small style="color:#888;">Esto puede demorar unos segundos según la cantidad de registros.</small>
+	</div>
+
 	<script src="assets/bootstrap/popper.min.js"></script>
 	<script src="assets/bootstrap/bootstrap.min.js"></script>
 	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>

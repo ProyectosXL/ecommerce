@@ -224,17 +224,44 @@ function ponerCero() {
   
 }
 
-const exportar = () => {
+const exportar = async () => {
+  const params = new URLSearchParams(window.location.search);
+  params.delete('pagina');
 
-  $("#id_tabla").table2excel({
-    // exclude CSS class
-    exclude: ".noExl",
-    name: "Worksheet Name",
-    filename: "Remitos", //do not include extension
-    fileext: ".xls", // file extension
-  });
-  
-}
+  document.getElementById('exportOverlay').style.display = 'flex';
+
+  try {
+    const response = await fetch('Controlador/exportarExcel.php?' + params.toString());
+
+    if (!response.ok) throw new Error('El servidor devolvió un error al generar el archivo.');
+
+    // Esperar a que todo el cuerpo de la respuesta esté disponible
+    const blob = await response.blob();
+
+    // Obtener el nombre del archivo desde el header Content-Disposition
+    const disposition = response.headers.get('Content-Disposition');
+    let filename = 'pedidos.csv';
+    if (disposition) {
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match) filename = match[1];
+    }
+
+    // Disparar la descarga en el navegador
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+  } catch (err) {
+    alert('Error al exportar: ' + err.message);
+  } finally {
+    document.getElementById('exportOverlay').style.display = 'none';
+  }
+};
 
 $( document ).ready(function() {
     var btn = document.querySelectorAll('.btn-buscar');
