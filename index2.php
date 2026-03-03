@@ -12,16 +12,18 @@ if (!isset($_GET['pagina']) || intval($_GET['pagina']) <= 1) {
     new_ml();
 }
 
+// Obtener NC pendientes si no hay filtro de fecha
+$nc_pendientes = [];
 if (!isset($_GET['desde'])) {
-    nc_pendientes();
+    $nc_pendientes = nc_pendientes();
 }
 
 $hoy = date("Y-m-d");
-$tienda = (!isset($_GET['tienda'])) ? '%' : $_GET['tienda'] . '%';
-$warehouse = (!isset($_GET['warehouse'])) ? '%' : $_GET['warehouse'] . '%';
+$tienda    = (!isset($_GET['tienda'])    || trim($_GET['tienda'])    === '') ? '%' : $_GET['tienda'] . '%';
+$warehouse = (!isset($_GET['warehouse']) || trim($_GET['warehouse']) === '') ? '%' : $_GET['warehouse'] . '%';
 $desde = (!isset($_GET['desde'])) ? $hoy : $_GET['desde'];
 $hasta = (!isset($_GET['hasta'])) ? $hoy : $_GET['hasta'];
-$estado = (isset($_GET['estado'])) ? $_GET['estado'] : null;
+$estado = (isset($_GET['estado']) && trim($_GET['estado']) !== '') ? $_GET['estado'] : null;
 $orden = (!isset($_GET['orden'])) ? '%' : $_GET['orden'] . '%';
 $pagina = (isset($_GET['pagina']) && intval($_GET['pagina']) > 0) ? intval($_GET['pagina']) : 1;
 $metodoEnvio = (isset($_GET['metodo_envio']) && trim($_GET['metodo_envio']) !== '') ? trim($_GET['metodo_envio']) : '';
@@ -89,6 +91,7 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
                         <label class="form-label">Tienda:</label>
                         <select class="form-select form-select-sm" name="tienda">
                             <option selected></option>
+                            <option value="FRAVEGA">FRAVEGA</option>
                             <option value="ICBC">ICBC</option>
                             <option value="VTEX">VTEX</option>
                             <option value="ML">MERCADO LIBRE</option>
@@ -153,7 +156,10 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
                             <div class="search-group">
                                 <label class="form-label mb-0 me-1">Búsqueda:</label>
                                 <input type="text" class="form-control form-control-sm search-input"
-                                    onkeyup="busquedaRapida()" id="textBox" placeholder="Sobre cualquier campo.." autofocus>
+                                    onkeyup="busquedaRapida()" onkeypress="return pulsar(event)"
+                                    id="textBox" name="factura"
+                                    value="<?= htmlspecialchars($_GET['factura'] ?? '') ?>"
+                                    placeholder="Sobre cualquier campo.." autofocus>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -183,18 +189,44 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
         </div>
 
         <?php if (isset($_GET['desde'])):
-            $busqueda2 = (isset($_GET['factura']) && trim($_GET['factura']) !== '') ? trim($_GET['factura']) : '';
+            $busqueda = (isset($_GET['factura']) && trim($_GET['factura']) !== '') ? trim($_GET['factura']) : '';
 
             // Solo la búsqueda de texto libre pide 1000 registros
-            // El filtro de método de envío ahora es Global vía Stored Procedure
-            $porPagina2 = $busqueda2 ? 1000 : 100;
-            $paginaUsada2 = $busqueda2 ? 1 : $pagina;
+            // El filtro de método de envío ya se aplica en el Stored Procedure
+            $porPagina   = $busqueda ? 1000 : 100;
+            $paginaUsada = $busqueda ? 1    : $pagina;
 
-            $arrayPedidos = $pedidos->traerPedidos($desde, $hasta, $tienda, $warehouse, $estado, $orden, $paginaUsada2, $porPagina2, $metodoEnvio);
-            // Filtrar pedidos que no tengan unidades
+            $arrayPedidos = $pedidos->traerPedidos($desde, $hasta, $tienda, $warehouse, $estado, $orden, $paginaUsada, $porPagina, $metodoEnvio);
+
+            // Filtrar pedidos sin unidades
             $arrayPedidos = array_filter($arrayPedidos, function ($value) {
                 return isset($value[0]->CANTIDAD_A_FACTURAR) && $value[0]->CANTIDAD_A_FACTURAR > 0;
             });
+
+            // Filtro de texto libre sobre cualquier campo visible
+            if ($busqueda) {
+                $busquedaLower = mb_strtolower($busqueda);
+                $arrayPedidos = array_filter($arrayPedidos, function ($value) use ($busquedaLower) {
+                    $campos = [
+                        $value[0]->NRO_ORDEN_ECOMMERCE ?? '',
+                        $value[0]->NRO_PEDIDO         ?? '',
+                        $value[0]->RAZON_SOCIAL        ?? '',
+                        $value[0]->COD_ARTICULO        ?? '',
+                        $value[0]->DESCRIPCION         ?? '',
+                        $value[0]->NRO_COMP            ?? '',
+                        $value[0]->WAREHOUSE           ?? '',
+                        $value[0]->METODO_ENVIO        ?? '',
+                        $value[0]->DESC_SUCURSAL       ?? '',
+                    ];
+                    foreach ($campos as $campo) {
+                        if (mb_strpos(mb_strtolower((string) $campo), $busquedaLower) !== false) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
+
             $totalResultados = count($arrayPedidos);
             $pedido_anterior = '';
             ?>
@@ -300,7 +332,7 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
                                     <td class="text-center noExl">
                                         <?php if ($value[0]->CONTROLADO == 1): ?>
                                             <i class="bi bi-clipboard2-check-fill status-controlled"
-                                                title="Controlado <?= $value[0]->FECHA_CONTROLADO->format('Y-m-d') ?>"></i>
+                                                title="Controlado <?= $value[0]->FECHA_CONTROLADO !== null ? $value[0]->FECHA_CONTROLADO->format('Y-m-d') : 'sin fecha' ?>"></i>
                                         <?php else: ?>
                                             <i class="status-empty"></i>
                                         <?php endif; ?>
@@ -357,7 +389,7 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
             $urlBase = '?' . http_build_query($queryParams);
 
             // Solo mostrar paginación si NO hay búsqueda de texto activa
-            if (!$busqueda2):
+            if (!$busqueda):
                 ?>
                 <div
                     style="display:flex; align-items:center; justify-content:center; gap:12px; padding:16px 0; margin-bottom:20px;">
@@ -378,7 +410,7 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
                 </div>
             <?php else: ?>
                 <div style="text-align:center; padding: 10px 0; margin-bottom:20px; color:#555;">
-                    <small><i class="bi bi-search"></i> Búsqueda de "<strong><?= htmlspecialchars($busqueda2) ?></strong>"
+                    <small><i class="bi bi-search"></i> Búsqueda de "<strong><?= htmlspecialchars($busqueda) ?></strong>"
                         &mdash; <?= $totalResultados ?> resultado(s) encontrado(s)</small>
                 </div>
             <?php endif; ?>
@@ -400,34 +432,31 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
         const mostrarSpinner = () => {
             document.getElementById("boxLoading").classList.remove("d-none");
         }
-
-        const contar2 = () => {
-            let trFiltrados = $('#id_tabla tbody tr:visible');
-            let pedidosUnicos = new Set();
-            let totalArticulos = 0;
-
-            trFiltrados.each(function () {
-                let numeroPedido = $(this).find('td').eq(4).text().trim();
-                let codArticulo = $(this).find('td').eq(6).text().trim();
-                let cantidad = parseFloat($(this).find('td').eq(8).text().trim()) || 0;
-
-                pedidosUnicos.add(numeroPedido);
-
-                if (codArticulo !== '***COSTO ENVIO') {
-                    totalArticulos += cantidad;
-                }
-            });
-
-            document.getElementById('cantidad').value = pedidosUnicos.size.toLocaleString();
-            document.getElementById('cantidadArticulos').value = totalArticulos.toLocaleString();
+        function pulsar(e) {
+            const tecla = e.keyCode || e.which;
+            return tecla !== 13;
         }
-
-        $(document).ready(function () {
-            contar2();
-        });
     </script>
 
     <?php require_once 'modals/ayuda.php'; ?>
+    <?php require_once 'modals/nc_pendientes.php'; ?>
+
+    <?php if (!empty($nc_pendientes)): ?>
+    <script>
+        $(document).ready(function () {
+            const ncPendientes = <?php echo json_encode(array_map(function ($item) {
+                return [
+                    'fecha'       => $item['fecha']->format('Y-m-d'),
+                    'promocion'   => $item['promocion'],
+                    'importe'     => $item['importe'],
+                    'cod_articulo'=> $item['cod_articulo'],
+                ];
+            }, $nc_pendientes)); ?>;
+            cargarNcPendientes(ncPendientes);
+            $('#modalNcPendientes').modal('show').css('z-index', 99999);
+        });
+    </script>
+    <?php endif; ?>
 </body>
 
 </html>
