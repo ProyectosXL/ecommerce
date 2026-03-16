@@ -10,6 +10,8 @@ $pedidos = new Pedido();
 
 // Exportaciones grandes pueden tomar varios minutos
 ini_set('max_execution_time', 0);
+set_time_limit(0);
+ini_set('memory_limit', '512M');
 
 $hoy      = date('Y-m-d');
 $tienda   = (!isset($_GET['tienda'])   || trim($_GET['tienda'])   === '') ? '%' : $_GET['tienda']   . '%';
@@ -70,6 +72,7 @@ $porPagina   = 500;
 $paginaActual = 1;
 $busquedaLower = $busqueda !== '' ? mb_strtolower($busqueda) : '';
 
+try {
 while (true) {
     $arrayPedidos = $pedidos->traerPedidos($desde, $hasta, $tienda, $warehouse, $estado, $orden, $paginaActual, $porPagina, $metodoEnvio);
 
@@ -158,6 +161,9 @@ while (true) {
     }
 
     $paginaActual++;
+}
+} catch (Throwable $e) {
+    error_log('exportarExcel error: ' . $e->getMessage());
 }
 
 fclose($output);

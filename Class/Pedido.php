@@ -10,7 +10,10 @@ class Pedido
         $cid = new Conexion();
         $cid_central = $cid->conectarSql('central');
 
-        ini_set('max_execution_time', 300);
+        // Solo limitar a 300s si no está ya en modo ilimitado (ej. exportarExcel lo pone en 0)
+        if (ini_get('max_execution_time') != 0) {
+            ini_set('max_execution_time', 300);
+        }
         $result = sqlsrv_query($cid_central, $sql);
         if ($result === false) {
             error_log('sqlsrv_query error: ' . print_r(sqlsrv_errors(), true));
