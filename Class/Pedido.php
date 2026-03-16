@@ -11,13 +11,16 @@ class Pedido
         $cid_central = $cid->conectarSql('central');
 
         ini_set('max_execution_time', 300);
-        $result = sqlsrv_query($cid_central, $sql) or die(exit("Error en sqlsrv_query"));
+        $result = sqlsrv_query($cid_central, $sql);
+        if ($result === false) {
+            error_log('sqlsrv_query error: ' . print_r(sqlsrv_errors(), true));
+            return [];
+        }
 
         $data = [];
         while ($v = sqlsrv_fetch_object($result)) {
             $data[] = array($v);
         }
-        ;
         return $data;
     }
 
