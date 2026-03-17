@@ -1,0 +1,14 @@
+# Configuración para deshabilitar compresión y buffering en exportaciones
+<Files "exportarExcel.php">
+    # Deshabilitar mod_deflate y mod_gzip
+    SetEnv no-gzip 1
+    
+    # Deshabilitar buffering de Apache
+    php_flag output_buffering Off
+    php_flag implicit_flush On
+    php_value zlib.output_compression Off
+    
+    # Aumentar tiempo de ejecución
+    php_value max_execution_time 600
+    php_value memory_limit 1024M
+</Files>

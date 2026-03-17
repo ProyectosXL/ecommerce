@@ -3,6 +3,12 @@
  * Exporta a Excel (CSV) todos los pedidos que coinciden con los filtros activos,
  * sin límite de paginación.
  */
+
+// Deshabilitar output buffering INMEDIATAMENTE antes de cualquier otra cosa
+while (ob_get_level()) {
+    ob_end_clean();
+}
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/Class/Conexion.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/Class/Pedido.php';
 
@@ -26,17 +32,22 @@ $busqueda    = (isset($_GET['factura'])      && trim($_GET['factura'])      !== 
 // ---------- Cabeceras HTTP para descarga — se envían ANTES de consultar la BD ----------
 $filename = 'pedidos_' . $desde . '_' . $hasta . '.csv';
 
+// Asegurar que no haya más output buffering
+@ob_implicit_flush(true);
+
+// Deshabilitar compresión de Apache/PHP
+@apache_setenv('no-gzip', '1');
+@ini_set('zlib.output_compression', 'Off');
+@ini_set('output_buffering', 'Off');
+@ini_set('implicit_flush', 'On');
+
 header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Pragma: no-cache');
 header('Expires: 0');
-// Deshabilitar compresión para que flush() funcione correctamente
+header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
 header('Content-Encoding: none');
-
-// Descartar cualquier buffer de salida abierto y arrancar sin buffer
-while (ob_get_level()) {
-    ob_end_clean();
-}
+header('X-Accel-Buffering: no'); // Deshabilitar buffering en nginx/proxy
 
 $output = fopen('php://output', 'w');
 
@@ -107,6 +118,12 @@ while (true) {
         });
     }
 
+    // Verificar si la conexión sigue activa
+    if (connection_status() != CONNECTION_NORMAL) {
+        error_log('exportarExcel: Conexión cerrada por el cliente');
+        break;
+    }
+
     foreach ($arrayPedidos as $value) {
         $v = $value[0];
 
@@ -152,8 +169,13 @@ while (true) {
     }
 
     // Enviar el chunk al cliente inmediatamente para mantener la conexión activa
-    fflush($output);
+    if (ob_get_level() > 0) {
+        ob_flush();
+    }
     flush();
+    if (function_exists('fflush')) {
+        fflush($output);
+    }
 
     // Si el SP devolvió menos registros que el límite, ya no hay más datos
     if ($rawCount < $porPagina) {
@@ -161,10 +183,21 @@ while (true) {
     }
 
     $paginaActual++;
+    
+    // Pequeña pausa para evitar saturar el servidor
+    usleep(1000); // 1ms
 }
 } catch (Throwable $e) {
     error_log('exportarExcel error: ' . $e->getMessage());
+    // Intentar enviar el error al log pero continuar
+    if (connection_status() == CONNECTION_NORMAL) {
+        // Si la conexión sigue activa, intentar cerrar limpiamente
+        fflush($output);
+        flush();
+    }
 }
 
-fclose($output);
+if (is_resource($output)) {
+    fclose($output);
+}
 exit;

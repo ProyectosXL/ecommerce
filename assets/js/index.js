@@ -231,12 +231,36 @@ const exportar = async () => {
   document.getElementById('exportOverlay').style.display = 'flex';
 
   try {
-    const response = await fetch('Controlador/exportarExcel.php?' + params.toString());
+    // Timeout de 10 minutos para exportaciones grandes
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutos
 
-    if (!response.ok) throw new Error('El servidor devolvió un error al generar el archivo.');
+    const response = await fetch('Controlador/exportarExcel.php?' + params.toString(), {
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: {
+        'Accept': 'text/csv'
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error('El servidor devolvió un error al generar el archivo. Código: ' + response.status);
+    }
+
+    // Verificar que se recibieron datos
+    const contentLength = response.headers.get('Content-Length');
+    console.log('Recibiendo archivo... Tamaño:', contentLength || 'desconocido');
 
     // Esperar a que todo el cuerpo de la respuesta esté disponible
     const blob = await response.blob();
+    
+    if (blob.size === 0) {
+      throw new Error('El archivo generado está vacío. Puede que no haya datos para exportar.');
+    }
+
+    console.log('Archivo descargado:', blob.size, 'bytes');
 
     // Obtener el nombre del archivo desde el header Content-Disposition
     const disposition = response.headers.get('Content-Disposition');
@@ -257,7 +281,12 @@ const exportar = async () => {
     URL.revokeObjectURL(url);
 
   } catch (err) {
-    alert('Error al exportar: ' + err.message);
+    console.error('Error en exportación:', err);
+    if (err.name === 'AbortError') {
+      alert('Error al exportar: La exportación tardó demasiado tiempo. Intente con un rango de fechas más pequeño.');
+    } else {
+      alert('Error al exportar: ' + err.message);
+    }
   } finally {
     document.getElementById('exportOverlay').style.display = 'none';
   }
