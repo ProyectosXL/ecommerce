@@ -12,12 +12,17 @@ while (ob_get_level()) {
 require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/Class/Conexion.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/Class/Pedido.php';
 
+// Registrar inicio de script con timer
+$startTime = microtime(true);
+error_log('exportarExcel.php: Iniciando exportación - ' . date('Y-m-d H:i:s'));
+
 $pedidos = new Pedido();
 
 // Exportaciones grandes pueden tomar varios minutos
 ini_set('max_execution_time', 0);
 set_time_limit(0);
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '1024M'); // Aumentado a 1GB
+ignore_user_abort(true); // Continuar aunque el cliente se desconecte
 
 $hoy      = date('Y-m-d');
 $tienda   = (!isset($_GET['tienda'])   || trim($_GET['tienda'])   === '') ? '%' : $_GET['tienda']   . '%';
@@ -29,27 +34,19 @@ $orden    = (!isset($_GET['orden'])    || trim($_GET['orden'])    === '') ? '%' 
 $metodoEnvio = (isset($_GET['metodo_envio']) && trim($_GET['metodo_envio']) !== '') ? trim($_GET['metodo_envio']) : '';
 $busqueda    = (isset($_GET['factura'])      && trim($_GET['factura'])      !== '') ? trim($_GET['factura'])      : '';
 
-// ---------- Cabeceras HTTP para descarga — se envían ANTES de consultar la BD ----------
+// ---------- Generar el archivo en el servidor primero ----------
 $filename = 'pedidos_' . $desde . '_' . $hasta . '.csv';
+$tempDir = sys_get_temp_dir();
+$tempFile = $tempDir . DIRECTORY_SEPARATOR . uniqid('export_', true) . '.csv';
 
-// Asegurar que no haya más output buffering
-@ob_implicit_flush(true);
+error_log("exportarExcel: Generando archivo temporal en: {$tempFile}");
 
-// Deshabilitar compresión de Apache/PHP
-@apache_setenv('no-gzip', '1');
-@ini_set('zlib.output_compression', 'Off');
-@ini_set('output_buffering', 'Off');
-@ini_set('implicit_flush', 'On');
-
-header('Content-Type: text/csv; charset=UTF-8');
-header('Content-Disposition: attachment; filename="' . $filename . '"');
-header('Pragma: no-cache');
-header('Expires: 0');
-header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-header('Content-Encoding: none');
-header('X-Accel-Buffering: no'); // Deshabilitar buffering en nginx/proxy
-
-$output = fopen('php://output', 'w');
+// Abrir archivo temporal para escritura
+$output = fopen($tempFile, 'w');
+if (!$output) {
+    error_log("exportarExcel: ERROR - No se pudo crear el archivo temporal");
+    die('Error: No se pudo crear el archivo temporal');
+}
 
 // BOM UTF-8 para que Excel lo abra correctamente con tildes / ñ
 fwrite($output, "\xEF\xBB\xBF");
@@ -73,15 +70,13 @@ fputcsv($output, [
     'ESTADO',
 ], ';');
 
-// Flusheamos los headers + cabecera de columnas para que el gateway vea actividad
-fflush($output);
-flush();
+// NO hacer flush aquí, estamos escribiendo a un archivo temporal
 
-// ---------- Fetch paginado: 500 registros por página ----------
-// Así el gateway nunca ve una conexión inactiva y no lanza 504.
-$porPagina   = 500;
+// ---------- Fetch paginado: 2000 registros por página para mayor velocidad ----------
+$porPagina   = 2000;
 $paginaActual = 1;
 $busquedaLower = $busqueda !== '' ? mb_strtolower($busqueda) : '';
+$totalRegistros = 0;
 
 try {
 while (true) {
@@ -166,16 +161,12 @@ while (true) {
             $v->DESC_SUCURSAL         ?? '',
             $estado_fila,
         ], ';');
+        
+        $totalRegistros++;
     }
 
-    // Enviar el chunk al cliente inmediatamente para mantener la conexión activa
-    if (ob_get_level() > 0) {
-        ob_flush();
-    }
-    flush();
-    if (function_exists('fflush')) {
-        fflush($output);
-    }
+    // NO necesitamos flush cuando escribimos a archivo temporal
+    // Escribir directamente al archivo es más eficiente
 
     // Si el SP devolvió menos registros que el límite, ya no hay más datos
     if ($rawCount < $porPagina) {
@@ -183,21 +174,68 @@ while (true) {
     }
 
     $paginaActual++;
-    
-    // Pequeña pausa para evitar saturar el servidor
-    usleep(1000); // 1ms
 }
+
+// Log de finalización exitosa con tiempo transcurrido
+$endTime = microtime(true);
+$duration = round($endTime - $startTime, 2);
+error_log("exportarExcel: Exportación completada exitosamente - {$totalRegistros} registros exportados en {$paginaActual} páginas - Tiempo: {$duration} segundos");
+
 } catch (Throwable $e) {
-    error_log('exportarExcel error: ' . $e->getMessage());
+    $endTime = microtime(true);
+    $duration = round($endTime - $startTime, 2);
+    $memoriaFinal = memory_get_usage(true) / 1024 / 1024;
+    error_log("exportarExcel ERROR: " . $e->getMessage() . " | Línea: " . $e->getLine() . " | Registros procesados: {$totalRegistros} | Memoria: {$memoriaFinal}MB | Tiempo: {$duration}s");
+    error_log("exportarExcel Stack trace: " . $e->getTraceAsString());
+    
     // Intentar enviar el error al log pero continuar
     if (connection_status() == CONNECTION_NORMAL) {
-        // Si la conexión sigue activa, intentar cerrar limpiamente
-        fflush($output);
-        flush();
+        // Si la conexión sigue activa, cerrar el archivo limpiamente
+        if (is_resource($output)) {
+            fclose($output);
+        }
     }
 }
 
+// Cerrar el archivo temporal
 if (is_resource($output)) {
     fclose($output);
 }
+
+// ---------- Ahora enviar el archivo generado al cliente ----------
+if (file_exists($tempFile)) {
+    $fileSize = filesize($tempFile);
+    $endGeneration = microtime(true);
+    $generationTime = round($endGeneration - $startTime, 2);
+    error_log("exportarExcel: Archivo generado exitosamente - {$fileSize} bytes, tiempo de generación: {$generationTime}s, enviando al cliente...");
+    
+    // Limpiar cualquier output buffer
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    // Enviar headers HTTP
+    header('Connection: keep-alive');
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . $fileSize);
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+    header('X-Accel-Buffering: no'); // Desactivar buffering de Nginx si está presente
+    
+    // Enviar el archivo
+    readfile($tempFile);
+    
+    // Eliminar el archivo temporal
+    unlink($tempFile);
+    $endTotal = microtime(true);
+    $totalTime = round($endTotal - $startTime, 2);
+    error_log("exportarExcel: Archivo enviado y archivo temporal eliminado - Tiempo total: {$totalTime}s");
+} else {
+    error_log("exportarExcel: ERROR - El archivo temporal no existe");
+    http_response_code(500);
+    echo "Error: El archivo no pudo ser generado";
+}
+
 exit;
