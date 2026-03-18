@@ -3,577 +3,663 @@
 require_once 'Class/Conexion.php';
 require_once 'Class/Pedido.php';
 require_once 'Controlador/envio_remitos_once.php';
-// require_once 'Controlador/nc_pend.php';
+
 $pedidos = new Pedido();
 
+// Solo sincronizar remitos en la primera carga
+remitos_buscar_once();
 
-// Solo sincronizar remitos en la primera página para no sumar tiempo al paginar
-if (!isset($_GET['pagina']) || intval($_GET['pagina']) <= 1) {
-	remitos_buscar_once();
-}
+$hoy         = date('Y-m-d');
+$desde       = isset($_GET['desde'])        ? $_GET['desde']        : $hoy;
+$hasta       = isset($_GET['hasta'])        ? $_GET['hasta']        : $hoy;
+$tienda      = isset($_GET['tienda'])       ? $_GET['tienda']       : '';
+$warehouse   = isset($_GET['warehouse'])    ? $_GET['warehouse']    : '';
+$estado      = isset($_GET['estado'])       ? $_GET['estado']       : '';
+$orden       = isset($_GET['orden'])        ? $_GET['orden']        : '';
+$metodoEnvio = isset($_GET['metodo_envio']) ? $_GET['metodo_envio'] : '';
+$busqueda    = isset($_GET['factura'])      ? $_GET['factura']      : '';
 
-// Obtener NC pendientes si no hay filtro de fecha
-$nc_pendientes = [];
-// if(!isset($_GET['desde'])){
-// $nc_pendientes = nc_pendientes();
-// }
-
-$hoy = date("Y-m-d");
-$tienda = (!isset($_GET['tienda']) || trim($_GET['tienda']) === '') ? '%' : $_GET['tienda'] . '%';
-$warehouse = (!isset($_GET['warehouse']) || trim($_GET['warehouse']) === '') ? '%' : $_GET['warehouse'] . '%';
-$desde = (!isset($_GET['desde'])) ? $hoy : $_GET['desde'];
-$hasta = (!isset($_GET['hasta'])) ? $hoy : $_GET['hasta'];
-$estado = (isset($_GET['estado']) && trim($_GET['estado']) !== '') ? $_GET['estado'] : null;
-$orden = (!isset($_GET['orden']) || trim($_GET['orden']) === '') ? '%' : $_GET['orden'] . '%';
-$pagina = (isset($_GET['pagina']) && intval($_GET['pagina']) > 0) ? intval($_GET['pagina']) : 1;
-$metodoEnvio = (isset($_GET['metodo_envio']) && trim($_GET['metodo_envio']) !== '') ? trim($_GET['metodo_envio']) : '';
-$todosLosWarehouse = $pedidos->traerWarehouse();
+$todosLosWarehouse    = $pedidos->traerWarehouse();
 $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
 
+// Con el nuevo sistema AJAX, BUSCAR_ACTIVO solo controla si hay params en la URL
+// (para que la búsqueda de texto y los botones aparezcan en carga directa via URL)
+// El submit del form siempre dispara la carga AJAX desde el JS.
+$buscarActivo = isset($_GET['desde']);
 
 ?>
-
 <!doctype HTML>
-
-<html lang="en">
-
+<html lang="es">
 <head>
-	<title>XL Extralarge - Inicio</title>
-	<meta charset="UTF-8">
-	</meta>
-	<link rel="shortcut icon" href="assets/icono.ico" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XL Extralarge - Inicio</title>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="assets/icono.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-	<?php
-	require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/assets/css/css.php';
-	?>
-	<link rel="stylesheet" href="assets/css/helpIndex.css" class="rel">
-	<link rel="stylesheet" href="assets/css/nc_pendientes.css">
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/assets/css/css.php'; ?>
+    <link rel="stylesheet" href="assets/css/helpIndex.css" class="rel">
+    <link rel="stylesheet" href="assets/css/nc_pendientes.css">
 
-	<script src="https://code.jquery.com/jquery-3.4.1.min.js"
-		integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
-		integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+          integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
 
+    <style>
+        /* ── Spinner de carga de tabla ── */
+        #loadingTable {
+            display: none;
+            text-align: center;
+            padding: 2rem 0;
+        }
+        #loadingTable .spinner-border { width: 3rem; height: 3rem; }
+        #loadingTable p { margin-top: 0.8rem; font-size: 1rem; color: #555; font-weight: 500; }
+
+        /* ── Barra de progreso de carga ── */
+        #progressBar {
+            display: none;
+            margin: 0.5rem 1.5rem;
+        }
+        #progressBar .progress { height: 6px; border-radius: 3px; }
+
+        /* ── Modal exportación ── */
+        #modalExportando .modal-header { background: #28a745; color: white; }
+        #modalExportando .progress { height: 20px; }
+        #exportProgressText { font-size: 0.85rem; color: #555; margin-top: 0.4rem; }
+    </style>
 </head>
 
 <body>
-	<div class="container-fluid">
-
-		<div class="alert alert-primary" role="alert" id="menu">
-			<div class="form-inline">
-				<h3 class="mt-2"><i class="bi bi-handbag"></i> Estado Pedidos Ecommerce</h3>
-				<label style="margin-left: 45%">Ordenes:</label>
-				<input type="text" style="text-align:center; width:10rem; font-size: 16px;"
-					class="form-control form-control-sm ml-1" id="cantidad" readonly disabled>
-				<label class="ml-2">Artículos:</label>
-				<input type="text" style="text-align:center; width:10rem; font-size: 16px;"
-					class="form-control form-control-sm ml-1" id="cantidadArticulos" readonly disabled>
-			</div>
-
-			<div class="row" id="renderr" style="margin-left:10px">
-
-				<div class="mt-2">
-
-					<form class="form-inline" method="GET" action="">
-
-						<div style="display: flex; flex-direction: column;">
-							<label style="align-self: flex-start;">Desde:</label>
-							<input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
-						</div>
-						<div style="display: flex; flex-direction: column; margin-left:0.5rem">
-							<label style="align-self: flex-start;">Hasta:</label>
-							<input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
-						</div>
-						<div style="display: flex; flex-direction: column; margin-left:0.5rem">
-							<label style="align-self: flex-start;">Tienda:</label>
-							<select class="form-control form-control-sm" name="tienda">
-								<option selected></option>
-								<option value="FRAVEGA">FRAVEGA</option>
-								<option value="ICBC">ICBC</option>
-								<option value="VTEX">VTEX</option>
-								<option value="ML">MERCADO LIBRE</option>
-							</select>
-						</div>
-
-						<div style="display: flex; flex-direction: column; margin-left:0.5rem">
-							<label style="align-self: flex-start;">Estado:</label>
-							<select class="form-control form-control-sm" name="estado">
-								<option selected></option>
-								<option value="CANCELADO" <?= (isset($_GET['estado']) && $_GET['estado'] == 'CANCELADO') ? 'selected' : '' ?>>CANCELADO</option>
-								<option value="PREPARADO" <?= (isset($_GET['estado']) && $_GET['estado'] == 'PREPARADO') ? 'selected' : '' ?>>PREPARADO</option>
-								<option value="SIN_CONTROLAR" <?= (isset($_GET['estado']) && $_GET['estado'] == 'SIN_CONTROLAR') ? 'selected' : '' ?>>SIN CONTROLAR</option>
-								<option value="FALTANTE" <?= (isset($_GET['estado']) && $_GET['estado'] == 'FALTANTE') ? 'selected' : '' ?>>FALTANTE</option>
-								<option value="FACTURADO" <?= (isset($_GET['estado']) && $_GET['estado'] == 'FACTURADO') ? 'selected' : '' ?>>FACTURADO</option>
-								<option value="DESPACHADO" <?= (isset($_GET['estado']) && $_GET['estado'] == 'DESPACHADO') ? 'selected' : '' ?>>DESPACHADO</option>
-								<option value="ENTREGADO" <?= (isset($_GET['estado']) && $_GET['estado'] == 'ENTREGADO') ? 'selected' : '' ?>>ENTREGADO</option>
-								<option value="SIN_DESPACHAR" <?= (isset($_GET['estado']) && $_GET['estado'] == 'SIN_DESPACHAR') ? 'selected' : '' ?>>SIN DESPACHAR</option>
-							</select>
-						</div>
-
-						<div style="display: flex; flex-direction: column; margin-left:0.5rem">
-							<label style="align-self: flex-start;">Origen:</label>
-							<select class="form-control form-control-sm" name="warehouse">
-								<option selected></option>
-								<?php
-
-								foreach ($todosLosWarehouse as $idx => $wh) {
-
-									?>
-
-									<option value="<?= $wh[0]->WAREHOUSE ?>"><?= $wh[0]->WAREHOUSE ?></option>
-									<?php
-								}
-								?>
-							</select>
-						</div>
-
-						<div style="display: flex; flex-direction: column; margin-left:0.5rem">
-							<label style="align-self: flex-start;">Orden:</label>
-							<input class="form-control form-control-sm" type="text" placeholder="Número de orden.."
-								name="orden">
-						</div>
-
-						<div style="display: flex; flex-direction: column; margin-left:0.5rem">
-							<label style="align-self: flex-start;">Método Envío:</label>
-							<select class="form-control form-control-sm" name="metodo_envio">
-								<option value="">Todos</option>
-								<?php foreach ($todosLosMetodosEnvio as $me): ?>
-									<option value="<?= $me[0]->METODO_ENVIO ?>" <?= $metodoEnvio === $me[0]->METODO_ENVIO ? 'selected' : '' ?>>
-										<?= $me[0]->METODO_ENVIO ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-						</div>
-
-						<div class="ml-2">
-							<button type="submit" onclick="mostrarSpinner()"
-								class="btn btn-primary btn-buscar mt-4">Buscar <i class="bi bi-search"></i></button>
-						</div>
-						<!-- spinner -->
-						<div id="boxLoading"></div>
-
-						<?php
-						if (isset($_GET['desde'])) {
-							?>
-
-							<label class="ml-2 mt-4">Busqueda:</label>
-							<input type="text" class="form-control form-control-sm ml-1 mt-4" onkeyup="busquedaRapida()"
-								onkeypress="return pulsar(event)" id="textBox" name="factura"
-								value="<?= htmlspecialchars($_GET['factura'] ?? '') ?>"
-								placeholder="Sobre cualquier campo..">
-							<?php
-						}
-						?>
-
-						<?php
-						if (isset($_GET['desde'])) {
-
-							$busqueda = (isset($_GET['factura']) && trim($_GET['factura']) !== '') ? trim($_GET['factura']) : '';
-
-							// Si buscamos texto libre, pedimos 1000 registros para filtrar en PHP
-							// Si solo usamos filtros desplegables (incluyendo metodo_envio), usamos paginación normal
-							$porPagina = $busqueda ? 1000 : 100;
-							$paginaUsada = $busqueda ? 1 : $pagina;
-
-							// Ahora el Método de Envío se filtra directamente en el Stored Procedure
-							$arrayPedidos = $pedidos->traerPedidos($desde, $hasta, $tienda, $warehouse, $estado, $orden, $paginaUsada, $porPagina, $metodoEnvio);
-
-							// Filtrar pedidos que no tengan unidades
-							$arrayPedidos = array_filter($arrayPedidos, function ($value) {
-								return isset($value[0]->CANTIDAD_A_FACTURAR) && $value[0]->CANTIDAD_A_FACTURAR > 0;
-							});
-
-							// Si hay búsqueda de texto libre, filtrar en PHP por cualquier campo visible
-							if ($busqueda) {
-								$busquedaLower = mb_strtolower($busqueda);
-								$arrayPedidos = array_filter($arrayPedidos, function ($value) use ($busquedaLower) {
-									$campos = [
-										$value[0]->NRO_ORDEN_ECOMMERCE ?? '',
-										$value[0]->NRO_PEDIDO ?? '',
-										$value[0]->RAZON_SOCIAL ?? '',
-										$value[0]->COD_ARTICULO ?? '',
-										$value[0]->DESCRIPCION ?? '',
-										$value[0]->NRO_COMP ?? '',
-										$value[0]->WAREHOUSE ?? '',
-										$value[0]->METODO_ENVIO ?? '',
-										$value[0]->DESC_SUCURSAL ?? '',
-									];
-									foreach ($campos as $campo) {
-										if (mb_strpos(mb_strtolower((string) $campo), $busquedaLower) !== false) {
-											return true;
-										}
-									}
-									return false;
-								});
-							}
-
-							$bandera = 0;
-							$pedido_viejo = '';
-							$pedido_nuevo = '';
-							$totalResultados = count($arrayPedidos);
-
-							?>
-
-						</form>
-
-					</div>
-
-					<div class="mt-4" style="margin-left: 1.5rem;">
-						<button onclick="filterPendientes()" id="buttonPendientes">Pendientes</button>
-						</svg>
-					</div>
-
-					<div class="ml-1 mt-4">
-						<button onclick="filterCancelados()" id="buttonCancelados">Sin NC</button>
-						</svg>
-					</div>
-
-					<div class="ml-1 mt-4">
-						<button onclick="filterIncompletos()" id="buttonIncompletos">Incompletos</button>
-						</svg>
-					</div>
-					<div class="ml-1 mt-4">
-						<button onclick="exportar()" id="buttonExportar"
-							style="background-color:#28a745">Exportar</i></button>
-						</svg>
-					</div>
-					<div class="ml-1 mt-4">
-						<button onclick="$('#modalAyuda').modal('show')" id="buttonAyuda" class="btn btn-info btn-sm"
-							data-toggle="tooltip" data-placement="top" title="Ayuda y guía de uso">
-							<i class="fas fa-question-circle"></i> Ayuda
-						</button>
-					</div>
-
-				</div>
-
-
-			</div>
-
-			<?php
-			require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/assets/js/js.php';
-			?>
-
-			<div style="width:100%;">
-
-
-				<!-- <script src="https://cdn.jsdelivr.net/npm/table2excel@1.0.4/dist/table2excel.min.js"></script> -->
-
-
-				<div>
-
-					<table class="table table-hover " id="id_tabla">
-						<thead id="tablaPedidosH">
-							<tr>
-								<th style="width: 2%;" class="headerTitle">TIENDA</th>
-								<th style="width: 9%;" class="headerTitle">NRO<BR>ORDEN</th>
-								<th style="width: 6%;" class="headerTitle">FECHA<BR>PEDIDO</th>
-								<th style="width: 6%;" class="headerTitle">HORA<BR>PEDIDO</th>
-								<th style="width: 5%;" class="headerTitle">PEDIDO</th>
-								<th style="width: 12%;" class="headerTitle">NOMBRE</th>
-								<th style="width: 8%;" class="headerTitle">COD<BR>ARTICULO</th>
-								<th style="width: 8%;" class="headerTitle">DESC<BR>ARTICULO</th>
-								<th style="width: 4%; text-align: left; padding-left: 0px" class="headerTitle">CANT</th>
-								<th style="width: 7%;" class="headerTitle">IMPORTE</th>
-								<th style="width: 5.5%;" class="headerTitle">NRO<BR>FACT</th>
-								<th style="width: 5%;" class="headerTitle">DEPOSITO</th>
-								<th style="width: 5%;" class="headerTitle">METODO<BR>ENVIO</th>
-								<th style="width: 5%;" class="headerTitle">TIENDA</th>
-								<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="bi-cart-check-fill"
-										data-toggle="tooltip" data-placement="top" title="Preparación"
-										style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
-								<th style="width: 1%; color: white;" class="headerTitle noExl"><i
-										class="bi bi-file-earmark-text-fill" data-toggle="tooltip" data-placement="top"
-										title="Facturación"
-										style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
-								<th style="width: 1%; color: white;" class="headerTitle noExl"><i
-										class="bi bi-clipboard2-check-fill" data-toggle="tooltip" data-placement="top"
-										title="Control" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i>
-								</th>
-								<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="fas fa-truck"
-										data-toggle="tooltip" data-placement="top" title="Despacho"
-										style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
-								<th style="width: 1%; color: white;" class="headerTitle noExl"><i class="fas fa-store"
-										data-toggle="tooltip" data-placement="top" title="Recibido"
-										style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
-								<th style="width: 1%; color: white;" class="headerTitle noExl"><i
-										class="bi bi-box-seam-fill" data-toggle="tooltip" data-placement="top"
-										title="Entrega" style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i>
-								</th>
-								<th style="width: 1%; color: white;" class="headerTitle noExl"><i
-										class="bi bi-cart-dash-fill" data-toggle="tooltip" data-placement="top"
-										title="Incompleto"
-										style="color: #FFFFFF; font-size: 18px; padding-top: 0.4rem;"></i></th>
-							</tr>
-						</thead>
-						<tbody id="table">
-							<?php
-							$id = 0;
-							foreach ($arrayPedidos as $key => $value) {
-
-
-								echo '<tr id="tr" style="';
-								if ($value[0]->NRO_COMP == '' && $value[0]->CANCELADO == 0) {
-									echo 'font-weight:bold; color:#FE2E2E;';
-								} else {
-									echo '';
-								}
-								if ($bandera == 0) {
-									$pedido_viejo = $value[0]->NRO_PEDIDO;
-									$bandera = 1;
-								} elseif ($value[0]->NRO_PEDIDO == $pedido_viejo) {
-									echo '';
-								} else {
-									echo ';border-top: 1px solid black;';
-									$pedido_viejo = $value[0]->NRO_PEDIDO;
-								}
-
-								echo '">'
-
-									// $date = date_create($value[0]->FECHA_PEDIDO);
-									// $date = date_format($date,"Y/m/d");
-									?>
-								<td><?= $value[0]->ORIGEN ?></td>
-								<td>
-									<?php if ($value[0]->ORIGEN == 'VTEX') {
-										?>
-										<a href="https://xlshop.myvtex.com/admin/orders/<?= $value[0]->NRO_ORDEN_ECOMMERCE; ?>"
-											target="_blank">
-											<?= $value[0]->NRO_ORDEN_ECOMMERCE ?>
-										</a>
-										<?php
-									} else {
-										echo $value[0]->NRO_ORDEN_ECOMMERCE;
-									} ?>
-								</td>
-								<td><?= $value[0]->FECHA_PEDIDO->format("Y-m-d"); ?></td>
-								<td><?= $value[0]->HORA ?></td>
-								<td><?= $value[0]->NRO_PEDIDO ?></td>
-								<td data-toggle="tooltip" data-placement="right" title="<?= $value[0]->LUGAR_ENTREGA ?>"
-									name="orden_<?php ?>"><small><?= $value[0]->RAZON_SOCIAL ?></small></td>
-								<td><?= $value[0]->COD_ARTICULO; ?></td>
-								<td><small><?= $value[0]->DESCRIPCION; ?></small></td>
-								<td style="text-align: left;"><?= $value[0]->CANTIDAD_A_FACTURAR; ?></td>
-								<td><?= '$ ' . number_format($value[0]->IMPORTE_PAGO, 0, '', '.') ?></td>
-								<td style="text-align: center;"><small><?= $value[0]->NRO_COMP ?></small></td>
-								<td style="text-align: center;"><small><?= $value[0]->WAREHOUSE ?></small></td>
-								<td style="text-align: center;"><small><?= $value[0]->METODO_ENVIO ?></small></td>
-								<td style="text-align: center;"><small><?= $value[0]->DESC_SUCURSAL ?></small></td>
-
-								<td id="incompleto" class="noExl">
-									<?php if ($value[0]->PREPARADO == 1) { ?>
-										<i title="Preparado <?= $value[0]->FECHA_PREPARADO->format("Y-m-d h:i") ?>"
-											data-toggle="tooltip" data-placement="left" class="bi bi-cart-check-fill"
-											style="color: #20c997; font-size: 20px;"></i>
-									<?php } else { ?>
-										<i class="fas fa-square" style="color: white; font-size: 20px;">
-										<?php } ?>
-								</td>
-
-								<td id="cancelado" class="noExl">
-
-									<?php if ($value[0]->CANCELADO == 1 && $value[0]->FACTURADO == 1 && !isset($value[0]->NCR)) { ?>
-										<i class="bi bi-clipboard-x-fill cancelado" data-toggle="tooltip" data-placement="left"
-											title="Pedido cancelado sin NC"
-											style="color: #6610f2; font-size: 20px; padding: 0;"></i>
-										<?php
-									} else if (isset($value[0]->NCR)) { ?>
-											<i class="bi bi-clipboard-check-fill" data-toggle="tooltip" data-placement="left" title="Pedido cancelado <?php if (isset($value[0]->NCR)) {
-												echo 'NCR ' . $value[0]->NCR;
-											} ?>" style="color: #17a2b8; font-size: 20px; padding: 0;"></i>
-										<?php
-									} else if ($value[0]->FACTURADO == 1) { ?>
-												<i class="bi bi-file-earmark-text-fill" data-toggle="tooltip" data-placement="left"
-													title="Facturado <?= $value[0]->FECHA_FACTURADO->format("Y-m-d h:i") ?>"
-													style="color: #6c757d; font-size: 20px;"></i>
-									<?php } else if ($value[0]->FACTURADO == 0) { ?>
-													<i class="fas fa-square pendiente" style="color: white; font-size: 20px;">
-										<?php } ?>
-
-								</td>
-
-								<td class="noExl">
-									<?php if ($value[0]->CONTROLADO == 1) { ?>
-										<?php if ($value[0]->FECHA_CONTROLADO !== null) { ?>
-											<i class="bi bi-clipboard2-check-fill" data-toggle="tooltip" data-placement="left"
-												title="Controlado <?= $value[0]->FECHA_CONTROLADO->format('Y-m-d') ?>"
-												style="color: green; font-size: 20px;"></i>
-										<?php } else { ?>
-											<i class="bi bi-clipboard2-check-fill" data-toggle="tooltip" data-placement="left"
-												title="Controlado (sin fecha)" style="color: green; font-size: 20px;"></i>
-										<?php } ?>
-									<?php } elseif ($value[0]->CONTROLADO == 0) { ?>
-										<i class="fas fa-square" style="color: white; font-size: 20px;"></i>
-									<?php } ?>
-								</td>
-
-								<td class="noExl">
-									<?php if ($value[0]->DESPACHADO == 1) { ?>
-										<i class="fas fa-truck" data-toggle="tooltip" data-placement="left"
-											title="Despachado <?= $value[0]->FECHA_DESPACHO->format("Y-m-d") ?>"
-											style="color: #17a2b8; font-size: 18px; padding-top: 0.4rem;"></i>
-									<?php } else if ($value[0]->DESPACHADO == 0) { ?>
-											<i class="fas fa-square" style="color: white; font-size: 20px;">
-										<?php } ?>
-								</td>
-
-								<td class="noExl">
-									<?php if ($value[0]->RECIBIDO_TIENDA == 1) { ?>
-										<i class="fas fa-store" data-toggle="tooltip" data-placement="left"
-											title="Recibido Tienda <?= $value[0]->FECHA_RECIBIDO_TIENDA->format("Y-m-d") ?>"
-											style="color: #17a2b8; font-size: 18px; padding-top: 0.4rem;"></i>
-									<?php } else if ($value[0]->RECIBIDO_TIENDA == 0) { ?>
-											<i class="fas fa-square" style="color: white; font-size: 20px;">
-										<?php } ?>
-								</td>
-
-								<td class="noExl">
-									<?php if ($value[0]->ENTREGADO == 1) { ?>
-										<i class="bi bi-box-seam-fill" data-toggle="tooltip" data-placement="left"
-											title="Entregado <?= $value[0]->FECHA_ENTREGADO->format("Y-m-d") ?>"
-											style="color: #007bff; font-size: 18px; padding-top: 0.4rem;"></i>
-									<?php } else if ($value[0]->ENTREGADO == 0) { ?>
-											<i class="fas fa-square" style="color: white; font-size: 20px;">
-										<?php } ?>
-								</td>
-
-								<td id="incompleto" class="noExl">
-									<?php if (isset($value[0]->FALTANTE) && $value[0]->FALTANTE == 1) { ?>
-										<i title="Pedido incompleto" data-toggle="tooltip" data-placement="left"
-											class="bi bi-cart-dash-fill incompleto" style="color: orange; font-size: 20px;"></i>
-									<?php } elseif ($value[0]->CANCELADO == 1) { ?>
-										<i class="bi bi-cart-x-fill" data-toggle="tooltip" data-placement="left" title="Cancelado"
-											style="color: red; font-size: 20px; padding: 0;"></i>
-									<?php } elseif (isset($value[0]->FALTANTE) && $value[0]->FALTANTE == 0) { ?>
-										<i class="fas fa-square" style="color: white; font-size: 20px;"></i>
-									<?php } ?>
-								</td>
-
-								</tr>
-								<?php
-								$id++;
-							}
-							?>
-
-						</tbody>
-
-					</table>
-
-				</div>
-
-				<?php
-				// Construir URL base para los botones de paginación (conserva todos los filtros)
-				$queryParams = $_GET;
-				unset($queryParams['pagina']);
-				$urlBase = '?' . http_build_query($queryParams);
-
-				// Solo mostrar paginación si NO hay búsqueda de texto activa
-				if (!$busqueda):
-					?>
-					<div
-						style="display:flex; align-items:center; justify-content:center; gap:12px; padding: 16px 0; margin-bottom: 20px;">
-						<?php if ($pagina > 1): ?>
-							<a href="<?= $urlBase ?>&pagina=<?= $pagina - 1 ?>" onclick="mostrarSpinner()"
-								class="btn btn-secondary btn-sm">
-								&laquo; Anterior
-							</a>
-						<?php endif; ?>
-						<span style="font-weight:bold;">Página <?= $pagina ?> &nbsp;|&nbsp; <?= $totalResultados ?> registros en
-							esta página</span>
-						<?php if ($totalResultados >= 100): ?>
-							<a href="<?= $urlBase ?>&pagina=<?= $pagina + 1 ?>" onclick="mostrarSpinner()"
-								class="btn btn-primary btn-sm">
-								Siguiente &raquo;
-							</a>
-						<?php endif; ?>
-					</div>
-				<?php else: ?>
-					<div style="text-align:center; padding: 10px 0; margin-bottom:20px; color:#555;">
-						<small><i class="bi bi-search"></i> Búsqueda de "<strong><?= htmlspecialchars($busqueda) ?></strong>"
-							&mdash; <?= $totalResultados ?> resultado(s) encontrado(s)</small>
-					</div>
-				<?php endif; ?>
-
-			</div>
-		</div>
-		<?php
-						}
-						?>
-
-	<script>
-
-		const contar = () => {
-			let trFiltrados = $('#id_tabla tbody tr:visible');
-			let pedidosUnicos = new Set();
-			let totalArticulos = 0;
-
-			trFiltrados.each(function () {
-				let numeroPedido = $(this).find('td').eq(4).text().trim();
-				let codArticulo = $(this).find('td').eq(6).text().trim();
-				let cantidad = parseFloat($(this).find('td').eq(8).text().trim()) || 0;
-
-				pedidosUnicos.add(numeroPedido);
-
-				if (codArticulo !== '***COSTO ENVIO') {
-					totalArticulos += cantidad;
-				}
-			});
-
-			document.getElementById('cantidad').value = pedidosUnicos.size.toLocaleString();
-			document.getElementById('cantidadArticulos').value = totalArticulos.toLocaleString();
-		}
-
-		$(document).ready(function () {
-			contar();
-		});
-
-		const mostrarSpinner = () => {
-			$("#boxLoading").addClass("loading")
-		}
-
-	</script>
-
-
-
-	<!-- <script type="text/javascript" src="Controlador/main.js"></script> -->
-
-
-
-	<!-- Overlay de exportación -->
-	<div id="exportOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:rgba(255,255,255,0.88); flex-direction:column; align-items:center; justify-content:center;">
-		<div class="spinner-border text-success" style="width:3.5rem; height:3.5rem;" role="status"></div>
-		<p style="margin-top:1.2rem; font-size:1.2rem; font-weight:600; color:#333;"><i class="bi bi-file-earmark-excel-fill" style="color:#28a745;"></i> Preparando archivo&hellip;</p>
-		<small style="color:#888;">Esto puede demorar unos segundos según la cantidad de registros.</small>
-	</div>
-
-	<script src="assets/bootstrap/popper.min.js"></script>
-	<script src="assets/bootstrap/bootstrap.min.js"></script>
-	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-	<?php require_once 'modals/ayuda.php'; ?>
-	<?php require_once 'modals/nc_pendientes.php'; ?>
-
-	<?php if (!empty($nc_pendientes)): ?>
-		<script>
-			$(document).ready(function () {
-				// Convertir datos de PHP a JavaScript
-				const ncPendientes = <?php echo json_encode(array_map(function ($item) {
-					return [
-						'fecha' => $item['fecha']->format('Y-m-d'),
-						'promocion' => $item['promocion'],
-						'importe' => $item['importe'],
-						'cod_articulo' => $item['cod_articulo']
-					];
-				}, $nc_pendientes)); ?>;
-
-				// Cargar datos
-				cargarNcPendientes(ncPendientes);
-
-				// Mostrar modal y forzar z-index
-				$('#modalNcPendientes').modal('show').css('z-index', 99999);
-			});
-		</script>
-	<?php endif; ?>
+<div class="container-fluid">
+
+    <div class="alert alert-primary" role="alert" id="menu">
+
+        <!-- ── Contadores ── -->
+        <div class="form-inline">
+            <h3 class="mt-2"><i class="bi bi-handbag"></i> Estado Pedidos Ecommerce</h3>
+            <label style="margin-left:45%">Ordenes:</label>
+            <input type="text" style="text-align:center;width:10rem;font-size:16px;"
+                   class="form-control form-control-sm ml-1" id="cantidad" readonly disabled>
+            <label class="ml-2">Artículos:</label>
+            <input type="text" style="text-align:center;width:10rem;font-size:16px;"
+                   class="form-control form-control-sm ml-1" id="cantidadArticulos" readonly disabled>
+        </div>
+
+        <!-- ── Formulario de filtros ── -->
+        <div class="row" id="renderr" style="margin-left:10px">
+            <div class="mt-2">
+                <form class="form-inline" id="formFiltros" method="GET" action="">
+
+                    <div style="display:flex;flex-direction:column;">
+                        <label style="align-self:flex-start;">Desde:</label>
+                        <input type="date" class="form-control form-control-sm" name="desde" value="<?= htmlspecialchars($desde) ?>">
+                    </div>
+                    <div style="display:flex;flex-direction:column;margin-left:0.5rem">
+                        <label style="align-self:flex-start;">Hasta:</label>
+                        <input type="date" class="form-control form-control-sm" name="hasta" value="<?= htmlspecialchars($hasta) ?>">
+                    </div>
+                    <div style="display:flex;flex-direction:column;margin-left:0.5rem">
+                        <label style="align-self:flex-start;">Tienda:</label>
+                        <select class="form-control form-control-sm" name="tienda">
+                            <option value="" <?= $tienda === '' ? 'selected' : '' ?>>Todas</option>
+                            <option value="FRAVEGA"  <?= $tienda === 'FRAVEGA'  ? 'selected' : '' ?>>FRAVEGA</option>
+                            <option value="ICBC"     <?= $tienda === 'ICBC'     ? 'selected' : '' ?>>ICBC</option>
+                            <option value="VTEX"     <?= $tienda === 'VTEX'     ? 'selected' : '' ?>>VTEX</option>
+                            <option value="ML"       <?= $tienda === 'ML'       ? 'selected' : '' ?>>MERCADO LIBRE</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;flex-direction:column;margin-left:0.5rem">
+                        <label style="align-self:flex-start;">Estado:</label>
+                        <select class="form-control form-control-sm" name="estado">
+                            <option value="" <?= $estado === '' ? 'selected' : '' ?>>Todos</option>
+                            <?php foreach (['CANCELADO','PREPARADO','SIN_CONTROLAR','FALTANTE','FACTURADO','DESPACHADO','ENTREGADO','SIN_DESPACHAR'] as $opt): ?>
+                                <option value="<?= $opt ?>" <?= $estado === $opt ? 'selected' : '' ?>><?= $opt ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div style="display:flex;flex-direction:column;margin-left:0.5rem">
+                        <label style="align-self:flex-start;">Origen:</label>
+                        <select class="form-control form-control-sm" name="warehouse">
+                            <option value="">Todos</option>
+                            <?php foreach ($todosLosWarehouse as $wh): ?>
+                                <option value="<?= htmlspecialchars($wh[0]->WAREHOUSE) ?>"
+                                    <?= $warehouse === $wh[0]->WAREHOUSE ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($wh[0]->WAREHOUSE) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div style="display:flex;flex-direction:column;margin-left:0.5rem">
+                        <label style="align-self:flex-start;">Orden:</label>
+                        <input class="form-control form-control-sm" type="text"
+                               placeholder="Número de orden.." name="orden" value="<?= htmlspecialchars($orden) ?>">
+                    </div>
+                    <div style="display:flex;flex-direction:column;margin-left:0.5rem">
+                        <label style="align-self:flex-start;">Método Envío:</label>
+                        <select class="form-control form-control-sm" name="metodo_envio">
+                            <option value="">Todos</option>
+                            <?php foreach ($todosLosMetodosEnvio as $me): ?>
+                                <option value="<?= htmlspecialchars($me[0]->METODO_ENVIO) ?>"
+                                    <?= $metodoEnvio === $me[0]->METODO_ENVIO ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($me[0]->METODO_ENVIO) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="ml-2">
+                        <button type="submit" id="btnBuscar" class="btn btn-primary btn-buscar mt-4">
+                            Buscar <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+
+                    <?php if ($buscarActivo): ?>
+                    <label class="ml-2 mt-4">Búsqueda rápida:</label>
+                    <input type="text" class="form-control form-control-sm ml-1 mt-4"
+                           onkeyup="busquedaRapida()" id="textBox" name="factura"
+                           value="<?= htmlspecialchars($busqueda) ?>"
+                           placeholder="Sobre cualquier campo..">
+                    <?php else: ?>
+                    <label class="ml-2 mt-4">Búsqueda rápida:</label>
+                    <input type="text" class="form-control form-control-sm ml-1 mt-4"
+                           onkeyup="busquedaRapida()" id="textBox" name="factura"
+                           value="" placeholder="Sobre cualquier campo..">
+                    <?php endif; ?>
+
+                </form>
+            </div><!-- /mt-2 -->
+        </div><!-- /renderr -->
+
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/assets/js/js.php'; ?>
+
+        <!-- ── Botones de acción (siempre visibles) ── -->
+        <div style="display:flex;align-items:center;gap:8px;margin:0.5rem 1.5rem;">
+            <button onclick="filterPendientes()"   id="buttonPendientes">Pendientes</button>
+            <button onclick="filterCancelados()"   id="buttonCancelados">Sin NC</button>
+            <button onclick="filterIncompletos()"  id="buttonIncompletos">Incompletos</button>
+            <button onclick="iniciarExportacion()" id="buttonExportar" style="background-color:#28a745;">
+                Exportar
+            </button>
+            <button onclick="$('#modalAyuda').modal('show')" class="btn btn-info btn-sm">
+                <i class="fas fa-question-circle"></i> Ayuda
+            </button>
+        </div>
+
+        <!-- ── Barra de progreso ── -->
+        <div id="progressBar" style="display:none;margin:0.5rem 1.5rem;">
+            <div class="progress" style="height:6px;border-radius:3px;">
+                <div id="progressBarInner" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                     role="progressbar" style="width:0%"></div>
+            </div>
+            <small id="progressText" style="color:#555;"></small>
+        </div>
+
+        <!-- ── Spinner de carga de tabla ── -->
+        <div id="loadingTable">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p>Cargando registros… <span id="loadedCount">0</span> cargados</p>
+        </div>
+
+        <!-- ── Tabla principal ── -->
+        <div style="width:100%;">
+            <table class="table table-hover" id="id_tabla">
+                <thead id="tablaPedidosH">
+                    <tr>
+                        <th style="width:2%"   class="headerTitle">TIENDA</th>
+                        <th style="width:9%"   class="headerTitle">NRO<BR>ORDEN</th>
+                        <th style="width:6%"   class="headerTitle">FECHA<BR>PEDIDO</th>
+                        <th style="width:6%"   class="headerTitle">HORA<BR>PEDIDO</th>
+                        <th style="width:5%"   class="headerTitle">PEDIDO</th>
+                        <th style="width:12%"  class="headerTitle">NOMBRE</th>
+                        <th style="width:8%"   class="headerTitle">COD<BR>ARTICULO</th>
+                        <th style="width:8%"   class="headerTitle">DESC<BR>ARTICULO</th>
+                        <th style="width:4%;text-align:left;padding-left:0px" class="headerTitle">CANT</th>
+                        <th style="width:7%"   class="headerTitle">IMPORTE</th>
+                        <th style="width:5.5%" class="headerTitle">NRO<BR>FACT</th>
+                        <th style="width:5%"   class="headerTitle">DEPOSITO</th>
+                        <th style="width:5%"   class="headerTitle">METODO<BR>ENVIO</th>
+                        <th style="width:5%"   class="headerTitle">TIENDA</th>
+                        <th style="width:1%;color:white;" class="headerTitle noExl">
+                            <i class="bi-cart-check-fill" data-toggle="tooltip" title="Preparación" style="color:#FFF;font-size:18px;padding-top:0.4rem;"></i>
+                        </th>
+                        <th style="width:1%;color:white;" class="headerTitle noExl">
+                            <i class="bi bi-file-earmark-text-fill" data-toggle="tooltip" title="Facturación" style="color:#FFF;font-size:18px;padding-top:0.4rem;"></i>
+                        </th>
+                        <th style="width:1%;color:white;" class="headerTitle noExl">
+                            <i class="bi bi-clipboard2-check-fill" data-toggle="tooltip" title="Control" style="color:#FFF;font-size:18px;padding-top:0.4rem;"></i>
+                        </th>
+                        <th style="width:1%;color:white;" class="headerTitle noExl">
+                            <i class="fas fa-truck" data-toggle="tooltip" title="Despacho" style="color:#FFF;font-size:18px;padding-top:0.4rem;"></i>
+                        </th>
+                        <th style="width:1%;color:white;" class="headerTitle noExl">
+                            <i class="fas fa-store" data-toggle="tooltip" title="Recibido" style="color:#FFF;font-size:18px;padding-top:0.4rem;"></i>
+                        </th>
+                        <th style="width:1%;color:white;" class="headerTitle noExl">
+                            <i class="bi bi-box-seam-fill" data-toggle="tooltip" title="Entrega" style="color:#FFF;font-size:18px;padding-top:0.4rem;"></i>
+                        </th>
+                        <th style="width:1%;color:white;" class="headerTitle noExl">
+                            <i class="bi bi-cart-dash-fill" data-toggle="tooltip" title="Incompleto" style="color:#FFF;font-size:18px;padding-top:0.4rem;"></i>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="table">
+                    <!-- Las filas se insertan dinámicamente via AJAX -->
+                </tbody>
+            </table>
+
+            <!-- Mensaje cuando no hay resultados -->
+            <div id="sinResultados" style="display:none;text-align:center;padding:2rem;color:#888;">
+                <i class="bi bi-search" style="font-size:2rem;"></i>
+                <p class="mt-2">No se encontraron registros para los filtros aplicados.</p>
+            </div>
+        </div>
+
+    </div><!-- /alert -->
+</div><!-- /container-fluid -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- Modal de exportación                                                       -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalExportando" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-earmark-excel-fill"></i> Generando exportación…
+                </h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="spinner-border text-success mb-3" style="width:3rem;height:3rem;" role="status"></div>
+                <div class="progress mb-2">
+                    <div id="exportProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                         role="progressbar" style="width:5%"></div>
+                </div>
+                <p id="exportProgressText">Iniciando… esto puede demorar unos segundos.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarExportacion()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay de descarga -->
+<div id="exportOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+     z-index:99999;background:rgba(255,255,255,0.88);flex-direction:column;
+     align-items:center;justify-content:center;">
+    <div class="spinner-border text-success" style="width:3.5rem;height:3.5rem;" role="status"></div>
+    <p style="margin-top:1.2rem;font-size:1.2rem;font-weight:600;color:#333;">
+        <i class="bi bi-file-earmark-excel-fill" style="color:#28a745;"></i> Preparando descarga…
+    </p>
+</div>
+
+<script src="assets/bootstrap/popper.min.js"></script>
+<script src="assets/bootstrap/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert@1.1.3/dist/sweetalert.min.js"></script>
+
+<?php require_once 'modals/ayuda.php'; ?>
+<?php require_once 'modals/nc_pendientes.php'; ?>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- JavaScript principal                                                       -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<script>
+// ── Estado global ─────────────────────────────────────────────────────────────
+let   cargando             = false;
+let   cancelarCarga        = false;
+let   pollingInterval      = null;
+let   currentExportIframe  = null;
+
+// ── Filtros iniciales desde PHP (para pre-cargar si la URL ya tiene parámetros) ─
+const filtrosIniciales = {
+    desde:        <?= json_encode($desde) ?>,
+    hasta:        <?= json_encode($hasta) ?>,
+    tienda:       <?= json_encode($tienda) ?>,
+    warehouse:    <?= json_encode($warehouse) ?>,
+    estado:       <?= json_encode($estado) ?>,
+    orden:        <?= json_encode($orden) ?>,
+    metodo_envio: <?= json_encode($metodoEnvio) ?>,
+    factura:      <?= json_encode($busqueda) ?>,
+};
+
+// Filtros que se usan en las llamadas AJAX (se actualizan al hacer submit)
+let filtros = Object.assign({}, filtrosIniciales);
+
+// ── Flag: hay búsqueda activa (URL ya tiene params) ───────────────────────────
+const BUSCAR_ACTIVO_INICIAL = <?= $buscarActivo ? 'true' : 'false' ?>;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CARGA PROGRESIVA VIA AJAX
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Carga todos los pedidos en chunks de 200, agregando filas al DOM
+ * de forma progresiva. El usuario ve los datos aparecer sin paginar.
+ */
+async function cargarPedidosProgresivo() {
+    cargando      = true;
+    cancelarCarga = false;
+
+    const tbody     = document.getElementById('table');
+    const loading   = document.getElementById('loadingTable');
+    const progBar   = document.getElementById('progressBar');
+    const progInner = document.getElementById('progressBarInner');
+    const progText  = document.getElementById('progressText');
+    const sinRes    = document.getElementById('sinResultados');
+    const loadedCnt = document.getElementById('loadedCount');
+
+    // Reset
+    tbody.innerHTML = '';
+    sinRes.style.display = 'none';
+    loading.style.display = 'block';
+    progBar.style.display = 'block';
+    progInner.style.width = '2%';
+    progText.textContent  = 'Conectando con el servidor…';
+
+    let pagina   = 1;
+    let total    = 0;
+    let hayMas   = true;
+
+    while (hayMas && !cancelarCarga) {
+        const params = new URLSearchParams({ ...filtros, pagina });
+        let data;
+
+        try {
+            const resp = await fetch('getPedidos.php?' + params.toString());
+            if (!resp.ok) throw new Error('HTTP ' + resp.status + ' - ' + resp.statusText);
+            const texto = await resp.text();
+            // Intentar parsear JSON; si falla, mostrar el texto raw (útil para ver errores PHP)
+            try {
+                data = JSON.parse(texto);
+            } catch(parseErr) {
+                throw new Error('Respuesta inválida del servidor: ' + texto.substring(0, 300));
+            }
+        } catch (err) {
+            loading.style.display = 'none';
+            progBar.style.display = 'none';
+            swal('Error al cargar pedidos', err.message, 'error');
+            cargando = false;
+            return;
+        }
+
+        // Si el servidor devolvió un error PHP dentro del JSON
+        if (data.error) {
+            loading.style.display = 'none';
+            progBar.style.display = 'none';
+            swal('Error del servidor', data.error, 'error');
+            cargando = false;
+            return;
+        }
+
+        if (data.html) {
+            tbody.insertAdjacentHTML('beforeend', data.html);
+            total += data.count;
+        }
+
+        hayMas = data.hayMas;
+        loadedCnt.textContent = total.toLocaleString();
+
+        // Actualizar barra de progreso (estimación: cada página ~200 registros)
+        // No sabemos el total real, mostramos progreso relativo
+        const pct = hayMas ? Math.min(95, pagina * 5) : 100;
+        progInner.style.width = pct + '%';
+        progText.textContent  = total.toLocaleString() + ' registros cargados' + (hayMas ? ', continuando…' : '.');
+
+        // Actualizar contadores de pedidos / artículos después de cada chunk
+        contar();
+
+        // Re-inicializar tooltips de Bootstrap en las filas nuevas
+        $('[data-toggle="tooltip"]').tooltip();
+
+        pagina++;
+
+        // Pequeña pausa para no saturar el servidor y dejar respirar al navegador
+        if (hayMas) await sleep(80);
+    }
+
+    // Finalizado
+    loading.style.display = 'none';
+
+    if (total === 0) {
+        sinRes.style.display = 'block';
+        progBar.style.display = 'none';
+    } else {
+        progInner.style.width = '100%';
+        progText.textContent  = '✓ ' + total.toLocaleString() + ' registros cargados.';
+        // Ocultar barra luego de 3 segundos
+        setTimeout(() => { progBar.style.display = 'none'; }, 3000);
+    }
+
+    contar();
+    cargando = false;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ── Interceptar submit del formulario ────────────────────────────────────────
+document.getElementById('formFiltros').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const params   = new URLSearchParams(formData).toString();
+
+    // Actualizar URL sin recargar
+    window.history.pushState({}, '', '?' + params);
+
+    // Actualizar objeto filtros
+    filtros = {
+        desde:        formData.get('desde')        || '',
+        hasta:        formData.get('hasta')        || '',
+        tienda:       formData.get('tienda')       || '',
+        warehouse:    formData.get('warehouse')    || '',
+        estado:       formData.get('estado')       || '',
+        orden:        formData.get('orden')        || '',
+        metodo_envio: formData.get('metodo_envio') || '',
+        factura:      formData.get('factura')      || '',
+    };
+
+    cargarPedidosProgresivo();
+});
+
+// ── Arrancar carga si la URL ya tiene parámetros (ej: recarga o link compartido) ─
+$(document).ready(function () {
+    $('[data-toggle="tooltip"]').tooltip();
+
+    if (BUSCAR_ACTIVO_INICIAL) {
+        // Hay params en la URL → cargar tabla automáticamente
+        filtros = Object.assign({}, filtrosIniciales);
+        cargarPedidosProgresivo();
+    }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONTADORES
+// ══════════════════════════════════════════════════════════════════════════════
+const contar = () => {
+    const trFiltrados = $('#id_tabla tbody tr:visible');
+    const pedidosUnicos = new Set();
+    let totalArticulos  = 0;
+
+    trFiltrados.each(function () {
+        const numeroPedido = $(this).find('td').eq(4).text().trim();
+        const codArticulo  = $(this).find('td').eq(6).text().trim();
+        const cantidad     = parseFloat($(this).find('td').eq(8).text().trim()) || 0;
+        pedidosUnicos.add(numeroPedido);
+        if (codArticulo !== '***COSTO ENVIO') totalArticulos += cantidad;
+    });
+
+    document.getElementById('cantidad').value          = pedidosUnicos.size.toLocaleString();
+    document.getElementById('cantidadArticulos').value = totalArticulos.toLocaleString();
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÚSQUEDA RÁPIDA (sobre DOM ya cargado)
+// ══════════════════════════════════════════════════════════════════════════════
+function busquedaRapida() {
+    const input  = document.getElementById('textBox');
+    if (!input) return;
+    const filter = input.value.toUpperCase();
+    const tbody  = document.getElementById('table');
+    const rows   = tbody.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        const cells   = rows[i].getElementsByTagName('td');
+        let   visible = false;
+        for (let j = 0; j < cells.length; j++) {
+            if (cells[j] && cells[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
+                visible = true;
+                break;
+            }
+        }
+        rows[i].style.display = visible ? '' : 'none';
+    }
+    contar();
+}
+
+function pulsar(e) {
+    return e.keyCode !== 13;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FILTROS RÁPIDOS (Pendientes / Sin NC / Incompletos)
+// ══════════════════════════════════════════════════════════════════════════════
+function filterPendientes() {
+    const rows = document.getElementById('table').getElementsByTagName('tr');
+    for (let r of rows) {
+        const canceladoCell = r.querySelector('td#cancelado');
+        const hayPendiente  = canceladoCell && canceladoCell.querySelector('.pendiente');
+        r.style.display = hayPendiente ? '' : 'none';
+    }
+    contar();
+}
+
+function filterCancelados() {
+    const rows = document.getElementById('table').getElementsByTagName('tr');
+    for (let r of rows) {
+        const canceladoCell = r.querySelector('td#cancelado');
+        const hayCancelado  = canceladoCell && canceladoCell.querySelector('.cancelado');
+        r.style.display = hayCancelado ? '' : 'none';
+    }
+    contar();
+}
+
+function filterIncompletos() {
+    const rows = document.getElementById('table').getElementsByTagName('tr');
+    for (let r of rows) {
+        const incompletoCell = r.querySelector('td#incompleto');
+        const hayIncompleto  = incompletoCell && incompletoCell.querySelector('.incompleto');
+        r.style.display = hayIncompleto ? '' : 'none';
+    }
+    contar();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// EXPORTACIÓN EN BACKGROUND
+// ══════════════════════════════════════════════════════════════════════════════
+
+function iniciarExportacion() {
+    // Token único por descarga (para la cookie de detección)
+    const token = Math.random().toString(36).substring(2, 14);
+
+    // Mostrar modal
+    document.getElementById('exportProgressBar').style.width = '10%';
+    document.getElementById('exportProgressText').textContent = 'Generando archivo, aguardá…';
+    $('#modalExportando').modal('show');
+
+    // Crear iframe oculto que recibirá el CSV
+    const iframeName = 'exportIframe_' + token;
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeName;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    currentExportIframe = iframe;
+
+    // Enviar filtros al iframe via form POST
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'exportarPedidos.php';
+    form.target = iframeName;
+    form.style.display = 'none';
+    const allParams = Object.assign({}, filtros, { export_token: token });
+    for (const [key, val] of Object.entries(allParams)) {
+        const inp = document.createElement('input');
+        inp.type  = 'hidden';
+        inp.name  = key;
+        inp.value = val;
+        form.appendChild(inp);
+    }
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    // Polling por cookie: PHP la setea cuando la respuesta empieza a enviarse
+    const cookieName = 'export_ready_' + token;
+    let ticks = 0;
+    const MAX_TICKS = 150; // 150 × 2 s = 5 min
+
+    pollingInterval = setInterval(() => {
+        ticks++;
+        // Animar barra de progreso
+        const pct = Math.min(90, 10 + ticks);
+        document.getElementById('exportProgressBar').style.width = pct + '%';
+
+        // Detectar cookie
+        if (document.cookie.split(';').some(c => c.trim().startsWith(cookieName + '='))) {
+            document.cookie = cookieName + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+            detenerPolling();
+            document.getElementById('exportProgressBar').style.width = '100%';
+            document.getElementById('exportProgressText').textContent = '✓ ¡Descarga iniciada!';
+            setTimeout(() => {
+                $('#modalExportando').modal('hide');
+                setTimeout(() => {
+                    if (currentExportIframe && currentExportIframe.parentNode) {
+                        document.body.removeChild(currentExportIframe);
+                    }
+                    currentExportIframe = null;
+                }, 30000);
+            }, 1200);
+            return;
+        }
+
+        // Timeout
+        if (ticks >= MAX_TICKS) {
+            detenerPolling();
+            $('#modalExportando').modal('hide');
+            if (currentExportIframe && currentExportIframe.parentNode) {
+                document.body.removeChild(currentExportIframe);
+            }
+            currentExportIframe = null;
+            swal('Tiempo agotado', 'La exportación tardó demasiado. Intentá con un rango menor de fechas.', 'warning');
+        }
+    }, 2000);
+}
+
+function cancelarExportacion() {
+    detenerPolling();
+    if (currentExportIframe && currentExportIframe.parentNode) {
+        document.body.removeChild(currentExportIframe);
+    }
+    currentExportIframe = null;
+    $('#modalExportando').modal('hide');
+}
+
+function detenerPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+}
+
+// Cancelar también si se cierra el modal de otra forma
+$('#modalExportando').on('hide.bs.modal', function () {
+    detenerPolling();
+});
+</script>
 
 </body>
-
 </html>

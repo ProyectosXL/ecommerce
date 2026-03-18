@@ -425,7 +425,7 @@ $todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
     <!-- Table2Excel for export functionality -->
     <script src="https://cdn.jsdelivr.net/npm/table2excel@1.0.4/dist/table2excel.min.js"></script>
     <!-- SweetAlert for notifications -->
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert@1.1.3/dist/sweetalert.min.js"></script>
     <!-- Custom JS -->
     <script src="assets/js/index2.js"></script>
     <script>
