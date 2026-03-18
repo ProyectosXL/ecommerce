@@ -8,7 +8,7 @@
     php_flag implicit_flush On
     php_value zlib.output_compression Off
     
-    # Aumentar tiempo de ejecución
-    php_value max_execution_time 600
+    # Aumentar tiempo de ejecución a 20 minutos
+    php_value max_execution_time 1200
     php_value memory_limit 1024M
 </Files>
