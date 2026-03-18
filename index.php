@@ -37,36 +37,12 @@ $buscarActivo = isset($_GET['desde']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/assets/css/css.php'; ?>
-    <link rel="stylesheet" href="assets/css/helpIndex.css" class="rel">
+    <link rel="stylesheet" href="assets/css/helpIndex.css">
     <link rel="stylesheet" href="assets/css/nc_pendientes.css">
-
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
-            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
           integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
-
-    <style>
-        /* ── Spinner de carga de tabla ── */
-        #loadingTable {
-            display: none;
-            text-align: center;
-            padding: 2rem 0;
-        }
-        #loadingTable .spinner-border { width: 3rem; height: 3rem; }
-        #loadingTable p { margin-top: 0.8rem; font-size: 1rem; color: #555; font-weight: 500; }
-
-        /* ── Barra de progreso de carga ── */
-        #progressBar {
-            display: none;
-            margin: 0.5rem 1.5rem;
-        }
-        #progressBar .progress { height: 6px; border-radius: 3px; }
-
-        /* ── Modal exportación ── */
-        #modalExportando .modal-header { background: #28a745; color: white; }
-        #modalExportando .progress { height: 20px; }
-        #exportProgressText { font-size: 0.85rem; color: #555; margin-top: 0.4rem; }
-    </style>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -74,15 +50,15 @@ $buscarActivo = isset($_GET['desde']);
 
     <div class="alert alert-primary" role="alert" id="menu">
 
-        <!-- ── Contadores ── -->
-        <div class="form-inline">
-            <h3 class="mt-2"><i class="bi bi-handbag"></i> Estado Pedidos Ecommerce</h3>
-            <label style="margin-left:45%">Ordenes:</label>
-            <input type="text" style="text-align:center;width:10rem;font-size:16px;"
-                   class="form-control form-control-sm ml-1" id="cantidad" readonly disabled>
-            <label class="ml-2">Artículos:</label>
-            <input type="text" style="text-align:center;width:10rem;font-size:16px;"
-                   class="form-control form-control-sm ml-1" id="cantidadArticulos" readonly disabled>
+        <!-- ── Cabecera ── -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem;">
+            <h3 class="mt-0 mb-0"><i class="bi bi-bag-check" style="color:var(--accent)"></i> Estado Pedidos Ecommerce</h3>
+            <div class="counter-group">
+                <label>Órdenes</label>
+                <input type="text" class="form-control form-control-sm" id="cantidad" readonly disabled placeholder="—">
+                <label class="ml-2">Artículos</label>
+                <input type="text" class="form-control form-control-sm" id="cantidadArticulos" readonly disabled placeholder="—">
+            </div>
         </div>
 
         <!-- ── Formulario de filtros ── -->
@@ -172,26 +148,24 @@ $buscarActivo = isset($_GET['desde']);
 
         <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/ecommerce/assets/js/js.php'; ?>
 
-        <!-- ── Botones de acción (siempre visibles) ── -->
-        <div style="display:flex;align-items:center;gap:8px;margin:0.5rem 1.5rem;">
-            <button onclick="filterPendientes()"   id="buttonPendientes">Pendientes</button>
-            <button onclick="filterCancelados()"   id="buttonCancelados">Sin NC</button>
-            <button onclick="filterIncompletos()"  id="buttonIncompletos">Incompletos</button>
-            <button onclick="iniciarExportacion()" id="buttonExportar" style="background-color:#28a745;">
-                Exportar
-            </button>
-            <button onclick="$('#modalAyuda').modal('show')" class="btn btn-info btn-sm">
+        <!-- ── Botones de acción ── -->
+        <div class="action-bar">
+            <button onclick="filterPendientes()"   id="buttonPendientes"><i class="bi bi-clock"></i> Pendientes</button>
+            <button onclick="filterCancelados()"   id="buttonCancelados"><i class="bi bi-x-circle"></i> Sin NC</button>
+            <button onclick="filterIncompletos()"  id="buttonIncompletos"><i class="bi bi-exclamation-triangle"></i> Incompletos</button>
+            <button onclick="iniciarExportacion()" id="buttonExportar"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar</button>
+            <button onclick="$('#modalAyuda').modal('show')" class="btn btn-outline-secondary btn-sm" style="height:34px;border-radius:6px;font-size:.8rem;">
                 <i class="fas fa-question-circle"></i> Ayuda
             </button>
         </div>
 
         <!-- ── Barra de progreso ── -->
-        <div id="progressBar" style="display:none;margin:0.5rem 1.5rem;">
-            <div class="progress" style="height:6px;border-radius:3px;">
+        <div id="progressBar">
+            <div class="progress">
                 <div id="progressBarInner" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
                      role="progressbar" style="width:0%"></div>
             </div>
-            <small id="progressText" style="color:#555;"></small>
+            <small id="progressText"></small>
         </div>
 
         <!-- ── Spinner de carga de tabla ── -->
@@ -269,16 +243,16 @@ $buscarActivo = isset($_GET['desde']);
                     <i class="bi bi-file-earmark-excel-fill"></i> Generando exportación…
                 </h5>
             </div>
-            <div class="modal-body text-center">
-                <div class="spinner-border text-success mb-3" style="width:3rem;height:3rem;" role="status"></div>
+            <div class="modal-body text-center" style="padding:1.5rem 2rem;">
+                <div class="spinner-border mb-3" style="width:2.5rem;height:2.5rem;color:var(--success);" role="status"></div>
                 <div class="progress mb-2">
-                    <div id="exportProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                    <div id="exportProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
                          role="progressbar" style="width:5%"></div>
                 </div>
-                <p id="exportProgressText">Iniciando… esto puede demorar unos segundos.</p>
+                <p id="exportProgressText" class="mb-0">Generando archivo, aguardá un momento…</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarExportacion()">
+            <div class="modal-footer" style="border-top:1px solid var(--border);padding:.6rem 1rem;">
+                <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;" onclick="cancelarExportacion()">
                     Cancelar
                 </button>
             </div>
