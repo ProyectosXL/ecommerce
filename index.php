@@ -331,86 +331,68 @@ async function cargarPedidosProgresivo() {
 
     // Reset
     tbody.innerHTML = '';
-    sinRes.style.display = 'none';
+    sinRes.style.display  = 'none';
     loading.style.display = 'block';
     progBar.style.display = 'block';
     progInner.style.width = '2%';
-    progText.textContent  = 'Conectando con el servidor…';
+    progText.textContent  = 'Consultando la base de datos…';
 
-    let pagina   = 1;
-    let total    = 0;
-    let hayMas   = true;
-
-    while (hayMas && !cancelarCarga) {
-        const params = new URLSearchParams({ ...filtros, pagina });
-        let data;
-
-        try {
-            const resp = await fetch('getPedidos.php?' + params.toString());
-            if (!resp.ok) throw new Error('HTTP ' + resp.status + ' - ' + resp.statusText);
-            const texto = await resp.text();
-            // Intentar parsear JSON; si falla, mostrar el texto raw (útil para ver errores PHP)
-            try {
-                data = JSON.parse(texto);
-            } catch(parseErr) {
-                throw new Error('Respuesta inválida del servidor: ' + texto.substring(0, 300));
-            }
-        } catch (err) {
-            loading.style.display = 'none';
-            progBar.style.display = 'none';
-            swal('Error al cargar pedidos', err.message, 'error');
-            cargando = false;
-            return;
-        }
-
-        // Si el servidor devolvió un error PHP dentro del JSON
-        if (data.error) {
-            loading.style.display = 'none';
-            progBar.style.display = 'none';
-            swal('Error del servidor', data.error, 'error');
-            cargando = false;
-            return;
-        }
-
-        if (data.html) {
-            tbody.insertAdjacentHTML('beforeend', data.html);
-            total += data.count;
-        }
-
-        hayMas = data.hayMas;
-        loadedCnt.textContent = total.toLocaleString();
-
-        // Actualizar barra de progreso (estimación: cada página ~200 registros)
-        // No sabemos el total real, mostramos progreso relativo
-        const pct = hayMas ? Math.min(95, pagina * 5) : 100;
+    // Animar barra mientras se espera la respuesta única
+    let pct  = 2;
+    const anim = setInterval(() => {
+        pct = Math.min(85, pct + 1);
         progInner.style.width = pct + '%';
-        progText.textContent  = total.toLocaleString() + ' registros cargados' + (hayMas ? ', continuando…' : '.');
+    }, 800);
 
-        // Actualizar contadores de pedidos / artículos después de cada chunk
-        contar();
+    const params = new URLSearchParams(filtros);
+    let data;
 
-        // Re-inicializar tooltips de Bootstrap en las filas nuevas
-        $('[data-toggle="tooltip"]').tooltip();
-
-        pagina++;
-
-        // Pequeña pausa para no saturar el servidor y dejar respirar al navegador
-        if (hayMas) await sleep(80);
+    try {
+        const resp = await fetch('getPedidos.php?' + params.toString());
+        if (!resp.ok) throw new Error('HTTP ' + resp.status + ' - ' + resp.statusText);
+        const texto = await resp.text();
+        try {
+            data = JSON.parse(texto);
+        } catch(parseErr) {
+            throw new Error('Respuesta inválida del servidor: ' + texto.substring(0, 300));
+        }
+    } catch (err) {
+        clearInterval(anim);
+        loading.style.display = 'none';
+        progBar.style.display = 'none';
+        swal('Error al cargar pedidos', err.message, 'error');
+        cargando = false;
+        return;
     }
 
-    // Finalizado
+    clearInterval(anim);
+
+    if (data.error) {
+        loading.style.display = 'none';
+        progBar.style.display = 'none';
+        swal('Error del servidor', data.error, 'error');
+        cargando = false;
+        return;
+    }
+
+    if (data.html) {
+        tbody.insertAdjacentHTML('beforeend', data.html);
+    }
+
+    const total = data.count || 0;
+    loadedCnt.textContent = total.toLocaleString();
+    progInner.style.width = '100%';
     loading.style.display = 'none';
 
     if (total === 0) {
         sinRes.style.display = 'block';
         progBar.style.display = 'none';
     } else {
-        progInner.style.width = '100%';
-        progText.textContent  = '✓ ' + total.toLocaleString() + ' registros cargados.';
-        // Ocultar barra luego de 3 segundos
+        progText.textContent = '✓ ' + total.toLocaleString() + ' registros cargados.';
         setTimeout(() => { progBar.style.display = 'none'; }, 3000);
     }
 
+    $('[data-toggle="tooltip"]').tooltip();
     contar();
     cargando = false;
 }

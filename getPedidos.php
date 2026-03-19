@@ -25,28 +25,31 @@ set_exception_handler(function($e) {
 
 header('Content-Type: application/json; charset=UTF-8');
 
+// Sin límite de tiempo ni memoria — misma estrategia que exportarPedidos.php
+set_time_limit(0);
+ini_set('max_execution_time', 0);
+ini_set('memory_limit', '512M');
+
 require_once __DIR__ . '/Class/Conexion.php';
 require_once __DIR__ . '/Class/Pedido.php';
 
 $pedidos = new Pedido();
 
 // ── Parámetros ────────────────────────────────────────────────────────────────
-$hoy        = date('Y-m-d');
-$desde      = isset($_GET['desde'])       ? $_GET['desde']       : $hoy;
-$hasta      = isset($_GET['hasta'])       ? $_GET['hasta']       : $hoy;
-$tienda     = (isset($_GET['tienda'])     && trim($_GET['tienda'])     !== '') ? $_GET['tienda']     . '%' : '%';
-$warehouse  = (isset($_GET['warehouse'])  && trim($_GET['warehouse'])  !== '') ? $_GET['warehouse']  . '%' : '%';
-$estado     = (isset($_GET['estado'])     && trim($_GET['estado'])     !== '') ? $_GET['estado']     : null;
-$orden      = (isset($_GET['orden'])      && trim($_GET['orden'])      !== '') ? $_GET['orden']      . '%' : '%';
-$metodoEnvio= (isset($_GET['metodo_envio']) && trim($_GET['metodo_envio']) !== '') ? trim($_GET['metodo_envio']) : '';
-$busqueda   = (isset($_GET['factura'])    && trim($_GET['factura'])    !== '') ? trim($_GET['factura'])    : '';
-$pagina     = (isset($_GET['pagina'])     && intval($_GET['pagina'])   > 0)   ? intval($_GET['pagina'])   : 1;
-$porPagina  = 200;
+$hoy         = date('Y-m-d');
+$desde       = isset($_GET['desde'])        ? $_GET['desde']        : $hoy;
+$hasta       = isset($_GET['hasta'])        ? $_GET['hasta']        : $hoy;
+$tienda      = (isset($_GET['tienda'])      && trim($_GET['tienda'])      !== '') ? $_GET['tienda']      . '%' : '%';
+$warehouse   = (isset($_GET['warehouse'])   && trim($_GET['warehouse'])   !== '') ? $_GET['warehouse']   . '%' : '%';
+$estado      = (isset($_GET['estado'])      && trim($_GET['estado'])      !== '') ? $_GET['estado']      : null;
+$orden       = (isset($_GET['orden'])       && trim($_GET['orden'])       !== '') ? $_GET['orden']       . '%' : '%';
+$metodoEnvio = (isset($_GET['metodo_envio']) && trim($_GET['metodo_envio']) !== '') ? trim($_GET['metodo_envio']) : '';
+$busqueda    = (isset($_GET['factura'])     && trim($_GET['factura'])     !== '') ? trim($_GET['factura'])     : '';
 
-// ── Consulta ──────────────────────────────────────────────────────────────────
+// ── Consulta única (sin paginación SQL para evitar lentitud por OFFSET profundo) ──
 $arrayPedidos = $pedidos->traerPedidos(
     $desde, $hasta, $tienda, $warehouse,
-    $estado, $orden, $pagina, $porPagina, $metodoEnvio
+    $estado, $orden, 1, 999999, $metodoEnvio
 );
 
 // Filtrar sin unidades
@@ -76,7 +79,7 @@ if ($busqueda !== '') {
     }));
 }
 
-$hayMas = count($arrayPedidos) >= $porPagina;
+$hayMas = false; // consulta única: no hay más páginas
 
 // ── Generar HTML de filas ─────────────────────────────────────────────────────
 $filas = [];
@@ -193,6 +196,5 @@ foreach ($arrayPedidos as $idx => $value) {
 echo json_encode([
     'html'   => implode('', $filas),
     'count'  => count($filas),
-    'hayMas' => $hayMas,
-    'pagina' => $pagina,
+    'hayMas' => false,
 ], JSON_UNESCAPED_UNICODE);
