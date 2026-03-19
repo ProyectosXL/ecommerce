@@ -65,6 +65,20 @@
     border-radius: 6px;
 }
 
+/* ── Botón descarga directa ── */
+.btn-descargar-directo {
+    font-size: .82rem;
+    padding: .3rem .9rem;
+    border-radius: 6px;
+    color: var(--success);
+    background: transparent;
+    border: 1.5px solid var(--success);
+}
+.btn-descargar-directo:hover {
+    background: var(--success);
+    color: #fff;
+}
+
 /* ── Botones de acción ── */
 #buttonPendientes,
 #buttonCancelados,

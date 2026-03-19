@@ -123,9 +123,14 @@ $buscarActivo = isset($_GET['desde']);
                         </select>
                     </div>
 
-                    <div class="ml-2">
+                    <div class="ml-2 d-flex align-items-end gap-1">
                         <button type="submit" id="btnBuscar" class="btn btn-primary btn-buscar mt-4">
                             Buscar <i class="bi bi-search"></i>
+                        </button>
+                        <button type="button" id="btnDescargarDirecto" class="btn btn-descargar-directo mt-4"
+                                onclick="descargarDirecto()"
+                                title="Descarga el CSV con los filtros seleccionados sin cargar la tabla">
+                            <i class="bi bi-file-earmark-arrow-down"></i> Descargar CSV
                         </button>
                     </div>
 
@@ -246,14 +251,14 @@ $buscarActivo = isset($_GET['desde']);
             <div class="modal-body text-center" style="padding:1.5rem 2rem;">
                 <div class="spinner-border mb-3" style="width:2.5rem;height:2.5rem;color:var(--success);" role="status"></div>
                 <div class="progress mb-2">
-                    <div id="exportProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
-                         role="progressbar" style="width:5%"></div>
+                    <div id="exportProgressBar" class="progress-bar bg-success"
+                         role="progressbar" style="width:100%"></div>
                 </div>
-                <p id="exportProgressText" class="mb-0">Generando archivo, aguardá un momento…</p>
+                <p id="exportProgressText" class="mb-0">Generando el archivo… La descarga aparecerá en la barra del navegador.</p>
             </div>
             <div class="modal-footer" style="border-top:1px solid var(--border);padding:.6rem 1rem;">
-                <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;" onclick="cancelarExportacion()">
-                    Cancelar
+                <button type="button" id="btnCancelarExport" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;" onclick="cancelarExportacion()">
+                    Cerrar (8)
                 </button>
             </div>
         </div>
@@ -285,7 +290,6 @@ $buscarActivo = isset($_GET['desde']);
 let   cargando             = false;
 let   cancelarCarga        = false;
 let   pollingInterval      = null;
-let   currentExportIframe  = null;
 
 // ── Filtros iniciales desde PHP (para pre-cargar si la URL ya tiene parámetros) ─
 const filtrosIniciales = {
@@ -533,105 +537,110 @@ function filterIncompletos() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// EXPORTACIÓN EN BACKGROUND
+// EXPORTACIÓN
 // ══════════════════════════════════════════════════════════════════════════════
 
-function iniciarExportacion() {
-    // Token único por descarga (para la cookie de detección)
-    const token = Math.random().toString(36).substring(2, 14);
+let _exportAbort = null;
 
-    // Mostrar modal
-    document.getElementById('exportProgressBar').style.width = '10%';
-    document.getElementById('exportProgressText').textContent = 'Generando archivo, aguardá…';
+/** Exporta con los filtros activos de la última búsqueda. */
+function iniciarExportacion() {
+    _dispararDescarga(filtros);
+}
+
+/** Exporta leyendo el formulario directamente, sin cargar la tabla. */
+function descargarDirecto() {
+    const fd = new FormData(document.getElementById('formFiltros'));
+    _dispararDescarga({
+        desde:        fd.get('desde')        || '',
+        hasta:        fd.get('hasta')        || '',
+        tienda:       fd.get('tienda')       || '',
+        warehouse:    fd.get('warehouse')    || '',
+        estado:       fd.get('estado')       || '',
+        orden:        fd.get('orden')        || '',
+        metodo_envio: fd.get('metodo_envio') || '',
+        factura:      fd.get('factura')      || '',
+    });
+}
+
+async function _dispararDescarga(params) {
+    if (_exportAbort) return; // ya hay una descarga en curso
+
+    _exportAbort = new AbortController();
+
+    // Preparar modal
+    const bar  = document.getElementById('exportProgressBar');
+    const txt  = document.getElementById('exportProgressText');
+    const btn  = document.getElementById('btnCancelarExport');
+    bar.style.width = '0%';
+    bar.classList.add('progress-bar-animated', 'progress-bar-striped');
+    txt.textContent = 'Consultando la base de datos…';
+    if (btn) btn.textContent = 'Cancelar';
     $('#modalExportando').modal('show');
 
-    // Crear iframe oculto que recibirá el CSV
-    const iframeName = 'exportIframe_' + token;
-    const iframe = document.createElement('iframe');
-    iframe.name = iframeName;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-    currentExportIframe = iframe;
+    // Animar barra mientras espera
+    let pct = 0;
+    const anim = setInterval(() => {
+        pct = Math.min(85, pct + 1);
+        bar.style.width = pct + '%';
+        if (pct > 30) txt.textContent = 'Generando el archivo CSV…';
+    }, 1000);
 
-    // Enviar filtros al iframe via form POST
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'exportarPedidos.php';
-    form.target = iframeName;
-    form.style.display = 'none';
-    const allParams = Object.assign({}, filtros, { export_token: token });
-    for (const [key, val] of Object.entries(allParams)) {
-        const inp = document.createElement('input');
-        inp.type  = 'hidden';
-        inp.name  = key;
-        inp.value = val;
-        form.appendChild(inp);
-    }
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
+    try {
+        const resp = await fetch('exportarPedidos.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body:    new URLSearchParams(params).toString(),
+            signal:  _exportAbort.signal,
+        });
 
-    // Polling por cookie: PHP la setea cuando la respuesta empieza a enviarse
-    const cookieName = 'export_ready_' + token;
-    let ticks = 0;
-    const MAX_TICKS = 150; // 150 × 2 s = 5 min
+        if (!resp.ok) throw new Error('Error del servidor (' + resp.status + ')');
 
-    pollingInterval = setInterval(() => {
-        ticks++;
-        // Animar barra de progreso
-        const pct = Math.min(90, 10 + ticks);
-        document.getElementById('exportProgressBar').style.width = pct + '%';
+        txt.textContent = 'Preparando descarga…';
+        const blob = await resp.blob();
 
-        // Detectar cookie
-        if (document.cookie.split(';').some(c => c.trim().startsWith(cookieName + '='))) {
-            document.cookie = cookieName + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
-            detenerPolling();
-            document.getElementById('exportProgressBar').style.width = '100%';
-            document.getElementById('exportProgressText').textContent = '✓ ¡Descarga iniciada!';
-            setTimeout(() => {
-                $('#modalExportando').modal('hide');
-                setTimeout(() => {
-                    if (currentExportIframe && currentExportIframe.parentNode) {
-                        document.body.removeChild(currentExportIframe);
-                    }
-                    currentExportIframe = null;
-                }, 30000);
-            }, 1200);
-            return;
-        }
+        // Extraer nombre del Content-Disposition
+        const cd       = resp.headers.get('Content-Disposition') || '';
+        const match    = cd.match(/filename="([^"]+)"/);
+        const filename  = match ? match[1] : 'pedidos.csv';
 
-        // Timeout
-        if (ticks >= MAX_TICKS) {
-            detenerPolling();
+        // Disparar descarga en la misma página (sin nueva pestaña)
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href     = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Éxito
+        clearInterval(anim);
+        bar.style.width = '100%';
+        bar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+        txt.textContent = '✓ Archivo descargado correctamente.';
+        if (btn) btn.textContent = 'Cerrar';
+        setTimeout(() => $('#modalExportando').modal('hide'), 2500);
+
+    } catch (err) {
+        clearInterval(anim);
+        if (err.name !== 'AbortError') {
             $('#modalExportando').modal('hide');
-            if (currentExportIframe && currentExportIframe.parentNode) {
-                document.body.removeChild(currentExportIframe);
-            }
-            currentExportIframe = null;
-            swal('Tiempo agotado', 'La exportación tardó demasiado. Intentá con un rango menor de fechas.', 'warning');
+            swal('Error al exportar', err.message, 'error');
         }
-    }, 2000);
+    } finally {
+        _exportAbort = null;
+    }
 }
 
 function cancelarExportacion() {
-    detenerPolling();
-    if (currentExportIframe && currentExportIframe.parentNode) {
-        document.body.removeChild(currentExportIframe);
-    }
-    currentExportIframe = null;
+    if (_exportAbort) { _exportAbort.abort(); _exportAbort = null; }
+    const btnCancel = document.getElementById('btnCancelarExport');
+    if (btnCancel) btnCancel.textContent = 'Cerrar';
     $('#modalExportando').modal('hide');
 }
 
-function detenerPolling() {
-    if (pollingInterval) {
-        clearInterval(pollingInterval);
-        pollingInterval = null;
-    }
-}
-
-// Cancelar también si se cierra el modal de otra forma
-$('#modalExportando').on('hide.bs.modal', function () {
-    detenerPolling();
+$('#modalExportando').on('hidden.bs.modal', function () {
+    if (_exportAbort) { _exportAbort.abort(); _exportAbort = null; }
 });
 </script>
 
