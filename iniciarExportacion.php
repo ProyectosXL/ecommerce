@@ -35,15 +35,25 @@ $paramsFile = $tmpDir . DIRECTORY_SEPARATOR . $jobId . '_params.json';
 file_put_contents($paramsFile, json_encode($params, JSON_UNESCAPED_UNICODE));
 
 // ── Lanzar proceso en background ─────────────────────────────────────────────
-$phpBin      = PHP_BINARY;
-$scriptPath  = __DIR__ . DIRECTORY_SEPARATOR . 'procesarExportacion.php';
+$scriptPath = __DIR__ . DIRECTORY_SEPARATOR . 'procesarExportacion.php';
 
 if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-    // Windows
+    $phpBin = PHP_BINARY;
     $cmd = 'start /B "" "' . $phpBin . '" "' . $scriptPath . '" "' . $paramsFile . '" > NUL 2>&1';
     pclose(popen($cmd, 'r'));
 } else {
-    // Linux / Mac
+    // En Linux/Mac, PHP_BINARY bajo PHP-FPM es el binario FPM (no el CLI).
+    // Buscar el binario CLI en rutas comunes primero.
+    $phpBin = null;
+    foreach (['/usr/bin/php', '/usr/local/bin/php', PHP_BINARY] as $candidate) {
+        if (is_executable($candidate)) {
+            $phpBin = $candidate;
+            break;
+        }
+    }
+    if (!$phpBin) {
+        $phpBin = trim((string) shell_exec('which php 2>/dev/null')) ?: 'php';
+    }
     $cmd = '"' . $phpBin . '" "' . $scriptPath . '" "' . $paramsFile . '" > /dev/null 2>&1 &';
     exec($cmd);
 }

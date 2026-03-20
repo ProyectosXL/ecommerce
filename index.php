@@ -337,63 +337,80 @@ async function cargarPedidosProgresivo() {
     progInner.style.width = '2%';
     progText.textContent  = 'Consultando la base de datos…';
 
-    // Animar barra mientras se espera la respuesta única
-    let pct  = 2;
-    const anim = setInterval(() => {
-        pct = Math.min(85, pct + 1);
-        progInner.style.width = pct + '%';
-    }, 800);
+    let pagina      = 1;
+    let totalLoaded = 0;
 
-    const params = new URLSearchParams(filtros);
-    let data;
+    // Loop: cada request trae hasta 500 filas para no superar el timeout del proxy
+    while (true) {
+        if (cancelarCarga) break;
 
-    try {
-        const resp = await fetch('getPedidos.php?' + params.toString());
-        if (!resp.ok) throw new Error('HTTP ' + resp.status + ' - ' + resp.statusText);
-        const texto = await resp.text();
+        const params = new URLSearchParams({ ...filtros, pagina });
+        let data;
+
         try {
-            data = JSON.parse(texto);
-        } catch(parseErr) {
-            throw new Error('Respuesta inválida del servidor: ' + texto.substring(0, 300));
+            const resp = await fetch('getPedidos.php?' + params.toString());
+            if (!resp.ok) throw new Error('HTTP ' + resp.status + ' - ' + resp.statusText);
+            const texto = await resp.text();
+            try {
+                data = JSON.parse(texto);
+            } catch (parseErr) {
+                throw new Error('Respuesta inválida del servidor: ' + texto.substring(0, 300));
+            }
+        } catch (err) {
+            loading.style.display = 'none';
+            progBar.style.display = 'none';
+            swal('Error al cargar pedidos', err.message, 'error');
+            cargando = false;
+            return;
         }
-    } catch (err) {
-        clearInterval(anim);
-        loading.style.display = 'none';
-        progBar.style.display = 'none';
-        swal('Error al cargar pedidos', err.message, 'error');
-        cargando = false;
-        return;
+
+        if (data.error) {
+            loading.style.display = 'none';
+            progBar.style.display = 'none';
+            swal('Error del servidor', data.error, 'error');
+            cargando = false;
+            return;
+        }
+
+        if (data.html) {
+            tbody.insertAdjacentHTML('beforeend', data.html);
+        }
+
+        totalLoaded += data.count || 0;
+        loadedCnt.textContent = totalLoaded.toLocaleString();
+
+        // Actualizar barra: 100% al terminar, animada mientras hay más páginas
+        if (data.hayMas) {
+            const pct = Math.min(90, pagina * 15);
+            progInner.style.width = pct + '%';
+            progText.textContent  = 'Cargando… ' + totalLoaded.toLocaleString() + ' registros';
+        } else {
+            progInner.style.width = '100%';
+            progText.textContent  = '✓ ' + totalLoaded.toLocaleString() + ' registros cargados.';
+        }
+
+        if (!data.hayMas) break;
+        pagina++;
     }
 
-    clearInterval(anim);
-
-    if (data.error) {
-        loading.style.display = 'none';
-        progBar.style.display = 'none';
-        swal('Error del servidor', data.error, 'error');
-        cargando = false;
-        return;
-    }
-
-    if (data.html) {
-        tbody.insertAdjacentHTML('beforeend', data.html);
-    }
-
-    const total = data.count || 0;
-    loadedCnt.textContent = total.toLocaleString();
-    progInner.style.width = '100%';
     loading.style.display = 'none';
 
-    if (total === 0) {
+    if (totalLoaded === 0) {
         sinRes.style.display = 'block';
         progBar.style.display = 'none';
     } else {
-        progText.textContent = '✓ ' + total.toLocaleString() + ' registros cargados.';
         setTimeout(() => { progBar.style.display = 'none'; }, 3000);
     }
 
     $('[data-toggle="tooltip"]').tooltip();
     contar();
+
+    // Aplicar búsqueda rápida si el usuario tenía texto en el campo
+    const textBox = document.getElementById('textBox');
+    if (textBox && textBox.value.trim() !== '') {
+        busquedaRapida();
+    }
+
     cargando = false;
 }
 
@@ -547,7 +564,7 @@ function descargarDirecto() {
 async function _dispararDescarga(params) {
     if (_exportAbort) return; // ya hay una descarga en curso
 
-    _exportAbort = new AbortController();
+    _exportAbort = { aborted: false };
 
     // Preparar modal
     const bar  = document.getElementById('exportProgressBar');
@@ -555,74 +572,92 @@ async function _dispararDescarga(params) {
     const btn  = document.getElementById('btnCancelarExport');
     bar.style.width = '0%';
     bar.classList.add('progress-bar-animated', 'progress-bar-striped');
-    txt.textContent = 'Consultando la base de datos…';
+    txt.textContent = 'Iniciando exportación…';
     if (btn) btn.textContent = 'Cancelar';
     $('#modalExportando').modal('show');
 
-    // Animar barra mientras espera
-    let pct = 0;
-    const anim = setInterval(() => {
-        pct = Math.min(85, pct + 1);
-        bar.style.width = pct + '%';
-        if (pct > 30) txt.textContent = 'Generando el archivo CSV…';
-    }, 1000);
-
+    // 1. Lanzar el job en background (responde en < 1 segundo)
+    let jobId;
     try {
-        const resp = await fetch('exportarPedidos.php', {
+        const resp = await fetch('iniciarExportacion.php', {
             method:  'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body:    new URLSearchParams(params).toString(),
-            signal:  _exportAbort.signal,
         });
-
         if (!resp.ok) throw new Error('Error del servidor (' + resp.status + ')');
-
-        txt.textContent = 'Preparando descarga…';
-        const blob = await resp.blob();
-
-        // Extraer nombre del Content-Disposition
-        const cd       = resp.headers.get('Content-Disposition') || '';
-        const match    = cd.match(/filename="([^"]+)"/);
-        const filename  = match ? match[1] : 'pedidos.csv';
-
-        // Disparar descarga en la misma página (sin nueva pestaña)
-        const url = URL.createObjectURL(blob);
-        const a   = document.createElement('a');
-        a.href     = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Éxito
-        clearInterval(anim);
-        bar.style.width = '100%';
-        bar.classList.remove('progress-bar-animated', 'progress-bar-striped');
-        txt.textContent = '✓ Archivo descargado correctamente.';
-        if (btn) btn.textContent = 'Cerrar';
-        setTimeout(() => $('#modalExportando').modal('hide'), 2500);
-
+        const json = await resp.json();
+        if (!json.ok || !json.job_id) throw new Error(json.error || 'No se pudo iniciar la exportación');
+        jobId = json.job_id;
     } catch (err) {
-        clearInterval(anim);
-        if (err.name !== 'AbortError') {
-            $('#modalExportando').modal('hide');
-            swal('Error al exportar', err.message, 'error');
-        }
-    } finally {
+        $('#modalExportando').modal('hide');
+        swal('Error al exportar', err.message, 'error');
         _exportAbort = null;
+        return;
     }
+
+    // 2. Polling cada 2 segundos hasta que el proceso background termine
+    txt.textContent = 'Generando el archivo CSV…';
+    let pct = 5;
+
+    while (true) {
+        if (_exportAbort && _exportAbort.aborted) break;
+
+        await sleep(2000);
+
+        if (_exportAbort && _exportAbort.aborted) break;
+
+        let status;
+        try {
+            const poll = await fetch('estadoExportacion.php?job_id=' + encodeURIComponent(jobId));
+            status = await poll.json();
+        } catch (e) {
+            continue; // error transitorio de red, reintentar
+        }
+
+        if (status.error) {
+            $('#modalExportando').modal('hide');
+            swal('Error al exportar', status.mensaje || 'Error desconocido', 'error');
+            _exportAbort = null;
+            return;
+        }
+
+        if (status.listo) {
+            // Éxito: disparar descarga sin navegar
+            bar.style.width = '100%';
+            bar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+            txt.textContent = '✓ ' + (status.total || 0).toLocaleString() + ' registros. Descargando…';
+            if (btn) btn.textContent = 'Cerrar';
+
+            const a = document.createElement('a');
+            a.href = 'descargarExportacion.php?job_id=' + encodeURIComponent(jobId);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setTimeout(() => $('#modalExportando').modal('hide'), 2500);
+            _exportAbort = null;
+            return;
+        }
+
+        // Actualizar barra de progreso aproximada
+        if (status.progreso) pct = Math.min(90, status.progreso);
+        else pct = Math.min(90, pct + 3);
+        bar.style.width = pct + '%';
+        if (pct > 20) txt.textContent = 'Generando el archivo CSV… (' + pct + '%)';
+    }
+
+    _exportAbort = null;
 }
 
 function cancelarExportacion() {
-    if (_exportAbort) { _exportAbort.abort(); _exportAbort = null; }
+    if (_exportAbort) { _exportAbort.aborted = true; _exportAbort = null; }
     const btnCancel = document.getElementById('btnCancelarExport');
     if (btnCancel) btnCancel.textContent = 'Cerrar';
     $('#modalExportando').modal('hide');
 }
 
 $('#modalExportando').on('hidden.bs.modal', function () {
-    if (_exportAbort) { _exportAbort.abort(); _exportAbort = null; }
+    if (_exportAbort) { _exportAbort.aborted = true; _exportAbort = null; }
 });
 </script>
 

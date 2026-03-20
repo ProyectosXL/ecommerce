@@ -46,40 +46,26 @@ $orden       = (isset($_GET['orden'])       && trim($_GET['orden'])       !== ''
 $metodoEnvio = (isset($_GET['metodo_envio']) && trim($_GET['metodo_envio']) !== '') ? trim($_GET['metodo_envio']) : '';
 $busqueda    = (isset($_GET['factura'])     && trim($_GET['factura'])     !== '') ? trim($_GET['factura'])     : '';
 
-// ── Consulta única (sin paginación SQL para evitar lentitud por OFFSET profundo) ──
+// ── Paginación: cada request trae hasta $porPagina filas → evita timeout de proxy ──
+$pagina    = max(1, intval($_GET['pagina'] ?? 1));
+$porPagina = 500;
+
 $arrayPedidos = $pedidos->traerPedidos(
     $desde, $hasta, $tienda, $warehouse,
-    $estado, $orden, 1, 999999, $metodoEnvio
+    $estado, $orden, $pagina, $porPagina, $metodoEnvio
 );
+
+// hayMas: si el SP devolvió una página completa puede haber más (usar count ANTES de filtrar)
+$rawCount = count($arrayPedidos);
+$hayMas   = ($rawCount >= $porPagina);
 
 // Filtrar sin unidades
 $arrayPedidos = array_values(array_filter($arrayPedidos, function ($value) {
     return isset($value[0]->CANTIDAD_A_FACTURAR) && $value[0]->CANTIDAD_A_FACTURAR > 0;
 }));
 
-// Filtro texto libre
-if ($busqueda !== '') {
-    $bl = mb_strtolower($busqueda);
-    $arrayPedidos = array_values(array_filter($arrayPedidos, function ($value) use ($bl) {
-        $campos = [
-            $value[0]->NRO_ORDEN_ECOMMERCE ?? '',
-            $value[0]->NRO_PEDIDO          ?? '',
-            $value[0]->RAZON_SOCIAL        ?? '',
-            $value[0]->COD_ARTICULO        ?? '',
-            $value[0]->DESCRIPCION         ?? '',
-            $value[0]->NRO_COMP            ?? '',
-            $value[0]->WAREHOUSE           ?? '',
-            $value[0]->METODO_ENVIO        ?? '',
-            $value[0]->DESC_SUCURSAL       ?? '',
-        ];
-        foreach ($campos as $c) {
-            if (mb_strpos(mb_strtolower((string)$c), $bl) !== false) return true;
-        }
-        return false;
-    }));
-}
-
-$hayMas = false; // consulta única: no hay más páginas
+// Nota: el filtro de texto libre ($busqueda) se aplica solo en el cliente (busquedaRapida())
+// para no interferir con la paginación SQL.
 
 // ── Generar HTML de filas ─────────────────────────────────────────────────────
 $filas = [];
@@ -196,5 +182,5 @@ foreach ($arrayPedidos as $idx => $value) {
 echo json_encode([
     'html'   => implode('', $filas),
     'count'  => count($filas),
-    'hayMas' => false,
+    'hayMas' => $hayMas,
 ], JSON_UNESCAPED_UNICODE);
