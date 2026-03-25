@@ -78,6 +78,29 @@ class Pedido
         return $array;
     }
 
+    /**
+     * Verifica si un pedido tiene artículos realmente faltantes (excluye OHGIFT/gift cards).
+     * Se consulta SOF_AUDITORIA directamente — la misma fuente que setea INCOMPLETO=1.
+     */
+    public function pedidoTieneRealFaltante($nroOrden) {
+        if (empty(trim($nroOrden))) return true;
+        $cid = new Conexion();
+        $cid_central = $cid->conectarSql('central');
+        $nroOrdenEsc = str_replace("'", "''", trim($nroOrden));
+        $sql = "SELECT TOP 1 1 AS HAY
+                FROM SOF_AUDITORIA
+                WHERE NRO_ORDEN_ECOMMERCE COLLATE DATABASE_DEFAULT = '$nroOrdenEsc'
+                  AND AUDITORIA = 1
+                  AND FECHA_AUDITORIA_1 IS NOT NULL
+                  AND CANTIDAD_A_FACTURAR <> CANT_AUDITADO
+                  AND COD_ARTICULO NOT LIKE 'OHGIFT%'
+                  AND COD_ARTICULO != '***COSTO ENVIO'";
+        $result = sqlsrv_query($cid_central, $sql);
+        if ($result === false) return false; // Si falla la query, asumir que no hay faltantes reales
+        $row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
+        return ($row !== null && $row !== false);
+    }
+
     public function buscarPedido($desde, $hasta, $orden, $pais = 'AR')
     {
         if (strtoupper($pais) === 'UY') {
@@ -515,13 +538,12 @@ class Pedido
             GVA21.COD_SUCURS AS DEPOSITO_ORIGEN,
             COALESCE(V_STA22.SUCURSAL_ENTREGA, CASE WHEN GVA21.COD_SUCURS = '01' THEN 'CENTRAL' ELSE 'No especificado' END) AS NOMBRE_ORIGEN,
 
-            -- LÓGICA CORREGIDA PARA ARTÍCULO ORIGINAL:
-            -- 1. Si se cargó manualmente un cambio (H.COD_ARTICULO_CAMBIO), usa ese.
-            -- 2. Si no, usa el/los artículo(s) detectado(s) con faltante actual en la auditoría (IA.ARTICULO_AUDITADO).
-            -- 3. Si falla todo, pone N/A.
-            COALESCE(H.COD_ARTICULO_CAMBIO, IA.ARTICULO_AUDITADO, 'N/A') as ARTICULO_ORIGINAL,
+            -- LÓGICA PARA ARTÍCULO ORIGINAL (FALTANTE):
+            -- COD_ARTICULO es el artículo faltante del pedido.
+            -- Si no existe, usa el artículo detectado en la auditoría.
+            COALESCE(H.COD_ARTICULO, IA.ARTICULO_AUDITADO, 'N/A') as ARTICULO_ORIGINAL,
 
-            ISNULL(H.COD_ARTICULO, 'Discrepancia General') as COD_ARTICULO,
+            ISNULL(H.COD_ARTICULO_CAMBIO, 'N/A') as COD_ARTICULO,
             
             -- NUEVOS CAMPOS SOLICITADOS:
             EP.FECHA_INCOMPLETO,
@@ -534,14 +556,14 @@ class Pedido
         LEFT JOIN RO_T_ENC_ECOMMERCE_HISTORIAL_FALT H ON GVA21.ORDER_ID_TIENDA = H.NRO_ORDEN COLLATE DATABASE_DEFAULT
         LEFT JOIN RO_V_STA22 V_STA22 ON GVA21.COD_SUCURS = V_STA22.COD_SUCURS COLLATE DATABASE_DEFAULT
         LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE EP ON GVA21.NRO_PEDIDO = EP.NRO_PEDIDO
-        LEFT JOIN [LAKERBIS].[LOCALES_LAKERS].DBO.CTA_ARTICULO CTA ON H.COD_ARTICULO_CAMBIO = CTA.COD_ARTICULO
-        -- Intento secundario: buscar por el primer artículo de la auditoría si COD_ARTICULO_CAMBIO no tiene match
+        LEFT JOIN [LAKERBIS].[LOCALES_LAKERS].DBO.CTA_ARTICULO CTA ON H.COD_ARTICULO = CTA.COD_ARTICULO
+        -- Intento secundario: buscar por el primer artículo de la auditoría si COD_ARTICULO no tiene match
         LEFT JOIN [LAKERBIS].[LOCALES_LAKERS].DBO.CTA_ARTICULO CTA2 ON 
             SUBSTRING(IA.ARTICULO_AUDITADO, 1, CASE WHEN CHARINDEX(',', IA.ARTICULO_AUDITADO) > 0 
                                                      THEN CHARINDEX(',', IA.ARTICULO_AUDITADO) - 1 
                                                      ELSE LEN(IA.ARTICULO_AUDITADO) END) = CTA2.COD_ARTICULO
         -- Buscar rubro del artículo
-        LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA RUBRO1 ON H.COD_ARTICULO_CAMBIO = RUBRO1.COD_ARTICU
+        LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA RUBRO1 ON H.COD_ARTICULO = RUBRO1.COD_ARTICU
         LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA RUBRO2 ON 
             SUBSTRING(IA.ARTICULO_AUDITADO, 1, CASE WHEN CHARINDEX(',', IA.ARTICULO_AUDITADO) > 0 
                                                      THEN CHARINDEX(',', IA.ARTICULO_AUDITADO) - 1 

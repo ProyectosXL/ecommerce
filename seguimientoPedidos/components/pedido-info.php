@@ -32,7 +32,9 @@
                         title="<?php echo $tooltipText; ?>">
                         </i>
                     <?php endif; ?>
-                    <?php if (($pedido->INCOMPLETO ?? 0) == 1): ?>
+                    <?php if (($pedido->FALTANTE_RESUELTO ?? 0) == 1): ?>
+                        <i class="fas fa-check-circle ms-2 text-success icon-state" data-bs-toggle="tooltip" title="Faltante resuelto"></i>
+                    <?php elseif (($pedido->INCOMPLETO ?? 0) == 1): ?>
                         <i class="fas fa-exclamation-triangle ms-2 text-warning icon-state" data-bs-toggle="tooltip" title="Pedido Incompleto"></i>
                     <?php endif; ?>
                 </div>

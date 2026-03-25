@@ -56,8 +56,8 @@ function guardarReclamo(estado = 'abierto') {
     const resolucion = $('#tipoResolucion').val();
     const sucursal = $('#selectSucursal').val();
     const articulo = $('#selectArticulo').val();
-    const selectedText = $('#selectArticulo option:selected').text();
-    const textAfterDash = selectedText.split('-')[1]?.trim();
+    // La descripción debe ser del artículo FALTANTE (el original), no del artículo de reemplazo
+    const descripcionFaltante = $('#modalArticulo').text().trim();
     const seccion = document.querySelectorAll('.seccion-historial');
 
     let dataSecciones = [];
@@ -119,7 +119,7 @@ function guardarReclamo(estado = 'abierto') {
             resolucion: resolucion,
             sucursal: sucursal || '',
             articulo: articulo || '',
-            descripcion: textAfterDash || '',
+            descripcion: descripcionFaltante || '',
             dataSecciones: dataSecciones,
             estado: estado,
             nroPedido: nroPedido,

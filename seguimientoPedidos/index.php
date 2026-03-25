@@ -117,6 +117,24 @@ require_once 'config.php';
                                         $pedido->FECHA_NCR = $infoCancelacion->fecha_ncr;
                                         $pedido->FECHA_PEDI = $pedido->FECHA_PEDIDO;
                                     }
+
+                                    // Si INCOMPLETO=1, verificar si el faltante ya fue resuelto o si solo hay OHGIFT
+                                    if (($pedido->INCOMPLETO ?? 0) == 1) {
+                                        $nroOrdenCheck = $pedido->NRO_ORDEN ?? ($pedido->ORDER_ID_TIENDA ?? '');
+                                        if (!$pedidos->pedidoTieneRealFaltante(trim($nroOrdenCheck))) {
+                                            // Solo tenía OHGIFT como faltante
+                                            $pedido->INCOMPLETO = 0;
+                                        } else {
+                                            // Tiene faltante real: verificar si ya fue resuelto en el historial
+                                            $historialCheck = $pedidos->traerHistorialReclamo(trim($pedido->NRO_PEDIDO));
+                                            if (isset($historialCheck[0]) && $historialCheck[0]['ESTADO'] === 'resuelto') {
+                                                $pedido->INCOMPLETO = 0;
+                                                $pedido->FALTANTE_RESUELTO = 1;
+                                            }
+                                        }
+                                    }
+                                    // Pre-cargar detalle para reutilizarlo en detalle-pedido.php
+                                    $detalles = $pedidos->buscarDetallePedido($desde, $hasta, $numero, $pais);
                                     
                                     include 'components/pedido-info.php';
                                     include 'components/devoluciones.php';

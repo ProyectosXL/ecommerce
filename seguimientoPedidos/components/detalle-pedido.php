@@ -38,10 +38,17 @@
                         $devolucionesPorArticuloBase[$dev->COD_ARTICU_BASE][] = $dev;
                     }
                     
-                    $detalles = $pedidos->buscarDetallePedido($desde, $hasta, $numero, $pais);
+                    if (!isset($detalles)) {
+                        $detalles = $pedidos->buscarDetallePedido($desde, $hasta, $numero, $pais);
+                    }
                     if ($detalles) {
                         foreach($detalles as $detalle) {
                             $item = $detalle[0];
+                            
+                            // Excluir gift cards (OHGIFT) - son medio de pago, no artículos faltantes
+                            if (stripos($item->COD_ARTICU, 'OHGIFT') !== false) {
+                                continue;
+                            }
                             
                             // CORRECCIÓN: Usar PRECIO si IMPORTE no existe (Uruguay)
                             $precioUnitario = $item->IMPORTE ?? $item->PRECIO ?? 0;
@@ -187,6 +194,10 @@
 if ($detalles) {
     foreach($detalles as $detalle) {
         $item = $detalle[0];
+        // Excluir gift cards (OHGIFT) - son medio de pago, no artículos faltantes
+        if (stripos($item->COD_ARTICU, 'OHGIFT') !== false) {
+            continue;
+        }
         $imageName = substr($item->COD_ARTICU, 0, 13);
         $imageUrl = file_exists("../../Imagenes/".$imageName.".jpg") ? 
                 "../../Imagenes/".$imageName.".jpg" : "";
