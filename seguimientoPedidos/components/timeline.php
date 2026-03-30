@@ -114,6 +114,50 @@
                         ?>
                     </div>
                 </div>
+                <?php if ((($pedido->INCOMPLETO ?? 0) == 1) || (($pedido->FALTANTE_RESUELTO ?? 0) == 1)):
+                    // Determinar estado, ícono y etiqueta del paso de faltante
+                    $hResuelto   = isset($historial[0]) && $historial[0]['ESTADO'] === 'resuelto';
+                    $hEnGestion  = isset($historial[0]) && $historial[0]['ESTADO'] !== 'resuelto';
+                    $hResolucion = $hResuelto ? strtolower(trim($historial[0]['RESOLUCION'] ?? '')) : '';
+
+                    if ($hResuelto) {
+                        $fIconClass = ($hResolucion === 'cancelado') ? 'cancelled' : 'active';
+                        switch ($hResolucion) {
+                            case 'completado': $fLabel = 'Completado'; $fIcon = 'fas fa-check-double'; break;
+                            case 'cambio':     $fLabel = 'Artículo Enviado'; $fIcon = 'fas fa-exchange-alt'; break;
+                            case 'cancelado':  $fLabel = 'Cancelado'; $fIcon = 'fas fa-times'; break;
+                            default:           $fLabel = 'Resuelto'; $fIcon = 'fas fa-check';
+                        }
+                        $fFecha = null;
+                        if (isset($historial[0]['FECHA_ULT_MODIF'])) {
+                            $f = $historial[0]['FECHA_ULT_MODIF'];
+                            $fFecha = ($f instanceof DateTime) ? $f->format('d/m/Y') : date('d/m/Y', strtotime($f));
+                        }
+                    } elseif ($hEnGestion) {
+                        $fIconClass = 'in-progress';
+                        $fLabel     = 'En Gestión';
+                        $fIcon      = 'fas fa-cogs';
+                        $fFecha     = null;
+                        if (isset($historial[0]['FECHA_ALTA'])) {
+                            $f = $historial[0]['FECHA_ALTA'];
+                            $fFecha = ($f instanceof DateTime) ? $f->format('d/m/Y') : date('d/m/Y', strtotime($f));
+                        }
+                    } else {
+                        $fIconClass = 'warning';
+                        $fLabel     = 'Faltante';
+                        $fIcon      = 'fas fa-exclamation-triangle';
+                        $fFecha     = null;
+                    }
+                ?>
+                <div class="col timeline-step">
+                    <div class="timeline-icon <?php echo $fIconClass; ?>">
+                        <i class="<?php echo $fIcon; ?> icon"></i>
+                    </div>
+                    <div><?php echo $fLabel; ?></div>
+                    <div class="timeline-date"><?php echo $fFecha ?? 'Pendiente'; ?></div>
+                </div>
+                <?php endif; ?>
+
                 <?php if ((($pedido->REINTEGRADO ?? 0) == 1) || (($pedido->CANCELADO ?? 0) == 1)): ?>
                 <div class="col timeline-step">
                     <div class="timeline-icon active cancelled">

@@ -572,7 +572,9 @@ class Pedido
 
         $params = array($fechaInicio, $fechaFin);
 
-        $whereConditions = [];
+        $whereConditions = [
+            "(EP.REINTEGRADO IS NULL OR EP.REINTEGRADO != 1)"
+        ];
         if (!empty($estado)) {
             $whereConditions[] = "ISNULL(H.ESTADO, 'abierto') = ?";
             array_push($params, $estado);
@@ -832,7 +834,10 @@ class Pedido
             }
 
             // Construir condiciones WHERE base
-            $whereConditions = ["EP.INCOMPLETO = 1"];
+            $whereConditions = [
+                "EP.INCOMPLETO = 1",
+                "(EP.CANCELADO IS NULL OR EP.CANCELADO != 1)"
+            ];
             $whereConditions[] = "CAST(EP.FECHA_PEDI AS DATE) BETWEEN ? AND ?";
             $params = array($fechaInicio, $fechaFin);
 

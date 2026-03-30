@@ -118,6 +118,9 @@ require_once 'config.php';
                                         $pedido->FECHA_PEDI = $pedido->FECHA_PEDIDO;
                                     }
 
+                                    // Pre-cargar historial para timeline y modal (evita doble consulta)
+                                    $historial = $pedidos->traerHistorialReclamo(trim($pedido->NRO_PEDIDO));
+
                                     // Si INCOMPLETO=1, verificar si el faltante ya fue resuelto o si solo hay OHGIFT
                                     if (($pedido->INCOMPLETO ?? 0) == 1) {
                                         $nroOrdenCheck = $pedido->NRO_ORDEN ?? ($pedido->ORDER_ID_TIENDA ?? '');
@@ -126,8 +129,7 @@ require_once 'config.php';
                                             $pedido->INCOMPLETO = 0;
                                         } else {
                                             // Tiene faltante real: verificar si ya fue resuelto en el historial
-                                            $historialCheck = $pedidos->traerHistorialReclamo(trim($pedido->NRO_PEDIDO));
-                                            if (isset($historialCheck[0]) && $historialCheck[0]['ESTADO'] === 'resuelto') {
+                                            if ($historial && isset($historial[0]) && $historial[0]['ESTADO'] === 'resuelto') {
                                                 $pedido->INCOMPLETO = 0;
                                                 $pedido->FALTANTE_RESUELTO = 1;
                                             }
