@@ -13,7 +13,7 @@ function nc_pendientes(){
     
     $sqlNc = 
     "SELECT * FROM SJ_NC_ECOMMERCE_PEND
-    WHERE FECHA >= GETDATE()-90
+    WHERE FECHA >= GETDATE()-60
     ORDER BY FECHA ASC 
     "
     ;

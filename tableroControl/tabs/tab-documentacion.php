@@ -102,7 +102,7 @@
                     <i class="fas fa-info-circle info-icon" 
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top" 
-                    title="Notas de crédito pendientes por devoluciones de productos de los últimos 270 días">
+                    title="Notas de crédito pendientes por devoluciones de productos de los últimos 2 meses">
                     </i>
                 </h5>
             </div>
