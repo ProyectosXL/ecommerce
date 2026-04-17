@@ -133,6 +133,7 @@ class Control extends Conexion {
         $sql = "SELECT MIN(CAST(A.FECHA AS DATE)) FECHA, COUNT(*) CANT_NC_PROMO, SUM(A.NC) IMPORTE_NC 
                 FROM SJ_NC_ECOMMERCE_PEND A
                 WHERE A.NUM_NC = 'NO'
+                AND A.FECHA >= GETDATE()-60
                 AND NOT EXISTS (
                     SELECT 1 
                     FROM GVA12 B
@@ -150,6 +151,7 @@ class Control extends Conexion {
         $sql = "SELECT A.FECHA, A.COD_PROMOCION_TARJETA, A.DESC_PROMOCION_TARJETA, A.PORC_REINTEGRO, A.COD_ARTICU, A.NC 
                 FROM SJ_NC_ECOMMERCE_PEND A
                 WHERE A.NUM_NC = 'NO'
+                AND A.FECHA >= GETDATE()-60
                 AND NOT EXISTS (
                     SELECT 1 
                     FROM GVA12 B
