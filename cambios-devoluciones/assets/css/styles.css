@@ -1,0 +1,388 @@
+/* ============================================================
+   Logística Inversa — Estilos principales
+   ============================================================ */
+
+/* Tarjeta de búsqueda */
+.search-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    margin-bottom: 1.5rem;
+}
+
+/* Info del pedido encontrado */
+#pedido-encontrado {
+    border-left: 4px solid #0d6efd;
+}
+
+#pedido-encontrado .info-label {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+#pedido-encontrado .info-value {
+    font-size: 1rem;
+    color: #212529;
+}
+
+/* Tabla de productos */
+#tabla-productos {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#tabla-productos thead {
+    background-color: #343a40;
+    color: #fff;
+}
+
+#tabla-productos tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+#tabla-productos .cant-input {
+    width: 80px;
+    text-align: center;
+}
+
+/* Badges de estado */
+.badge-pendiente   { background-color: #ffc107; color: #212529; }
+.badge-en_transito { background-color: #0dcaf0; color: #212529; }
+.badge-recibido    { background-color: #198754; }
+.badge-resuelto    { background-color: #6c757d; }
+
+/* Tabla listado */
+#tabla-listado thead {
+    background-color: #343a40;
+    color: #fff;
+}
+
+#tabla-listado tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 4px 10px rgba(0,0,0,.08);
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Input groups */
+.input-group-text {
+    background-color: #f8f9fa;
+}
+
+/* Modal detalle */
+#modal-detalle .modal-header {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+#modal-detalle .modal-header .btn-close {
+    filter: invert(1);
+}
+
+/* Spinner de búsqueda */
+.spinner-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,.7);
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.spinner-overlay.active {
+    display: flex;
+}
+
+/* Sección de productos deshabilitada hasta tener pedido */
+#seccion-productos.disabled-section {
+    pointer-events: none;
+    opacity: .5;
+}
+
+/* Tipo chip */
+.chip-tipo {
+    display: inline-block;
+    padding: .25rem .75rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.chip-cambio     { background: #cff4fc; color: #055160; }
+.chip-devolucion { background: #f8d7da; color: #842029; }
+
+/* Responsive fix */
+@media (max-width: 768px) {
+    .cant-input { width: 60px; }
+    #tabla-listado { font-size: .85rem; }
+}
+
+/* ============================================================
+   STEP PROGRESS INDICATOR
+   ============================================================ */
+.li-steps {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.07);
+}
+
+.li-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3rem;
+    flex: 0 0 auto;
+}
+
+.li-step-num {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid #dee2e6;
+    background: #f8f9fa;
+    color: #6c757d;
+    font-weight: 700;
+    font-size: .95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .25s, border-color .25s, color .25s;
+}
+
+.li-step-label {
+    font-size: .75rem;
+    color: #6c757d;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color .25s;
+}
+
+.li-step.li-step-active .li-step-num {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+.li-step.li-step-active .li-step-label {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.li-step.li-step-done .li-step-num {
+    background: #198754;
+    border-color: #198754;
+    color: #fff;
+}
+.li-step.li-step-done .li-step-label {
+    color: #198754;
+}
+
+.li-step-line {
+    flex: 1;
+    height: 2px;
+    background: #dee2e6;
+    margin: 0 .75rem;
+    margin-bottom: 1.3rem; /* align with circle centers */
+    transition: background .3s;
+}
+
+.li-step-line.li-step-line-done {
+    background: #198754;
+}
+
+/* ============================================================
+   COLLAPSIBLE SECTION TOGGLES
+   ============================================================ */
+.li-section-toggle {
+    display: inline-flex;
+    align-items: center;
+    font-size: .85rem;
+    font-weight: 600;
+    color: #495057;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    cursor: pointer;
+    padding: .25rem 0;
+    transition: color .15s;
+}
+.li-section-toggle:hover {
+    color: #0d6efd;
+}
+
+.li-toggle-icon {
+    font-size: .75rem;
+    transition: transform .2s ease;
+}
+.li-toggle-icon.li-toggle-open {
+    transform: rotate(90deg);
+}
+
+/* ============================================================
+   VALIDACIÓN — TABLA DE PRODUCTOS
+   ============================================================ */
+
+/* ============================================================
+   VALIDACIÓN — TARJETAS DE PRODUCTOS (PASO 3)
+   ============================================================ */
+
+/* Campo inválido dentro de tarjeta */
+.li-product-card .is-invalid {
+    border-color: #dc3545 !important;
+    background-color: #fff8f8;
+    box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .18);
+}
+
+/* Select2 — estado inválido */
+.li-product-card .select2-container.is-invalid .select2-selection {
+    border-color: #dc3545 !important;
+    background-color: #fff8f8;
+    box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .18);
+}
+
+/* Select2 — tamaño compacto (sm) para encajar en los campos de la tarjeta */
+.li-product-card .select2-container {
+    display: block;             /* evita inline-block que descuadra */
+    width: 100% !important;
+}
+.li-product-card .select2-container .select2-selection--single {
+    height: 31px;
+    border: 1px solid #ced4da; /* igual a Bootstrap form-control */
+    border-radius: .25rem;
+    background-color: #fff;
+}
+.li-product-card .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 29px;
+    padding-left: .5rem;
+    padding-right: 1.75rem;
+    font-size: .875rem;
+    color: #212529;
+}
+.li-product-card .select2-container .select2-selection--single .select2-selection__arrow {
+    height: 29px;
+    top: 0;
+    right: 4px;
+}
+.li-product-card .select2-container--default .select2-selection--single .select2-selection__clear {
+    line-height: 29px;
+}
+
+/* Mensaje de error inline dentro de la tarjeta */
+.li-row-error {
+    background-color: #fff3cd;
+    border-radius: 4px;
+    padding: .3rem .6rem;
+    font-size: .8rem;
+}
+
+/* Campo de descripción de cambio mientras busca (readonly transitorio) */
+.li-product-card .input-desc-cambio[readonly] {
+    background-color: #f0f4ff;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* ============================================================
+   PASO 3 — TARJETAS DE PRODUCTOS
+   ============================================================ */
+
+.li-productos-container {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+
+.li-product-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-left: 4px solid #0d6efd;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    transition: box-shadow .15s ease, border-left-color .15s ease;
+}
+
+.li-product-card:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .08);
+    border-left-color: #0b5ed7;
+}
+
+/* Etiquetas compactas de campo: texto pinado al fondo del área */
+.li-field-label {
+    display: flex;
+    align-items: flex-end;     /* texto siempre pegado abajo */
+    min-height: 2.4rem;        /* reserva 2 líneas para los labels más largos */
+    margin-bottom: .25rem;
+    font-size: .75rem;
+    color: #6c757d;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+/* Fila B (cambio): aspecto tenue, se activa visualmente cuando aplica */
+.li-fila-cambio {
+    padding-top: .5rem;
+    border-top: 1px dashed #dee2e6;
+    margin-top: .25rem;
+}
+
+/* ============================================================
+   MINIATURAS DE ARTÍCULOS
+   ============================================================ */
+
+.li-thumb-wrap {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.li-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    display: block;
+    transition: transform .2s ease, box-shadow .2s ease, z-index 0s;
+    cursor: zoom-in;
+}
+
+.li-thumb:hover {
+    transform: scale(3);
+    z-index: 200;
+    position: relative;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
+    border-color: #0d6efd;
+}
+
+/* Placeholder cuando no hay imagen */
+.li-thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 1px dashed #ced4da;
+    border-radius: 5px;
+    color: #adb5bd;
+    font-size: 1.2rem;
+    background: #f8f9fa;
+}

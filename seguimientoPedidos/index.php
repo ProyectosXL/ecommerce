@@ -40,6 +40,8 @@ require_once 'config.php';
     <link rel="stylesheet" href="css/timeline.css">
     <link rel="stylesheet" href="css/modal.css">
     <link rel="stylesheet" href="css/reportes.css">
+    <!-- Logística Inversa -->
+    <link rel="stylesheet" href="../cambios-devoluciones/assets/css/styles.css">
 </head>
 <body>
     <div class="container py-4">
@@ -77,6 +79,11 @@ require_once 'config.php';
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="reporte-tab" data-bs-toggle="tab" data-bs-target="#reporte-content" type="button" role="tab" aria-controls="reporte-content" aria-selected="false">
                             <i class="fas fa-chart-line me-2"></i>Reporte de Incidentes
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="logistica-tab" data-bs-toggle="tab" data-bs-target="#logistica-content" type="button" role="tab" aria-controls="logistica-content" aria-selected="false">
+                            <i class="fas fa-undo-alt me-2"></i>Logística Inversa
                         </button>
                     </li>
                 </ul>
@@ -155,6 +162,10 @@ require_once 'config.php';
                     <div class="tab-pane fade" id="reporte-content" role="tabpanel" aria-labelledby="reporte-tab">
                         <?php include 'components/reporte-incidentes.php'; ?>
                     </div>
+                    <!-- Contenido de la Pestaña de Logística Inversa -->
+                    <div class="tab-pane fade" id="logistica-content" role="tabpanel" aria-labelledby="logistica-tab">
+                        <?php include 'components/logistica-inversa.php'; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -175,6 +186,9 @@ require_once 'config.php';
     <script src="js/modal-handler.js"></script>
     <script src="js/ajax-requests.js"></script>
     <script src="js/reporte-incidentes.js"></script>
+    <!-- Logística Inversa -->
+    <script>window.LOGISTICA_API_BASE = '../cambios-devoluciones/api/';</script>
+    <script src="../cambios-devoluciones/assets/js/main.js"></script>
     
     <script>
         // CORRECCIÓN: Sincronizar país seleccionado con valor del servidor
