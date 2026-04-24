@@ -193,6 +193,25 @@
                     </div>
 
                 </div>
+
+                <!-- Badge de seguimiento (se muestra tras guardar Paso 2) -->
+                <div id="li-nro-seguimiento-badge" class="mt-3" style="display:none">
+                    <div class="alert alert-success d-flex align-items-center gap-3 py-2 mb-0">
+                        <i class="fas fa-check-circle fs-4"></i>
+                        <div>
+                            <div class="fw-bold">Paso 2 guardado &mdash; N&deg; de Seguimiento:</div>
+                            <span id="li-nro-seguimiento-valor" class="fs-5 fw-bold font-monospace"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Guardar Paso 2 -->
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" id="btn-guardar-paso2" class="btn btn-primary btn-lg" disabled>
+                        <i class="fas fa-arrow-right me-1"></i>Guardar y continuar al Paso 3
+                    </button>
+                </div>
+
             </div>
 
             <!-- Paso 3 — Productos -->
@@ -213,13 +232,15 @@
                 </div>
             </div>
 
-            <!-- Botones -->
-            <div class="d-flex justify-content-end gap-2 mt-2">
+            </div><!-- /seccion-productos -->
+
+            <!-- Botones Paso 3 -->
+            <div class="d-flex justify-content-between gap-2 mt-2">
                 <button type="button" class="btn btn-outline-secondary" onclick="resetFormulario()">
                     <i class="fas fa-redo me-1"></i>Limpiar y empezar de nuevo
                 </button>
-                <button type="submit" id="btn-guardar" class="btn btn-success btn-lg">
-                    <i class="fas fa-save me-1"></i>Guardar registro
+                <button type="submit" id="btn-guardar" class="btn btn-success btn-lg" disabled>
+                    <i class="fas fa-save me-1"></i>Guardar productos
                 </button>
             </div>
         </form>
@@ -292,7 +313,7 @@
                         <th style="width:120px">Tipo</th>
                         <th style="width:140px">Estado</th>
                         <th style="width:140px">Fecha creación</th>
-                        <th class="text-center" style="width:100px">Acciones</th>
+                        <th class="text-center" style="width:140px">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>

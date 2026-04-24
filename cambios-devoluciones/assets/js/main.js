@@ -23,7 +23,8 @@ const TIPOS_LABEL = {
 };
 
 /* Estado local de la sesión de alta */
-let pedidoCargado = null;
+let pedidoCargado  = null;
+let devolucionId   = null; // ID guardado tras Paso 2
 let localesData    = null; // Cache de tiendas/locales para Select2
 
 /* ============================================================
@@ -32,20 +33,28 @@ let localesData    = null; // Cache de tiendas/locales para Select2
 function actualizarPasos(paso) {
     const $s1  = $('#step-1'),  $s2  = $('#step-2'),  $s3  = $('#step-3');
     const $l12 = $('#step-line-12'), $l23 = $('#step-line-23');
+
+    // Reset
+    [$s1, $s2, $s3].forEach(function ($s) {
+        $s.removeClass('li-step-active li-step-done');
+    });
+    [$l12, $l23].forEach(function ($l) { $l.removeClass('li-step-line-done'); });
+    $s1.find('.li-step-num').text('1');
+    $s2.find('.li-step-num').text('2');
+    $s3.find('.li-step-num').text('3');
+
+    if (paso >= 1) $s1.addClass('li-step-active');
     if (paso >= 2) {
         $s1.removeClass('li-step-active').addClass('li-step-done');
         $s1.find('.li-step-num').html('<i class="fas fa-check"></i>');
         $l12.addClass('li-step-line-done');
         $s2.addClass('li-step-active');
-        $s3.addClass('li-step-active');
+    }
+    if (paso >= 3) {
+        $s2.removeClass('li-step-active').addClass('li-step-done');
+        $s2.find('.li-step-num').html('<i class="fas fa-check"></i>');
         $l23.addClass('li-step-line-done');
-    } else {
-        $s1.addClass('li-step-active').removeClass('li-step-done');
-        $s1.find('.li-step-num').text('1');
-        $l12.removeClass('li-step-line-done');
-        $s2.removeClass('li-step-active li-step-done');
-        $s3.removeClass('li-step-active li-step-done');
-        $l23.removeClass('li-step-line-done');
+        $s3.addClass('li-step-active');
     }
 }
 
@@ -95,8 +104,11 @@ $(function () {
     // Botón buscar pedido
     $('#btn-buscar-pedido').on('click', buscarPedido);
 
-    // Formulario guardar devolución
-    $('#form-devolucion').on('submit', guardarDevolucion);
+    // Guardar Paso 2 (cabecera)
+    $('#btn-guardar-paso2').on('click', guardarPaso2);
+
+    // Formulario Paso 3 (productos)
+    $('#form-devolucion').on('submit', guardarPaso3);
 
     // Filtros del listado
     $('#btn-filtrar').on('click', cargarListado);
@@ -231,6 +243,8 @@ function buscarPedido() {
         renderizarTablaProductos(resp.detalle);
         $('#seccion-productos').removeClass('disabled-section');
         $('#seccion-paso2').removeClass('disabled-section');
+        // Habilitar botón Paso 2 (estaba disabled mientras no hay pedido)
+        $('#btn-guardar-paso2').prop('disabled', false).removeClass('disabled-section');
         actualizarPasos(2);
         // Auto-scroll hacia el formulario
         setTimeout(function () {
@@ -515,27 +529,85 @@ function renderizarTablaProductos(detalle) {
 
 
 /* ============================================================
-   GUARDAR DEVOLUCIÓN
+   GUARDAR PASO 2 (CABECERA)
    ============================================================ */
-function guardarDevolucion(e) {
-    e.preventDefault();
-
+function guardarPaso2() {
     if (!pedidoCargado) {
-        mostrarAlerta('Primero busque y confirme un pedido.', 'warning');
+        mostrarAlerta('Primero busque un pedido.', 'warning');
         return;
     }
 
-    const pedidoId   = $('#pedido-id').val().trim();
-    const tipo       = $('#campo-tipo').val();
-    const motivo     = $('#campo-motivo').val().trim();
-    const usuario    = $('#campo-usuario').val().trim();
-    const cliente    = $('#campo-cliente').val().trim();
-    const fechaPed   = $('#campo-fecha-pedido').val().trim();
-
+    const tipo = $('#campo-tipo').val();
     if (!tipo) {
         mostrarAlerta('Seleccione el tipo de operación.', 'warning');
         return;
     }
+
+    const payload = {
+        id:               devolucionId || null,
+        pedido_id:        $('#pedido-id').val().trim(),
+        cliente:          $('#campo-cliente').val().trim(),
+        fecha_pedido:     $('#campo-fecha-pedido').val().trim(),
+        tipo,
+        motivo:           $('#campo-motivo').val().trim(),
+        usuario:          $('#campo-usuario').val().trim(),
+        observaciones:    $('#campo-observaciones').val().trim(),
+        nro_rto:          $('#campo-nro-rto').val().trim(),
+        nro_nc_fact:      $('#campo-nro-nc-fact').val().trim(),
+        precio_abonado:   $('#campo-precio-abonado').val()    !== '' ? parseFloat($('#campo-precio-abonado').val())    : null,
+        precio_art_cambio:$('#campo-precio-art-cambio').val() !== '' ? parseFloat($('#campo-precio-art-cambio').val()) : null,
+        diferencia_precio:$('#campo-diferencia-precio').val() !== '' ? parseFloat($('#campo-diferencia-precio').val()) : null,
+        link_pago_mp:     $('#campo-link-pago-mp').val().trim(),
+        nro_operacion_mp: $('#campo-nro-operacion-mp').val().trim(),
+    };
+
+    const $btn = $('#btn-guardar-paso2');
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Guardando...');
+
+    $.ajax({
+        url:         API_BASE + 'guardar_cabecera.php',
+        method:      'POST',
+        contentType: 'application/json',
+        data:        JSON.stringify(payload),
+        dataType:    'json',
+    })
+    .done(function (resp) {
+        if (!resp.success) {
+            mostrarAlerta(resp.error || 'No se pudo guardar.', 'danger');
+            return;
+        }
+        devolucionId = resp.id;
+
+        // Mostrar badge de seguimiento
+        $('#li-nro-seguimiento-valor').text(resp.nro_seguimiento || '#' + resp.id);
+        $('#li-nro-seguimiento-badge').slideDown(200);
+
+        // Avanzar indicador y habilitar botón Paso 3
+        actualizarPasos(3);
+        $('#btn-guardar').prop('disabled', false);
+
+        // Scroll al Paso 3
+        setTimeout(function () {
+            const el = document.getElementById('seccion-productos');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+
+        // Refrescar listado si está visible
+        if ($('#listado-content').hasClass('active')) cargarListado();
+    })
+    .fail(function (xhr) {
+        mostrarAlerta(xhr.responseJSON?.error || 'Error al conectar con el servidor.', 'danger');
+    })
+    .always(function () {
+        $btn.prop('disabled', false).html('<i class="fas fa-arrow-right me-1"></i>Guardar y continuar al Paso 3');
+    });
+}
+
+/* ============================================================
+   GUARDAR PASO 3 (PRODUCTOS)
+   ============================================================ */
+function guardarPaso3(e) {
+    e.preventDefault();
 
     // Limpiar errores anteriores de la tabla
     $('#tabla-productos .is-invalid').removeClass('is-invalid');
@@ -608,34 +680,23 @@ function guardarDevolucion(e) {
 
     if (primeraFilaConError) {
         primeraFilaConError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        mostrarAlerta('Completá los campos requeridos en la tabla de productos (marcados en rojo).', 'warning');
+        mostrarAlerta('Completá los campos requeridos en los productos (marcados en rojo).', 'warning');
+        return;
     }
-
     if (items.length === 0) return;
 
-    const payload = {
-        pedido_id:          pedidoId,
-        cliente,
-        fecha_pedido:       fechaPed,
-        tipo,
-        motivo,
-        usuario,
-        observaciones:      $('#campo-observaciones').val().trim(),
-        nro_rto:            $('#campo-nro-rto').val().trim(),
-        nro_nc_fact:        $('#campo-nro-nc-fact').val().trim(),
-        precio_abonado:     $('#campo-precio-abonado').val()     !== '' ? parseFloat($('#campo-precio-abonado').val())     : null,
-        precio_art_cambio:  $('#campo-precio-art-cambio').val()  !== '' ? parseFloat($('#campo-precio-art-cambio').val())  : null,
-        diferencia_precio:  $('#campo-diferencia-precio').val()  !== '' ? parseFloat($('#campo-diferencia-precio').val())  : null,
-        link_pago_mp:       $('#campo-link-pago-mp').val().trim(),
-        nro_operacion_mp:   $('#campo-nro-operacion-mp').val().trim(),
-        items,
-    };
+    if (!devolucionId) {
+        mostrarAlerta('Primero guarde el Paso 2 para registrar el caso.', 'warning');
+        return;
+    }
+
+    const payload = { devolucion_id: devolucionId, items };
 
     const $btn = $('#btn-guardar');
     $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Guardando...');
 
     $.ajax({
-        url:         API_BASE + 'crear_devolucion.php',
+        url:         API_BASE + 'guardar_detalle.php',
         method:      'POST',
         contentType: 'application/json',
         data:        JSON.stringify(payload),
@@ -648,8 +709,8 @@ function guardarDevolucion(e) {
         }
         Swal.fire({
             icon:  'success',
-            title: '¡Guardado!',
-            text:  `Devolución #${resp.devolucion_id} registrada correctamente.`,
+            title: '¡Registro completo!',
+            html:  `Caso <strong>${escHtml($('#li-nro-seguimiento-valor').text())}</strong> guardado correctamente.`,
             confirmButtonText: 'Ver listado',
         }).then(function () {
             resetFormulario();
@@ -661,7 +722,7 @@ function guardarDevolucion(e) {
         mostrarAlerta(msg, 'danger');
     })
     .always(function () {
-        $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Guardar registro');
+        $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Guardar productos');
     });
 }
 
@@ -713,15 +774,26 @@ function renderizarListado(data) {
     }
 
     data.forEach(function (row) {
+        const sinDetalle = !row.total_items || parseInt(row.total_items, 10) === 0;
+        const btnContinuar = sinDetalle
+            ? `<button class="btn btn-sm btn-warning btn-continuar me-1"
+                       data-id="${row.id}" title="Continuar Paso 3">
+                   <i class="fas fa-play"></i>
+               </button>`
+            : '';
         $tbody.append(`
-            <tr>
+            <tr class="${sinDetalle ? 'table-warning' : ''}">
                 <td><span class="fw-bold text-primary">${escHtml(row.nro_seguimiento || '—')}</span></td>
                 <td><strong>${escHtml(row.pedido_id)}</strong></td>
                 <td>${escHtml(row.cliente || '—')}</td>
                 <td>${TIPOS_LABEL[row.tipo] || escHtml(row.tipo)}</td>
-                <td>${ESTADOS_LABEL[row.estado] || escHtml(row.estado)}</td>
+                <td>
+                    ${ESTADOS_LABEL[row.estado] || escHtml(row.estado)}
+                    ${sinDetalle ? '<br><small class="text-warning fw-bold"><i class="fas fa-exclamation-circle me-1"></i>Sin productos</small>' : ''}
+                </td>
                 <td>${formatearFecha(row.fecha_creacion)}</td>
                 <td class="text-center">
+                    ${btnContinuar}
                     <button class="btn btn-sm btn-outline-primary me-1 btn-ver-detalle"
                             data-id="${row.id}" title="Ver detalle">
                         <i class="fas fa-eye"></i>
@@ -741,6 +813,106 @@ function renderizarListado(data) {
     });
     $tbody.find('.btn-cambiar-estado').on('click', function () {
         cambiarEstado($(this).data('id'), $(this).data('estado'));
+    });
+    $tbody.find('.btn-continuar').on('click', function () {
+        continuarDesdeListado($(this).data('id'));
+    });
+}
+
+/* ============================================================
+   CONTINUAR DESDE LISTADO (Paso 3 pendiente)
+   ============================================================ */
+function continuarDesdeListado(id) {
+    resetFormulario();
+
+    // Cambiar a tab de Alta
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('#alta-tab')).show();
+
+    // Mostrar spinner en zona de pedido
+    $('#pedido-encontrado').html(
+        '<div class="text-center py-3"><span class="spinner-border"></span> Cargando registro...</div>'
+    ).slideDown(200);
+
+    $.ajax({
+        url:      API_BASE + 'listar_devoluciones.php',
+        method:   'GET',
+        data:     { id },
+        dataType: 'json',
+    })
+    .done(function (resp) {
+        if (!resp.success) {
+            mostrarAlerta(resp.error || 'No se pudo cargar el registro.', 'danger');
+            return;
+        }
+        const cab = resp.data.cabecera;
+
+        // Rellenar Paso 1 (pedido-id) y buscar el pedido para tener imagen/detalle
+        $('#pedido-id').val(cab.pedido_id);
+        buscarPedidoYContinuar(cab, id);
+    })
+    .fail(function () {
+        mostrarAlerta('Error al cargar el registro.', 'danger');
+    });
+}
+
+/**
+ * Busca el pedido en el SP (para tener imagen/cant orig) y luego pre-llena el
+ * formulario con los datos ya guardados.
+ */
+function buscarPedidoYContinuar(cab, existingId) {
+    $.ajax({
+        url:    API_BASE + 'buscar_pedido.php',
+        method: 'POST',
+        data:   { pedido_id: cab.pedido_id },
+        dataType: 'json',
+    })
+    .done(function (resp) {
+        if (resp.success) {
+            pedidoCargado = resp;
+            renderizarPedidoEncontrado(resp.cabecera, resp.detalle);
+            renderizarTablaProductos(resp.detalle);
+        }
+
+        // Pre-llenar formulario Paso 2
+        $('#campo-cliente').val(cab.cliente || '');
+        $('#campo-fecha-pedido').val((cab.fecha_pedido || '').substring(0, 10));
+        $('#campo-tipo').val(cab.tipo || '');
+        $('#campo-motivo').val(cab.motivo || '');
+        $('#campo-usuario').val(cab.usuario || '');
+        $('#campo-observaciones').val(cab.observaciones || '');
+        $('#campo-nro-rto').val(cab.nro_rto || '');
+        $('#campo-nro-nc-fact').val(cab.nro_nc_fact || '');
+        $('#campo-precio-abonado').val(cab.precio_abonado != null ? cab.precio_abonado : '');
+        $('#campo-precio-art-cambio').val(cab.precio_art_cambio != null ? cab.precio_art_cambio : '');
+        $('#campo-diferencia-precio').val(cab.diferencia_precio != null ? cab.diferencia_precio : '');
+        $('#campo-link-pago-mp').val(cab.link_pago_mp || '');
+        $('#campo-nro-operacion-mp').val(cab.nro_operacion_mp || '');
+
+        // Estado: ya guardado como Paso 2
+        devolucionId = existingId;
+        const nroSeg = cab.nro_seguimiento || '#' + existingId;
+        $('#li-nro-seguimiento-valor').text(nroSeg);
+        $('#li-nro-seguimiento-badge').show();
+
+        // Habilitar secciones y botón Paso 3
+        $('#seccion-paso2').removeClass('disabled-section');
+        $('#seccion-productos').removeClass('disabled-section');
+        $('#btn-guardar-paso2').prop('disabled', false).removeClass('disabled-section');
+        $('#btn-guardar').prop('disabled', false);
+        actualizarPasos(3);
+
+        setTimeout(function () {
+            const el = document.getElementById('seccion-productos');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+    })
+    .fail(function () {
+        // Si el pedido ya no se encuentra en el SP (muy antiguo), igual habilitamos
+        devolucionId = existingId;
+        $('#seccion-paso2').removeClass('disabled-section');
+        $('#btn-guardar-paso2').prop('disabled', false).removeClass('disabled-section');
+        $('#btn-guardar').prop('disabled', false);
+        actualizarPasos(3);
     });
 }
 
@@ -973,8 +1145,12 @@ function cambiarEstado(id, estadoActual) {
    ============================================================ */
 function resetFormulario() {
     pedidoCargado = null;
+    devolucionId  = null;
     $('#pedido-id').val('');
     $('#pedido-encontrado').hide();
+    $('#li-nro-seguimiento-badge').hide();
+    $('#btn-guardar-paso2').prop('disabled', true);
+    $('#btn-guardar').prop('disabled', true);
     // Destruir instancias Select2 antes de vaciar el contenedor
     $('#tabla-productos .select-stock-cambio').each(function () {
         if ($(this).data('select2')) { $(this).select2('destroy'); }

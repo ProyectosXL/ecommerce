@@ -93,6 +93,65 @@ class DevolucionModel
      */
     public function crearDevolucion(array $datos, array $items)
     {
+        $id = $this->guardarCabecera($datos);
+        if ($id === false) return false;
+        if (!empty($items)) {
+            $this->guardarDetalle($id, $items);
+        }
+        return $id;
+    }
+
+    /**
+     * Inserta sólo la cabecera y genera nro_seguimiento.
+     * Si $datos['id'] está presente, actualiza en lugar de insertar.
+     *
+     * @return int|false  ID de la devolución
+     */
+    public function guardarCabecera(array $datos)
+    {
+        $fechaPedido = !empty($datos['fecha_pedido'])
+            ? $this->parsearFecha($datos['fecha_pedido'])
+            : null;
+
+        $precioAbonado   = isset($datos['precio_abonado'])    && $datos['precio_abonado']    !== '' ? (float) $datos['precio_abonado']    : null;
+        $precioArtCambio = isset($datos['precio_art_cambio']) && $datos['precio_art_cambio'] !== '' ? (float) $datos['precio_art_cambio'] : null;
+        $diferencia      = isset($datos['diferencia_precio']) && $datos['diferencia_precio'] !== '' ? (float) $datos['diferencia_precio'] : null;
+
+        // ---- ACTUALIZAR ----
+        if (!empty($datos['id'])) {
+            $id = (int) $datos['id'];
+            $sql = "UPDATE devoluciones SET
+                        tipo             = ?,
+                        motivo           = ?,
+                        usuario          = ?,
+                        observaciones    = ?,
+                        nro_rto          = ?,
+                        nro_nc_fact      = ?,
+                        precio_abonado   = ?,
+                        precio_art_cambio= ?,
+                        diferencia_precio= ?,
+                        link_pago_mp     = ?,
+                        nro_operacion_mp = ?
+                    WHERE id = ?";
+            $params = [
+                $datos['tipo'],
+                $datos['motivo']         ?? null,
+                $datos['usuario']        ?? null,
+                $datos['observaciones']  ?? null,
+                $datos['nro_rto']        ?? null,
+                $datos['nro_nc_fact']    ?? null,
+                $precioAbonado,
+                $precioArtCambio,
+                $diferencia,
+                $datos['link_pago_mp']      ?? null,
+                $datos['nro_operacion_mp']  ?? null,
+                $id,
+            ];
+            $result = sqlsrv_query($this->conn, $sql, $params);
+            return $result !== false ? $id : false;
+        }
+
+        // ---- INSERTAR ----
         $sql = "INSERT INTO devoluciones
                     (pedido_id, cliente, fecha_pedido, tipo, motivo, estado, usuario, fecha_creacion,
                      factura, observaciones, nro_rto, nro_nc_fact,
@@ -104,60 +163,76 @@ class DevolucionModel
                         ?, ?, ?);
                 SELECT SCOPE_IDENTITY() AS nuevo_id;";
 
-        $fechaPedido = !empty($datos['fecha_pedido'])
-            ? $this->parsearFecha($datos['fecha_pedido'])
-            : null;
-
         $params = [
             $datos['pedido_id'],
-            $datos['cliente']           ?? null,
+            $datos['cliente']        ?? null,
             $fechaPedido,
             $datos['tipo'],
-            $datos['motivo']            ?? null,
-            $datos['usuario']           ?? null,
-            $datos['factura']           ?? null,
-            $datos['observaciones']     ?? null,
-            $datos['nro_rto']           ?? null,
-            $datos['nro_nc_fact']       ?? null,
-            isset($datos['precio_abonado'])    && $datos['precio_abonado']    !== '' ? (float) $datos['precio_abonado']    : null,
-            isset($datos['precio_art_cambio']) && $datos['precio_art_cambio'] !== '' ? (float) $datos['precio_art_cambio'] : null,
-            isset($datos['diferencia_precio']) && $datos['diferencia_precio'] !== '' ? (float) $datos['diferencia_precio'] : null,
+            $datos['motivo']         ?? null,
+            $datos['usuario']        ?? null,
+            $datos['factura']        ?? null,
+            $datos['observaciones']  ?? null,
+            $datos['nro_rto']        ?? null,
+            $datos['nro_nc_fact']    ?? null,
+            $precioAbonado,
+            $precioArtCambio,
+            $diferencia,
             $datos['link_pago_mp']      ?? null,
             $datos['nro_operacion_mp']  ?? null,
             $datos['nro_ped_tango']     ?? null,
         ];
 
         $result = sqlsrv_query($this->conn, $sql, $params);
-
         if ($result === false) {
-            error_log('crearDevolucion error: ' . print_r(sqlsrv_errors(), true));
+            error_log('guardarCabecera INSERT error: ' . print_r(sqlsrv_errors(), true));
             return false;
         }
 
-        // Avanzar al result set del SELECT SCOPE_IDENTITY()
         sqlsrv_next_result($result);
         $row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
+        if (!$row || !isset($row['nuevo_id'])) return false;
 
-        if (!$row || !isset($row['nuevo_id'])) {
+        $id = (int) $row['nuevo_id'];
+        $nroSeg = 'G' . str_pad($id, 15, '0', STR_PAD_LEFT);
+        sqlsrv_query($this->conn, "UPDATE devoluciones SET nro_seguimiento = ? WHERE id = ?", [$nroSeg, $id]);
+
+        return $id;
+    }
+
+    /**
+     * Reemplaza las líneas de detalle de una devolución existente.
+     *
+     * @param int   $id     ID de la devolución
+     * @param array $items  Array de productos
+     * @return bool
+     */
+    public function guardarDetalle(int $id, array $items): bool
+    {
+        // Eliminar detalle anterior (re-edición)
+        $del = sqlsrv_query($this->conn, "DELETE FROM devoluciones_detalle WHERE devolucion_id = ?", [$id]);
+        if ($del === false) {
+            error_log('guardarDetalle DELETE error: ' . print_r(sqlsrv_errors(), true));
             return false;
         }
 
-        $devolucionId = (int) $row['nuevo_id'];
-
-        // Generar y guardar nro_seguimiento basado en el ID auto-incremental
-        $nroSeg = 'G' . str_pad($devolucionId, 15, '0', STR_PAD_LEFT);
-        sqlsrv_query($this->conn, "UPDATE devoluciones SET nro_seguimiento = ? WHERE id = ?", [$nroSeg, $devolucionId]);
-
-        // Insertar detalle
-        if (!empty($items)) {
-            foreach ($items as $item) {
-                if (!$this->agregarDetalle($devolucionId, $item)) {
-                    error_log("Error al insertar detalle para devolucion_id=$devolucionId");
-                }
+        foreach ($items as $item) {
+            if (!$this->agregarDetalle($id, $item)) {
+                error_log("guardarDetalle: error insertando ítem para devolucion_id=$id");
+                return false;
             }
         }
+        return true;
+    }
 
-        return $devolucionId;
+    /**
+     * Devuelve el nro_seguimiento de un ID.
+     */
+    public function obtenerNroSeguimiento(int $id): ?string
+    {
+        $result = sqlsrv_query($this->conn, "SELECT nro_seguimiento FROM devoluciones WHERE id = ?", [$id]);
+        if ($result === false) return null;
+        $row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
+        return $row ? (string) $row['nro_seguimiento'] : null;
     }
 
     /**
