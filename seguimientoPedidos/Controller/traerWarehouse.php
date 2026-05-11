@@ -16,9 +16,12 @@ require_once '../../Class/Conexion.php';
 require_once '../../Class/Pedido.php';
 
 try {
-    // Crear instancia y traer warehouses
+    // NUEVO: Obtener país seleccionado
+    $pais = isset($_GET['pais']) ? strtoupper(trim($_GET['pais'])) : 'AR';
+    
+    // Crear instancia y traer warehouses según país
     $pedido = new Pedido();
-    $sucursales = $pedido->traerWarehouse();
+    $sucursales = $pedido->traerWarehouse($pais);
 
     // Devolver resultado como JSON
     header('Content-Type: application/json');

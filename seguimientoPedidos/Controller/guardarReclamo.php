@@ -38,8 +38,11 @@ try {
     $cliente = $_POST['cliente'] ?? '';
     $prepara = $_POST['prepara'] ?? '';
     $modalCantidad = $_POST['modalCantidad'] ?? '';
+    // NUEVO: Obtener país seleccionado
+    $pais = isset($_POST['pais']) ? strtoupper(trim($_POST['pais'])) : 'AR';
     $modalCodigo = $_POST['modalCodigo'] ?? '';
     $warehouse = $_POST['warehouse'] ?? ''; // Warehouse del pedido original
+    $pais = $_POST['pais'] ?? 'AR'; // NUEVO: Default Argentina
 
     // Validar datos requeridos
     if (empty($resolucion) || empty($nro_pedido)) {
@@ -79,17 +82,24 @@ try {
         'prepara' => $prepara,
         'modalCantidad' => $modalCantidad,
         'modalCodigo' => $modalCodigo,
-        'dataSecciones' => $dataSecciones
+        'dataSecciones' => $dataSecciones,
+        'warehouse' => $warehouse
     ];
 
     // Crear instancia y guardar
     $pedido = new Pedido();
     
-    // Verificar si existe el método nuevo, sino usar el original
-    if (method_exists($pedido, 'guardarHistorialReclamoConUpsert')) {
-        $resultado = $pedido->guardarHistorialReclamoConUpsert($data);
+    // MODIFICADO: Detectar país y usar métodos correspondientes
+    if (strtoupper($pais) === 'UY') {
+        // Uruguay: usar métodos UY
+        $resultado = $pedido->guardarHistorialReclamoUY($data);
     } else {
-        $resultado = $pedido->guardarHistorialReclamo($data);
+        // Argentina: usar método original
+        if (method_exists($pedido, 'guardarHistorialReclamoConUpsert')) {
+            $resultado = $pedido->guardarHistorialReclamoConUpsert($data);
+        } else {
+            $resultado = $pedido->guardarHistorialReclamo($data);
+        }
     }
 
     if ($resultado) {
@@ -106,7 +116,13 @@ try {
             
             if (!empty(trim($stringParaSql))) {
                 $stringParaSql = substr($stringParaSql, 0, -1);
-                $pedido->guardarReclamoDetalle($stringParaSql);
+                
+                // MODIFICADO: Llamar método según país
+                if (strtoupper($pais) === 'UY') {
+                    $pedido->guardarReclamoDetalleUY($stringParaSql);
+                } else {
+                    $pedido->guardarReclamoDetalle($stringParaSql);
+                }
             }
         }
         
@@ -114,14 +130,26 @@ try {
         if (in_array(strtolower($resolucion), ['completado', 'cambio'])) {
             $comentarioAutomatico = "Pedido marcado como CONTROLADO automáticamente por resolución: " . ucfirst($resolucion);
             $stringComentarioAuto = "('" . $nro_pedido . "', '" . addslashes($comentarioAutomatico) . "', 'Sistema', 'Sistema Automático', GETDATE())";
-            $pedido->guardarReclamoDetalle($stringComentarioAuto);
+            
+            // MODIFICADO: Llamar método según país
+            if (strtoupper($pais) === 'UY') {
+                $pedido->guardarReclamoDetalleUY($stringComentarioAuto);
+            } else {
+                $pedido->guardarReclamoDetalle($stringComentarioAuto);
+            }
         }
         
         // Si la resolución es "cancelado", agregar comentario automático indicando que se marcó como cancelado
         if (strtolower($resolucion) === 'cancelado') {
             $comentarioAutomatico = "Pedido marcado como CANCELADO en el sistema automáticamente por resolución: Cancelado";
             $stringComentarioAuto = "('" . $nro_pedido . "', '" . addslashes($comentarioAutomatico) . "', 'Sistema', 'Sistema Automático', GETDATE())";
-            $pedido->guardarReclamoDetalle($stringComentarioAuto);
+            
+            // MODIFICADO: Llamar método según país
+            if (strtoupper($pais) === 'UY') {
+                $pedido->guardarReclamoDetalleUY($stringComentarioAuto);
+            } else {
+                $pedido->guardarReclamoDetalle($stringComentarioAuto);
+            }
         }
         
         ob_end_clean();

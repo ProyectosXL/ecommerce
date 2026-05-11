@@ -133,16 +133,7 @@ class Control extends Conexion {
         $sql = "SELECT MIN(CAST(A.FECHA AS DATE)) FECHA, COUNT(*) CANT_NC_PROMO, SUM(A.NC) IMPORTE_NC 
                 FROM SJ_NC_ECOMMERCE_PEND A
                 WHERE A.NUM_NC = 'NO'
-                AND NOT EXISTS (
-                    SELECT 1 
-                    FROM GVA12 B
-                    INNER JOIN GVA53 C ON B.T_COMP = C.T_COMP AND B.N_COMP = C.N_COMP
-                    WHERE B.COD_CLIENT = '000000'
-                    AND B.T_COMP = 'NCR'
-                    AND C.COD_ARTICU = A.COD_ARTICU
-                    AND CAST(B.FECHA_EMIS AS DATE) >= CAST(A.FECHA AS DATE)
-                    AND CAST(B.FECHA_EMIS AS DATE) <= DATEADD(DAY, 15, CAST(A.FECHA AS DATE))
-                )";
+                AND A.FECHA >= GETDATE()-60";
         return $this->getDatos($sql);
     }
 
@@ -150,16 +141,7 @@ class Control extends Conexion {
         $sql = "SELECT A.FECHA, A.COD_PROMOCION_TARJETA, A.DESC_PROMOCION_TARJETA, A.PORC_REINTEGRO, A.COD_ARTICU, A.NC 
                 FROM SJ_NC_ECOMMERCE_PEND A
                 WHERE A.NUM_NC = 'NO'
-                AND NOT EXISTS (
-                    SELECT 1 
-                    FROM GVA12 B
-                    INNER JOIN GVA53 C ON B.T_COMP = C.T_COMP AND B.N_COMP = C.N_COMP
-                    WHERE B.COD_CLIENT = '000000'
-                    AND B.T_COMP = 'NCR'
-                    AND C.COD_ARTICU = A.COD_ARTICU
-                    AND CAST(B.FECHA_EMIS AS DATE) >= CAST(A.FECHA AS DATE)
-                    AND CAST(B.FECHA_EMIS AS DATE) <= DATEADD(DAY, 15, CAST(A.FECHA AS DATE))
-                )
+                AND A.FECHA >= GETDATE()-60
                 ORDER BY A.FECHA DESC";
         return $this->getDatosMultiples($sql);
     }
@@ -171,7 +153,7 @@ class Control extends Conexion {
                 LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND (B.CANCELADO = 1 OR REINTEGRADO = 1)
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-60 AND (B.CANCELADO = 1 OR REINTEGRADO = 1)
                 AND B.NCR IS NULL AND C.N_COMP IS NOT NULL
                 ) A";
         return $this->getDatos($sql);
@@ -185,7 +167,7 @@ class Control extends Conexion {
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
                 LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
 				LEFT JOIN RO_T_DEPOSITOS_ECOMMERCE_TIENDAS F ON D.COD_SUCURS = F.COD_DEPOSI_ECOMM
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND (B.CANCELADO = 1 OR REINTEGRADO = 1)
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-60 AND (B.CANCELADO = 1 OR REINTEGRADO = 1)
                 AND B.NCR IS NULL AND C.N_COMP IS NOT NULL
                 ORDER BY A.FECHA_PEDI ASC";
         return $this->getDatosMultiples($sql);
@@ -433,11 +415,13 @@ class Control extends Conexion {
                 ) A";
         
         try {
-            $cid_central = $this;
             $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
-                throw new Exception("Error de conexión a la base de datos de Uruguay");
+                $errors = sqlsrv_errors();
+                $error_detail = !empty($errors) ? json_encode($errors) : 'Conexión rechazada';
+                error_log("Error conexión BD Uruguay (traerNcPendDevolucionesUruguay): " . $error_detail);
+                throw new Exception("Error de conexión a la base de datos de Uruguay: " . $error_detail);
             }
             
             ini_set('max_execution_time', 300);
@@ -445,23 +429,30 @@ class Control extends Conexion {
             
             if ($result === false) {
                 $errors = sqlsrv_errors();
-                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+                $error_detail = !empty($errors) ? json_encode($errors) : 'Error desconocido';
+                error_log("Error consulta traerNcPendDevolucionesUruguay: " . $error_detail);
+                sqlsrv_close($cid_uruguay);
+                throw new Exception("Error en la consulta NC Devoluciones Uruguay: " . $error_detail);
             }
             
             $row = sqlsrv_fetch_object($result);
             sqlsrv_free_stmt($result);
             sqlsrv_close($cid_uruguay);
             
+            // Log para depuración
+            error_log("traerNcPendDevolucionesUruguay - Resultado: " . json_encode($row));
+            
             return $row ? $row : null;
             
         } catch (Exception $e) {
+            error_log("Exception en traerNcPendDevolucionesUruguay: " . $e->getMessage());
             throw new Exception($e->getMessage());
         }
     }
 
     public function traerDetalleNcPendDevolucionesUruguay() {
         $sql = "SELECT CAST(A.FECHA_PEDI AS DATE) FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, UPPER(E.RAZON_SOCI) CLIENTE,
-                D.COD_SUCURS, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
+                D.COD_SUCURS, A.COD_SUCURS AS SUCURSAL, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
                 LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
@@ -471,11 +462,13 @@ class Control extends Conexion {
                 ORDER BY A.FECHA_PEDI ASC";
         
         try {
-            $cid_central = $this;
             $cid_uruguay = $this->conectarSql('uy');
             
             if ($cid_uruguay === false) {
-                throw new Exception("Error de conexión a la base de datos de Uruguay");
+                $errors = sqlsrv_errors();
+                $error_detail = !empty($errors) ? json_encode($errors) : 'Conexión rechazada';
+                error_log("Error conexión BD Uruguay (traerDetalleNcPendDevolucionesUruguay): " . $error_detail);
+                throw new Exception("Error de conexión a la base de datos de Uruguay: " . $error_detail);
             }
             
             ini_set('max_execution_time', 300);
@@ -483,7 +476,10 @@ class Control extends Conexion {
             
             if ($result === false) {
                 $errors = sqlsrv_errors();
-                throw new Exception("Error en la consulta: " . $errors[0]['message']);
+                $error_detail = !empty($errors) ? json_encode($errors) : 'Error desconocido';
+                error_log("Error consulta traerDetalleNcPendDevolucionesUruguay: " . $error_detail);
+                sqlsrv_close($cid_uruguay);
+                throw new Exception("Error en la consulta detalle NC Devoluciones Uruguay: " . $error_detail);
             }
             
             $rows = array();
@@ -494,9 +490,13 @@ class Control extends Conexion {
             sqlsrv_free_stmt($result);
             sqlsrv_close($cid_uruguay);
             
+            // Log para depuración
+            error_log("traerDetalleNcPendDevolucionesUruguay - Total registros: " . count($rows));
+            
             return $rows;
             
         } catch (Exception $e) {
+            error_log("Exception en traerDetalleNcPendDevolucionesUruguay: " . $e->getMessage());
             throw new Exception($e->getMessage());
         }
     }

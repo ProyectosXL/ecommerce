@@ -1,152 +1,185 @@
-
-table.table-fh {
-    width: 100%;
-	
+/* ── Variables ── */
+:root {
+    --accent:   #3d6fcc;
+    --success:  #2d9f5e;
+    --danger:   #c0392b;
+    --warn:     #e0a020;
+    --muted:    #6c757d;
+    --border:   #dee2e6;
+    --bg-panel: #f8f9fb;
+    --header-bg:#2c3e50;
 }
 
-/* table.table-fh.table-15c > thead > tr >th, table.table-fh.table-15c > tbody > tr > td {
-    width: calc(100% / 15);
+/* ── Panel header ── */
+#menu {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--bg-panel) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    padding: 1rem 1.25rem 0.75rem;
 }
 
-table.table-fh.table-19c > thead > tr >th, table.table-fh.table-19c > tbody > tr > td {
-    width: calc(100% / 19);
-} */
-/* 
-table.table-fh, table.table-fh > tbody > tr > td {
-    border-collapse: collapse;
-    border: 1px solid #000;
-} */
-table.table-fh > thead {
-    display: table;
-    /* width: calc(100% - 17px); */
+/* ── Título ── */
+#menu h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--header-bg);
+    margin-bottom: 0;
+    letter-spacing: .01em;
 }
+
+/* ── Contadores ── */
+.counter-group { display: flex; align-items: center; gap: .5rem; }
+.counter-group label { font-size: .78rem; color: var(--muted); margin: 0; white-space: nowrap; }
+.counter-group input {
+    width: 8rem !important;
+    font-size: .88rem !important;
+    font-weight: 600;
+    text-align: center;
+    border-radius: 6px !important;
+    border: 1px solid var(--border) !important;
+    background: #fff !important;
+    color: var(--header-bg) !important;
+}
+
+/* ── Formulario de filtros ── */
+#formFiltros { gap: .5rem; flex-wrap: wrap; align-items: flex-end; }
+#formFiltros label { font-size: .75rem; color: var(--muted); margin-bottom: 2px; }
+#formFiltros .form-control {
+    font-size: .82rem;
+    border-radius: 6px;
+    border-color: var(--border);
+}
+#formFiltros .form-control:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(61,111,204,.15);
+}
+
+/* ── Botón buscar ── */
+.btn-buscar {
+    font-size: .82rem;
+    padding: .3rem .9rem;
+    border-radius: 6px;
+}
+
+/* ── Botón descarga directa ── */
+.btn-descargar-directo {
+    font-size: .82rem;
+    padding: .3rem .9rem;
+    border-radius: 6px;
+    color: var(--success);
+    background: transparent;
+    border: 1.5px solid var(--success);
+}
+.btn-descargar-directo:hover {
+    background: var(--success);
+    color: #fff;
+}
+
+/* ── Botones de acción ── */
+#buttonPendientes,
+#buttonCancelados,
+#buttonIncompletos,
+#buttonExportar {
+    color: #f7f7f7;
+    height: 34px;
+    font-size: .8rem;
+    border-radius: 6px;
+    border: none;
+    padding: 0 .9rem;
+    width: auto;
+    letter-spacing: .01em;
+    cursor: pointer;
+}
+#buttonPendientes  { background: #e0a020; }
+#buttonCancelados  { background: var(--accent); }
+#buttonIncompletos { background: var(--danger); }
+#buttonExportar    { background: var(--success); }
+
+#buttonPendientes:focus,
+#buttonCancelados:focus,
+#buttonIncompletos:focus,
+#buttonExportar:focus { outline: none; }
+
+.action-bar { display: flex; align-items: center; gap: 6px; margin: .6rem 0 .4rem; flex-wrap: wrap; }
+
+/* ── Tabla ── */
+td { font-size: 11px; }
+#id_tabla { font-size: .8rem; }
+
+.headerTitle {
+    font-size: .72rem;
+    font-weight: 600;
+    color: white;
+    letter-spacing: .03em;
+    padding: .45rem .4rem !important;
+}
+
+#tablaPedidosH {
+    position: sticky;
+    top: 7rem;
+    background-color: var(--header-bg);
+    padding: 10px;
+    z-index: 1000;
+}
+
+#id_tabla tbody tr:hover { background: #f0f4ff; }
+
+table.table-fh { width: 100%; }
+table.table-fh > thead { display: table; }
 table.table-fh > tbody {
     display: block;
     max-height: 70vh;
     overflow-y: scroll;
 }
+table.table-fh > tbody > tr > td { border: none; }
 
-/* table.table-fh > tbody > tr {
-    display: table;
-    width: 100%;
-} */
-table.table-fh > tbody > tr > td {
+/* ── Spinner de carga ── */
+#loadingTable {
+    display: none;
+    text-align: center;
+    padding: 2.5rem 0;
+}
+#loadingTable .spinner-border { width: 2.4rem; height: 2.4rem; color: var(--accent) !important; }
+#loadingTable p { margin-top: .7rem; font-size: .9rem; color: var(--muted); }
+
+/* ── Barra de progreso de carga ── */
+#progressBar { display: none; margin: .5rem 0; }
+#progressBar .progress { height: 4px; border-radius: 4px; background: #e9ecef; }
+#progressText { font-size: .75rem; color: var(--muted); }
+
+/* ── Sin resultados ── */
+#sinResultados { color: var(--muted); padding: 3rem; }
+#sinResultados i { font-size: 2.2rem; opacity: .45; }
+
+/* ── Modal exportación ── */
+#modalExportando .modal-header {
+    background: var(--header-bg);
+    color: #fff;
+    border-radius: 8px 8px 0 0;
+    padding: .75rem 1rem;
+}
+#modalExportando .modal-title { font-size: .95rem; font-weight: 600; }
+#modalExportando .modal-content {
+    border-radius: 10px;
     border: none;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
 }
+#modalExportando .progress { height: 8px; border-radius: 4px; }
+#modalExportando .progress-bar { background: var(--success) !important; }
+#exportProgressText { font-size: .82rem; color: var(--muted); margin-top: .5rem; }
 
-/* td{
-	font-size:11px;
-    justify-content: center;
-} */
-
-#columnita{
-	font-size:9px;
-	padding: 0px;
-	margin-top: 2px;
-}
-
-#botones{
-	padding-left: 2%;
-	
-}
-#formulario{
-	padding:0px;
-	margin-left:1%;
-}
-
-td{
-	font-size:11px;
-}
-
-#botones{
-	padding-left: 3%;
-	
-}
-#formulario{
-	padding:0px;
-	margin-left:1%;
-}
-
-#buttonIncompletos{
-    color: #f7f7f7;
-    background-color: #dc3545;
-    border-color: #dc3545;
-    border-radius: 5px;
-    height: 40px;
-    width: 10vh;
-    font-size: 12px;
-}
-#buttonExportar{
-    color: #f7f7f7;
-    background-color: #28a745 ;
-    border-color: #28a745 ;
-    border-radius: 5px;
-    height: 40px;
-    width: 100px;
-}
-
-#buttonCancelados{
-    color: #f7f7f7;
-    background-color: #007bff;
-    border-color: #263544;
-    border-radius: 5px;
-    height: 40px;
-    width: 10vh;
-    font-size: 12px;
-}
-
-#buttonPendientes{
-    color: #f7f7f7;
-    background-color: #ffc107;
-    border-color: #ffc107;
-    border-radius: 5px;
-    height: 40px;
-    width: 10vh;
-    font-size: 12px;
-}
-
-#buttonIncompletos:focus{
-    outline: none;
-}
-
-#buttonCancelados:focus{
-    outline: none;
-}
-
-#buttonPendientes:focus{
-    outline: none;
-}
-
-.headerTitle
-{
-    font-size: 11px;
-    color: white;
-}
+/* ── Misc heredado ── */
+#columnita { font-size: 9px; padding: 0; margin-top: 2px; }
 
 .loading {
     position: fixed;
-    left: 0px;
-    top: 0px;
-    width: 100%;
-    height: 100%;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
     z-index: 9999;
-    background: url('../css/images/spinnervlll.gif') 50% 50% no-repeat  rgb(246,247,248);
+    background: url('../css/images/spinnervlll.gif') 50% 50% no-repeat rgb(246,247,248);
     opacity: .8;
-  }
-
-  	
-#menu {
-    position: sticky;
-    top: 0;
-	bottom: 1.5rem;
-    z-index: 1000;
-}
-
-
-#tablaPedidosH {
-    position: sticky;
-    top:7rem; /* Ajusta la distancia vertical según sea necesario */
-    background-color: #343a40;
-    padding: 10px; /* Ajusta el relleno según sea necesario */
-    z-index: 1000; /* Asegura que esté por encima del contenido */
 }

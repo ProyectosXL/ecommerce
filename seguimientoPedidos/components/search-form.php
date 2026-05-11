@@ -33,6 +33,7 @@
                     placeholder="Ingrese número de Orden, Pedido o Factura" 
                     value="<?php echo isset($_POST['numero']) ? htmlspecialchars($_POST['numero']) : ''; ?>"
                     required>
+                <input type="hidden" name="pais" id="pais-input" value="<?php echo isset($_POST['pais']) ? strtoupper(trim($_POST['pais'])) : 'AR'; ?>">
             </div>
         </div>
         <div class="col-md-2">

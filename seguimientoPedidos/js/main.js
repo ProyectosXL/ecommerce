@@ -1,5 +1,7 @@
 
 // Variables globales
+window.paisSeleccionado = 'AR'; // Variable global para el país seleccionado
+
 let articuloReclamado = {
     codigo: '',
     descripcion: '',
@@ -78,6 +80,58 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inicializar Select2
     initializeSelect2();
+    
+    // Event listener para el toggle de país GLOBAL
+    const countryRadios = document.querySelectorAll('input[name="country-global"]');
+    countryRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const paisAnterior = window.paisSeleccionado;
+            window.paisSeleccionado = this.value;
+            
+            // Actualizar el campo oculto del formulario de búsqueda (Tab 1)
+            const paisInput = document.getElementById('pais-input');
+            if (paisInput) {
+                paisInput.value = this.value;
+            }
+            
+            console.log('País cambiado de', paisAnterior, 'a', window.paisSeleccionado);
+            
+            // CORRECCIÓN: Limpiar resultados sin recargar página al cambiar de país (Tab 1)
+            const seguimientoTab = document.getElementById('seguimiento-content');
+            if (seguimientoTab && seguimientoTab.classList.contains('show', 'active')) {
+                const resultsContainer = document.getElementById('search-results-container');
+                const numeroInput = document.querySelector('input[name="numero"]');
+                
+                // Si hay resultados visibles, limpiarlos y resetear el formulario
+                if (resultsContainer && resultsContainer.children.length > 0) {
+                    console.log('Limpiando resultados de búsqueda al cambiar a', window.paisSeleccionado);
+                    
+                    // Limpiar resultados
+                    resultsContainer.innerHTML = '';
+                    
+                    // Limpiar campo de búsqueda
+                    if (numeroInput) {
+                        numeroInput.value = '';
+                    }
+                    
+                    // Mostrar mensaje informativo
+                    resultsContainer.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Se cambió el país a <strong>' + 
+                        (this.value === 'AR' ? 'Argentina' : 'Uruguay') + 
+                        '</strong>. Por favor, realice una nueva búsqueda.</div>';
+                }
+            }
+            
+            // Si estamos en la pestaña de Reporte de Incidentes (Tab 2), recargar el reporte
+            const reporteTab = document.getElementById('reporte-content');
+            if (reporteTab && reporteTab.classList.contains('show', 'active')) {
+                console.log('Recargando reporte con país:', window.paisSeleccionado);
+                // Llamar a la función cargarReporte() que está en reporte-incidentes.js
+                if (typeof window.cargarReportePorCambioPais === 'function') {
+                    window.cargarReportePorCambioPais();
+                }
+            }
+        });
+    });
     
     // Agregar event listener al formulario de búsqueda para mostrar spinner
     const searchForm = document.querySelector('form[method="POST"]');

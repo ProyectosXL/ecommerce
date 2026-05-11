@@ -102,7 +102,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     showSpinner();
                     
-                    const response = await fetch('Controller/traerWarehouse.php');
+                    const pais = document.querySelector('input[name="country-global"]:checked')?.value || 'AR';
+                    const response = await fetch(`Controller/traerWarehouse.php?pais=${pais}`);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -152,7 +153,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         $('#selectArticulo').val('').trigger('change');
 
                         // Petición al servidor para cargar artículos según la sucursal seleccionada
-                        const response = await fetch(`Controller/buscarStock.php?sucursal=${encodeURIComponent(sucursalSeleccionada)}`);
+                        const pais = document.querySelector('input[name="country-global"]:checked')?.value || 'AR';
+                        const response = await fetch(`Controller/buscarStock.php?sucursal=${encodeURIComponent(sucursalSeleccionada)}&pais=${pais}`);
                         
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);

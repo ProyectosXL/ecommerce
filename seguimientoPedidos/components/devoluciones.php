@@ -2,12 +2,40 @@
 <?php
 // Usar NRO_PEDIDO limpio (sin espacios) para la búsqueda
 $nroPedido = trim($pedido->NRO_PEDIDO);
-$nroOrden = trim($pedido->NRO_ORDEN);
+$nroOrden = isset($pedido->NRO_ORDEN) ? trim($pedido->NRO_ORDEN) : (isset($pedido->ORDER_ID_TIENDA) ? trim($pedido->ORDER_ID_TIENDA) : '');
 
-// Obtener devoluciones para el pedido actual
-$resumenDevoluciones = $pedidos->obtenerResumenDevoluciones($nroPedido, $nroOrden);
-$ncrPendientes = $pedidos->verificarNcrPendiente($nroPedido, $nroOrden);
-$infoCancelacion = $pedidos->verificarCancelacion($nroPedido, $nroOrden);
+// CORREGIDO: Obtener devoluciones usando método principal que ya rutea según país
+$devolucionesArray = $pedidos->obtenerDevoluciones($nroPedido, $nroOrden, $pais);
+$infoCancelacion = $pedidos->verificarCancelacion($nroPedido, $nroOrden, $pais);
+
+// Construir resumen manualmente
+$resumenDevoluciones = (object)[
+    'tiene_devoluciones' => !empty($devolucionesArray),
+    'total_articulos' => 0,
+    'total_importe' => 0,
+    'tiene_ncr_pendiente' => false,
+    'tipos' => []
+];
+
+$ncrPendientes = [];
+
+foreach ($devolucionesArray as $dev) {
+    $resumenDevoluciones->total_articulos += ($dev->CANTIDAD ?? 0);
+    $resumenDevoluciones->total_importe += (($dev->CANTIDAD ?? 0) * ($dev->IMPORTE ?? 0));
+    
+    if (in_array($dev->ESTADO ?? '', ['NCR_PENDIENTE', 'PENDIENTE'])) {
+        $resumenDevoluciones->tiene_ncr_pendiente = true;
+        $ncrPendientes[] = $dev;
+    }
+    
+    $tipoDisplay = $dev->TIPO ?? 'REINTEGRO';
+    if (!isset($resumenDevoluciones->tipos[$tipoDisplay])) {
+        $resumenDevoluciones->tipos[$tipoDisplay] = (object)['cantidad' => 0, 'importe' => 0, 'registros' => []];
+    }
+    $resumenDevoluciones->tipos[$tipoDisplay]->cantidad += ($dev->CANTIDAD ?? 0);
+    $resumenDevoluciones->tipos[$tipoDisplay]->importe += (($dev->CANTIDAD ?? 0) * ($dev->IMPORTE ?? 0));
+    $resumenDevoluciones->tipos[$tipoDisplay]->registros[] = $dev;
+}
 
 // Solo mostrar la sección si hay devoluciones
 if ($resumenDevoluciones->tiene_devoluciones):

@@ -1,4 +1,3 @@
-
 <?php
 require_once 'Class/Conexion.php';
 require_once 'Class/Pedido.php';
@@ -7,31 +6,40 @@ require_once 'Controlador/nuevo_ml.php';
 require_once 'Controlador/nc_pend.php';
 $pedidos = new Pedido();
 
-remitos_buscar_once();
-new_ml();
+// Solo sincronizar remitos y ML en la primera página para no sumar tiempo al paginar
+if (!isset($_GET['pagina']) || intval($_GET['pagina']) <= 1) {
+    remitos_buscar_once();
+    new_ml();
+}
 
-if(!isset($_GET['desde'])){
-    nc_pendientes();
+// Obtener NC pendientes si no hay filtro de fecha
+$nc_pendientes = [];
+if (!isset($_GET['desde'])) {
+    $nc_pendientes = nc_pendientes();
 }
 
 $hoy = date("Y-m-d");
-$tienda = (!isset($_GET['tienda'])) ? '%' : '%'.$_GET['tienda'].'%';
-$warehouse = (!isset($_GET['warehouse'])) ? '%' : '%'.$_GET['warehouse'].'%';
+$tienda    = (!isset($_GET['tienda'])    || trim($_GET['tienda'])    === '') ? '%' : $_GET['tienda'] . '%';
+$warehouse = (!isset($_GET['warehouse']) || trim($_GET['warehouse']) === '') ? '%' : $_GET['warehouse'] . '%';
 $desde = (!isset($_GET['desde'])) ? $hoy : $_GET['desde'];
 $hasta = (!isset($_GET['hasta'])) ? $hoy : $_GET['hasta'];
-$estado = (isset($_GET['estado'])) ? $_GET['estado'] : null;
-$orden = (!isset($_GET['orden'])) ? '%' : '%'.$_GET['orden'].'%';
+$estado = (isset($_GET['estado']) && trim($_GET['estado']) !== '') ? $_GET['estado'] : null;
+$orden = (!isset($_GET['orden'])) ? '%' : $_GET['orden'] . '%';
+$pagina = (isset($_GET['pagina']) && intval($_GET['pagina']) > 0) ? intval($_GET['pagina']) : 1;
+$metodoEnvio = (isset($_GET['metodo_envio']) && trim($_GET['metodo_envio']) !== '') ? trim($_GET['metodo_envio']) : '';
 $todosLosWarehouse = $pedidos->traerWarehouse();
+$todosLosMetodosEnvio = $pedidos->traerMetodosEnvio();
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XL Extralarge - Estado Pedidos</title>
     <link rel="shortcut icon" href="assets/icono.ico" />
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -52,7 +60,7 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
                         <i class="bi bi-handbag me-2"></i>Estado Pedidos Ecommerce
                     </h4>
                 </div>
-                
+
                 <div class="d-flex flex-wrap gap-2 align-items-center">
                     <div class="stats-group">
                         <label class="form-label mb-0 me-1">Órdenes:</label>
@@ -60,7 +68,8 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
                     </div>
                     <div class="stats-group">
                         <label class="form-label mb-0 me-1">Artículos:</label>
-                        <input type="text" class="form-control form-control-sm stats-input" id="cantidadArticulos" readonly>
+                        <input type="text" class="form-control form-control-sm stats-input" id="cantidadArticulos"
+                            readonly>
                     </div>
                 </div>
             </div>
@@ -70,18 +79,19 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
                 <div class="row g-2 align-items-end">
                     <div class="col-md-2 col-sm-6">
                         <label class="form-label">Desde:</label>
-                        <input type="date" class="form-control form-control-sm" name="desde" value="<?=$desde?>">
+                        <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
                     </div>
-                    
+
                     <div class="col-md-2 col-sm-6">
                         <label class="form-label">Hasta:</label>
-                        <input type="date" class="form-control form-control-sm" name="hasta" value="<?=$hasta?>">
+                        <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
                     </div>
-                    
+
                     <div class="col-md-2 col-sm-6">
                         <label class="form-label">Tienda:</label>
                         <select class="form-select form-select-sm" name="tienda">
                             <option selected></option>
+                            <option value="FRAVEGA">FRAVEGA</option>
                             <option value="ICBC">ICBC</option>
                             <option value="VTEX">VTEX</option>
                             <option value="ML">MERCADO LIBRE</option>
@@ -107,7 +117,7 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
                         <label class="form-label">Origen:</label>
                         <select class="form-select form-select-sm" name="warehouse">
                             <option selected></option>
-                            <?php foreach($todosLosWarehouse as $warehouse => $key): ?>
+                            <?php foreach ($todosLosWarehouse as $warehouse => $key): ?>
                                 <option value="<?= $key[0]->WAREHOUSE ?>"><?= $key[0]->WAREHOUSE ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -115,7 +125,20 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
 
                     <div class="col-md-2 col-sm-6">
                         <label class="form-label">Orden:</label>
-                        <input class="form-control form-control-sm" type="text" placeholder="Número de orden.." name="orden">
+                        <input class="form-control form-control-sm" type="text" placeholder="Número de orden.."
+                            name="orden">
+                    </div>
+
+                    <div class="col-md-2 col-sm-6">
+                        <label class="form-label">Método Envío:</label>
+                        <select class="form-select form-select-sm" name="metodo_envio">
+                            <option value="">Todos</option>
+                            <?php foreach ($todosLosMetodosEnvio as $me): ?>
+                                <option value="<?= $me[0]->METODO_ENVIO ?>" <?= $metodoEnvio === $me[0]->METODO_ENVIO ? 'selected' : '' ?>>
+                                    <?= $me[0]->METODO_ENVIO ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
 
@@ -124,198 +147,274 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
                         <button type="submit" class="btn btn-primary btn-sm">
                             <i class="bi bi-search me-1"></i>Buscar
                         </button>
-                        
+
                         <div id="boxLoading" class="spinner-border spinner-border-sm d-none" role="status">
                             <span class="visually-hidden">Cargando...</span>
                         </div>
 
-                        <?php if(isset($_GET['desde'])): ?>
-                        <div class="search-group">
-                            <label class="form-label mb-0 me-1">Búsqueda:</label>
-                            <input type="text" class="form-control form-control-sm search-input" 
-                                   onkeyup="busquedaRapida()" id="textBox" 
-                                   placeholder="Sobre cualquier campo.." autofocus>
-                        </div>
+                        <?php if (isset($_GET['desde'])): ?>
+                            <div class="search-group">
+                                <label class="form-label mb-0 me-1">Búsqueda:</label>
+                                <input type="text" class="form-control form-control-sm search-input"
+                                    onkeyup="busquedaRapida()" onkeypress="return pulsar(event)"
+                                    id="textBox" name="factura"
+                                    value="<?= htmlspecialchars($_GET['factura'] ?? '') ?>"
+                                    placeholder="Sobre cualquier campo.." autofocus>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
             </form>
 
-            <?php if(isset($_GET['desde'])): ?>
-            <!-- Action Buttons -->
-            <div class="action-buttons mt-3">
-                <button onclick="filterPendientes()" class="btn btn-outline-warning btn-sm">
-                    <i class="bi bi-clock me-1"></i>Pendientes
-                </button>
-                <button onclick="filterCancelados()" class="btn btn-outline-danger btn-sm">
-                    <i class="bi bi-x-circle me-1"></i>Sin NC
-                </button>
-                <button onclick="filterIncompletos()" class="btn btn-outline-info btn-sm">
-                    <i class="bi bi-exclamation-triangle me-1"></i>Incompletos
-                </button>
-                <button onclick="exportar()" class="btn btn-success btn-sm">
-                    <i class="bi bi-download me-1"></i>Exportar
-                </button>
-                <button onclick="showHelp()" class="btn btn-info btn-sm">
-                    <i class="fas fa-question-circle me-1"></i>Ayuda
-                </button>
-            </div>
+            <?php if (isset($_GET['desde'])): ?>
+                <!-- Action Buttons -->
+                <div class="action-buttons mt-3">
+                    <button onclick="filterPendientes()" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-clock me-1"></i>Pendientes
+                    </button>
+                    <button onclick="filterCancelados()" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-x-circle me-1"></i>Sin NC
+                    </button>
+                    <button onclick="filterIncompletos()" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Incompletos
+                    </button>
+                    <button onclick="exportar()" class="btn btn-success btn-sm">
+                        <i class="bi bi-download me-1"></i>Exportar
+                    </button>
+                    <button onclick="showHelp()" class="btn btn-info btn-sm">
+                        <i class="fas fa-question-circle me-1"></i>Ayuda
+                    </button>
+                </div>
             <?php endif; ?>
         </div>
 
-        <?php if(isset($_GET['desde'])): 
-            $arrayPedidos = $pedidos->traerPedidos($desde, $hasta, $tienda, $warehouse, $estado, $orden);
+        <?php if (isset($_GET['desde'])):
+            $busqueda = (isset($_GET['factura']) && trim($_GET['factura']) !== '') ? trim($_GET['factura']) : '';
+
+            // Solo la búsqueda de texto libre pide 1000 registros
+            // El filtro de método de envío ya se aplica en el Stored Procedure
+            $porPagina   = $busqueda ? 1000 : 100;
+            $paginaUsada = $busqueda ? 1    : $pagina;
+
+            $arrayPedidos = $pedidos->traerPedidos($desde, $hasta, $tienda, $warehouse, $estado, $orden, $paginaUsada, $porPagina, $metodoEnvio);
+
+            // Filtrar pedidos sin unidades
+            $arrayPedidos = array_filter($arrayPedidos, function ($value) {
+                return isset($value[0]->CANTIDAD_A_FACTURAR) && $value[0]->CANTIDAD_A_FACTURAR > 0;
+            });
+
+            // Filtro de texto libre sobre cualquier campo visible
+            if ($busqueda) {
+                $busquedaLower = mb_strtolower($busqueda);
+                $arrayPedidos = array_filter($arrayPedidos, function ($value) use ($busquedaLower) {
+                    $campos = [
+                        $value[0]->NRO_ORDEN_ECOMMERCE ?? '',
+                        $value[0]->NRO_PEDIDO         ?? '',
+                        $value[0]->RAZON_SOCIAL        ?? '',
+                        $value[0]->COD_ARTICULO        ?? '',
+                        $value[0]->DESCRIPCION         ?? '',
+                        $value[0]->NRO_COMP            ?? '',
+                        $value[0]->WAREHOUSE           ?? '',
+                        $value[0]->METODO_ENVIO        ?? '',
+                        $value[0]->DESC_SUCURSAL       ?? '',
+                    ];
+                    foreach ($campos as $campo) {
+                        if (mb_strpos(mb_strtolower((string) $campo), $busquedaLower) !== false) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
+
+            $totalResultados = count($arrayPedidos);
             $pedido_anterior = '';
-        ?>
-        
-        <!-- Table Container -->
-        <div class="table-container">
-            <div class="table-responsive">
-                <table class="table table-sm" id="id_tabla">
-                    <thead class="table-header">
-                        <tr>
-                            <th class="col-tienda">TIENDA</th>
-                            <th class="col-orden">NRO<br>ORDEN</th>
-                            <th class="col-fecha">FECHA<br>PEDIDO</th>
-                            <th class="col-hora">HORA<br>PEDIDO</th>
-                            <th class="col-pedido">PEDIDO</th>
-                            <th class="col-nombre">NOMBRE</th>
-                            <th class="col-cod">COD<br>ARTICULO</th>
-                            <th class="col-desc">DESC<br>ARTICULO</th>
-                            <th class="col-cant">CANT</th>
-                            <th class="col-importe">IMPORTE</th>
-                            <th class="col-fact">NRO<br>FACT</th>
-                            <th class="col-deposito">DEPOSITO</th>
-                            <th class="col-envio">MÉTODO<br>ENVÍO</th>
-                            <th class="col-sucursal">TIENDA</th>
-                            <th class="col-icon noExl"><i class="bi-cart-check-fill" title="Preparación"></i></th>
-                            <th class="col-icon noExl"><i class="bi bi-file-earmark-text-fill" title="Facturación"></i></th>
-                            <th class="col-icon noExl"><i class="bi bi-clipboard2-check-fill" title="Control"></i></th>
-                            <th class="col-icon noExl"><i class="fas fa-truck" title="Despacho"></i></th>
-                            <th class="col-icon noExl"><i class="fas fa-store" title="Recibido"></i></th>
-                            <th class="col-icon noExl"><i class="bi bi-box-seam-fill" title="Entrega"></i></th>
-                            <th class="col-icon noExl"><i class="bi bi-cart-dash-fill" title="Estado"></i></th>
-                        </tr>
-                    </thead>
-                    <tbody id="table">
-                        <?php foreach($arrayPedidos as $key => $value): 
-                            $nuevo_grupo = ($pedido_anterior != $value[0]->NRO_ORDEN_ECOMMERCE);
-                            $pedido_anterior = $value[0]->NRO_ORDEN_ECOMMERCE;
-                            
-                            $row_class = '';
-                            if ($value[0]->NRO_COMP == '' && $value[0]->CANCELADO == 0) {
-                                $row_class .= ' row-pending';
-                            }
-                            if ($nuevo_grupo) {
-                                $row_class .= ' row-group-start';
-                            }
-                        ?>
-                        <tr class="data-row <?= $row_class ?>">
-                            <td><?= $value[0]->ORIGEN ?></td>
-                            <td>
-                                <?php if($value[0]->ORIGEN == 'VTEX'): ?>
-                                    <a href="https://xlshop.myvtex.com/admin/orders/<?= $value[0]->NRO_ORDEN_ECOMMERCE; ?>" 
-                                       target="_blank" class="order-link">
-                                        <?= $value[0]->NRO_ORDEN_ECOMMERCE ?>
-                                    </a>
-                                <?php else: ?>
-                                    <?= $value[0]->NRO_ORDEN_ECOMMERCE ?>
-                                <?php endif; ?>
-                                <?php if($nuevo_grupo): ?>
-                                    <div class="group-indicator"></div>
-                                <?php endif; ?>
-                            </td>
-                            <td><?= $value[0]->FECHA_PEDIDO->format("Y-m-d") ?></td>
-                            <td><?= $value[0]->HORA ?></td>
-                            <td><?= $value[0]->NRO_PEDIDO ?></td>
-                            <td class="customer-name" title="<?= $value[0]->LUGAR_ENTREGA ?>">
-                                <?= $value[0]->RAZON_SOCIAL ?>
-                            </td>
-                            <td><?= $value[0]->COD_ARTICULO ?></td>
-                            <td class="product-desc"><?= $value[0]->DESCRIPCION ?></td>
-                            <td class="text-center"><?= $value[0]->CANTIDAD_A_FACTURAR ?></td>
-                            <td class="text-end">$<?= number_format($value[0]->IMPORTE_PAGO, 0, '', '.') ?></td>
-                            <td class="text-center"><?= $value[0]->NRO_COMP ?></td>
-                            <td class="text-center"><?= $value[0]->WAREHOUSE ?></td>
-                            <td class="text-center"><?= $value[0]->METODO_ENVIO ?></td>
-                            <td class="text-center"><?= $value[0]->DESC_SUCURSAL ?></td>
+            ?>
 
-                            <!-- Status Icons -->
-                            <td class="text-center noExl" id="incompleto">
-                                <?php if($value[0]->PREPARADO == 1): ?>
-                                    <i class="bi bi-cart-check-fill status-prepared" 
-                                       title="Preparado <?= $value[0]->FECHA_PREPARADO->format('Y-m-d H:i') ?>"></i>
-                                <?php else: ?>
-                                    <i class="status-empty"></i>
-                                <?php endif; ?>
-                            </td>
+            <!-- Table Container -->
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="table table-sm" id="id_tabla">
+                        <thead class="table-header">
+                            <tr>
+                                <th class="col-tienda">TIENDA</th>
+                                <th class="col-orden">NRO<br>ORDEN</th>
+                                <th class="col-fecha">FECHA<br>PEDIDO</th>
+                                <th class="col-hora">HORA<br>PEDIDO</th>
+                                <th class="col-pedido">PEDIDO</th>
+                                <th class="col-nombre">NOMBRE</th>
+                                <th class="col-cod">COD<br>ARTICULO</th>
+                                <th class="col-desc">DESC<br>ARTICULO</th>
+                                <th class="col-cant">CANT</th>
+                                <th class="col-importe">IMPORTE</th>
+                                <th class="col-fact">NRO<br>FACT</th>
+                                <th class="col-deposito">DEPOSITO</th>
+                                <th class="col-envio">MÉTODO<br>ENVÍO</th>
+                                <th class="col-sucursal">TIENDA</th>
+                                <th class="col-icon noExl"><i class="bi-cart-check-fill" title="Preparación"></i></th>
+                                <th class="col-icon noExl"><i class="bi bi-file-earmark-text-fill" title="Facturación"></i>
+                                </th>
+                                <th class="col-icon noExl"><i class="bi bi-clipboard2-check-fill" title="Control"></i></th>
+                                <th class="col-icon noExl"><i class="fas fa-truck" title="Despacho"></i></th>
+                                <th class="col-icon noExl"><i class="fas fa-store" title="Recibido"></i></th>
+                                <th class="col-icon noExl"><i class="bi bi-box-seam-fill" title="Entrega"></i></th>
+                                <th class="col-icon noExl"><i class="bi bi-cart-dash-fill" title="Estado"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="table">
+                            <?php foreach ($arrayPedidos as $key => $value):
+                                $nuevo_grupo = ($pedido_anterior != $value[0]->NRO_ORDEN_ECOMMERCE);
+                                $pedido_anterior = $value[0]->NRO_ORDEN_ECOMMERCE;
 
-                            <td class="text-center noExl" id="cancelado">
-                                <?php if($value[0]->CANCELADO == 1 && $value[0]->FACTURADO == 1 && !isset($value[0]->NCR)): ?>
-                                    <i class="bi bi-clipboard-x-fill status-cancelled-no-nc cancelado" 
-                                       title="Pedido cancelado sin NC"></i>
-                                <?php elseif(isset($value[0]->NCR)): ?>
-                                    <i class="bi bi-clipboard-check-fill status-cancelled-with-nc" 
-                                       title="Pedido cancelado NCR <?= $value[0]->NCR ?>"></i>
-                                <?php elseif($value[0]->FACTURADO == 1): ?>
-                                    <i class="bi bi-file-earmark-text-fill status-invoiced" 
-                                       title="Facturado <?= $value[0]->FECHA_FACTURADO->format('Y-m-d H:i') ?>"></i>
-                                <?php else: ?>
-                                    <i class="status-empty status-pending pendiente"></i>
-                                <?php endif; ?>
-                            </td>
+                                $row_class = '';
+                                if ($value[0]->NRO_COMP == '' && $value[0]->CANCELADO == 0) {
+                                    $row_class .= ' row-pending';
+                                }
+                                if ($nuevo_grupo) {
+                                    $row_class .= ' row-group-start';
+                                }
+                                ?>
+                                <tr class="data-row <?= $row_class ?>">
+                                    <td><?= $value[0]->ORIGEN ?></td>
+                                    <td>
+                                        <?php if ($value[0]->ORIGEN == 'VTEX'): ?>
+                                            <a href="https://xlshop.myvtex.com/admin/orders/<?= $value[0]->NRO_ORDEN_ECOMMERCE; ?>"
+                                                target="_blank" class="order-link">
+                                                <?= $value[0]->NRO_ORDEN_ECOMMERCE ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <?= $value[0]->NRO_ORDEN_ECOMMERCE ?>
+                                        <?php endif; ?>
+                                        <?php if ($nuevo_grupo): ?>
+                                            <div class="group-indicator"></div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= $value[0]->FECHA_PEDIDO->format("Y-m-d") ?></td>
+                                    <td><?= $value[0]->HORA ?></td>
+                                    <td><?= $value[0]->NRO_PEDIDO ?></td>
+                                    <td class="customer-name" title="<?= $value[0]->LUGAR_ENTREGA ?>">
+                                        <?= $value[0]->RAZON_SOCIAL ?>
+                                    </td>
+                                    <td><?= $value[0]->COD_ARTICULO ?></td>
+                                    <td class="product-desc"><?= $value[0]->DESCRIPCION ?></td>
+                                    <td class="text-center"><?= $value[0]->CANTIDAD_A_FACTURAR ?></td>
+                                    <td class="text-end">$<?= number_format($value[0]->IMPORTE_PAGO, 0, '', '.') ?></td>
+                                    <td class="text-center"><?= $value[0]->NRO_COMP ?></td>
+                                    <td class="text-center"><?= $value[0]->WAREHOUSE ?></td>
+                                    <td class="text-center"><?= $value[0]->METODO_ENVIO ?></td>
+                                    <td class="text-center"><?= $value[0]->DESC_SUCURSAL ?></td>
 
-                            <td class="text-center noExl">
-                                <?php if($value[0]->CONTROLADO == 1): ?>
-                                    <i class="bi bi-clipboard2-check-fill status-controlled" 
-                                       title="Controlado <?= $value[0]->FECHA_CONTROLADO->format('Y-m-d') ?>"></i>
-                                <?php else: ?>
-                                    <i class="status-empty"></i>
-                                <?php endif; ?>
-                            </td>
+                                    <!-- Status Icons -->
+                                    <td class="text-center noExl" id="incompleto">
+                                        <?php if ($value[0]->PREPARADO == 1): ?>
+                                            <i class="bi bi-cart-check-fill status-prepared"
+                                                title="Preparado <?= $value[0]->FECHA_PREPARADO->format('Y-m-d H:i') ?>"></i>
+                                        <?php else: ?>
+                                            <i class="status-empty"></i>
+                                        <?php endif; ?>
+                                    </td>
 
-                            <td class="text-center noExl">
-                                <?php if($value[0]->DESPACHADO == 1): ?>
-                                    <i class="fas fa-truck status-dispatched" 
-                                       title="Despachado <?= $value[0]->FECHA_DESPACHO->format('Y-m-d') ?>"></i>
-                                <?php else: ?>
-                                    <i class="status-empty"></i>
-                                <?php endif; ?>
-                            </td>
+                                    <td class="text-center noExl" id="cancelado">
+                                        <?php if ($value[0]->CANCELADO == 1 && $value[0]->FACTURADO == 1 && !isset($value[0]->NCR)): ?>
+                                            <i class="bi bi-clipboard-x-fill status-cancelled-no-nc cancelado"
+                                                title="Pedido cancelado sin NC"></i>
+                                        <?php elseif (isset($value[0]->NCR)): ?>
+                                            <i class="bi bi-clipboard-check-fill status-cancelled-with-nc"
+                                                title="Pedido cancelado NCR <?= $value[0]->NCR ?>"></i>
+                                        <?php elseif ($value[0]->FACTURADO == 1): ?>
+                                            <i class="bi bi-file-earmark-text-fill status-invoiced"
+                                                title="Facturado <?= $value[0]->FECHA_FACTURADO->format('Y-m-d H:i') ?>"></i>
+                                        <?php else: ?>
+                                            <i class="status-empty status-pending pendiente"></i>
+                                        <?php endif; ?>
+                                    </td>
 
-                            <td class="text-center noExl">
-                                <?php if($value[0]->RECIBIDO_TIENDA == 1): ?>
-                                    <i class="fas fa-store status-received" 
-                                       title="Recibido Tienda <?= $value[0]->FECHA_RECIBIDO_TIENDA->format('Y-m-d') ?>"></i>
-                                <?php else: ?>
-                                    <i class="status-empty"></i>
-                                <?php endif; ?>
-                            </td>
+                                    <td class="text-center noExl">
+                                        <?php if ($value[0]->CONTROLADO == 1): ?>
+                                            <i class="bi bi-clipboard2-check-fill status-controlled"
+                                                title="Controlado <?= $value[0]->FECHA_CONTROLADO !== null ? $value[0]->FECHA_CONTROLADO->format('Y-m-d') : 'sin fecha' ?>"></i>
+                                        <?php else: ?>
+                                            <i class="status-empty"></i>
+                                        <?php endif; ?>
+                                    </td>
 
-                            <td class="text-center noExl">
-                                <?php if($value[0]->ENTREGADO == 1): ?>
-                                    <i class="bi bi-box-seam-fill status-delivered" 
-                                       title="Entregado <?= $value[0]->FECHA_ENTREGADO->format('Y-m-d') ?>"></i>
-                                <?php else: ?>
-                                    <i class="status-empty"></i>
-                                <?php endif; ?>
-                            </td>
+                                    <td class="text-center noExl">
+                                        <?php if ($value[0]->DESPACHADO == 1): ?>
+                                            <i class="fas fa-truck status-dispatched"
+                                                title="Despachado <?= $value[0]->FECHA_DESPACHO->format('Y-m-d') ?>"></i>
+                                        <?php else: ?>
+                                            <i class="status-empty"></i>
+                                        <?php endif; ?>
+                                    </td>
 
-                            <td class="text-center noExl" id="incompleto">
-                                <?php if ($value[0]->CANCELADO == 1): ?>
-                                    <i class="bi bi-cart-x-fill status-cancelled" title="Cancelado"></i>
-                                <?php elseif (isset($value[0]->FALTANTE) && $value[0]->FALTANTE == 1): ?>
-                                    <i class="bi bi-cart-dash-fill status-incomplete incompleto" title="Pedido incompleto"></i>
-                                <?php else: ?>
-                                    <i class="status-empty"></i>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                                    <td class="text-center noExl">
+                                        <?php if ($value[0]->RECIBIDO_TIENDA == 1): ?>
+                                            <i class="fas fa-store status-received"
+                                                title="Recibido Tienda <?= $value[0]->FECHA_RECIBIDO_TIENDA->format('Y-m-d') ?>"></i>
+                                        <?php else: ?>
+                                            <i class="status-empty"></i>
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <td class="text-center noExl">
+                                        <?php if ($value[0]->ENTREGADO == 1): ?>
+                                            <i class="bi bi-box-seam-fill status-delivered"
+                                                title="Entregado <?= $value[0]->FECHA_ENTREGADO->format('Y-m-d') ?>"></i>
+                                        <?php else: ?>
+                                            <i class="status-empty"></i>
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <td class="text-center noExl" id="incompleto">
+                                        <?php if ($value[0]->CANCELADO == 1): ?>
+                                            <i class="bi bi-cart-x-fill status-cancelled" title="Cancelado"></i>
+                                        <?php elseif (isset($value[0]->FALTANTE) && $value[0]->FALTANTE == 1): ?>
+                                            <i class="bi bi-cart-dash-fill status-incomplete incompleto"
+                                                title="Pedido incompleto"></i>
+                                        <?php else: ?>
+                                            <i class="status-empty"></i>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+
+            <?php
+            // Controles de paginación
+            $queryParams = $_GET;
+            unset($queryParams['pagina']);
+            $urlBase = '?' . http_build_query($queryParams);
+
+            // Solo mostrar paginación si NO hay búsqueda de texto activa
+            if (!$busqueda):
+                ?>
+                <div
+                    style="display:flex; align-items:center; justify-content:center; gap:12px; padding:16px 0; margin-bottom:20px;">
+                    <?php if ($pagina > 1): ?>
+                        <a href="<?= $urlBase ?>&pagina=<?= $pagina - 1 ?>" onclick="mostrarSpinner()"
+                            class="btn btn-secondary btn-sm">
+                            &laquo; Anterior
+                        </a>
+                    <?php endif; ?>
+                    <span style="font-weight:bold;">Página <?= $pagina ?> &nbsp;|&nbsp; <?= $totalResultados ?> registros en
+                        esta página</span>
+                    <?php if ($totalResultados >= 100): ?>
+                        <a href="<?= $urlBase ?>&pagina=<?= $pagina + 1 ?>" onclick="mostrarSpinner()"
+                            class="btn btn-primary btn-sm">
+                            Siguiente &raquo;
+                        </a>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div style="text-align:center; padding: 10px 0; margin-bottom:20px; color:#555;">
+                    <small><i class="bi bi-search"></i> Búsqueda de "<strong><?= htmlspecialchars($busqueda) ?></strong>"
+                        &mdash; <?= $totalResultados ?> resultado(s) encontrado(s)</small>
+                </div>
+            <?php endif; ?>
+
         <?php endif; ?>
     </div>
 
@@ -326,10 +425,38 @@ $todosLosWarehouse = $pedidos->traerWarehouse();
     <!-- Table2Excel for export functionality -->
     <script src="https://cdn.jsdelivr.net/npm/table2excel@1.0.4/dist/table2excel.min.js"></script>
     <!-- SweetAlert for notifications -->
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert@1.1.3/dist/sweetalert.min.js"></script>
     <!-- Custom JS -->
     <script src="assets/js/index2.js"></script>
+    <script>
+        const mostrarSpinner = () => {
+            document.getElementById("boxLoading").classList.remove("d-none");
+        }
+        function pulsar(e) {
+            const tecla = e.keyCode || e.which;
+            return tecla !== 13;
+        }
+    </script>
 
     <?php require_once 'modals/ayuda.php'; ?>
+    <?php require_once 'modals/nc_pendientes.php'; ?>
+
+    <?php if (!empty($nc_pendientes)): ?>
+    <script>
+        $(document).ready(function () {
+            const ncPendientes = <?php echo json_encode(array_map(function ($item) {
+                return [
+                    'fecha'       => $item['fecha']->format('Y-m-d'),
+                    'promocion'   => $item['promocion'],
+                    'importe'     => $item['importe'],
+                    'cod_articulo'=> $item['cod_articulo'],
+                ];
+            }, $nc_pendientes)); ?>;
+            cargarNcPendientes(ncPendientes);
+            $('#modalNcPendientes').modal('show').css('z-index', 99999);
+        });
+    </script>
+    <?php endif; ?>
 </body>
+
 </html>

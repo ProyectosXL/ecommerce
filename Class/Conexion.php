@@ -1,4 +1,3 @@
-
 <?php
 
 class Conexion{
@@ -102,7 +101,7 @@ class Conexion{
             return $mongoDb;
         
 
-        } catch (\Throwable $th) {
+        } catch (\Throwable $e) {
 
             echo $e->getMessage();
 

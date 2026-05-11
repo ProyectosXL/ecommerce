@@ -10,7 +10,7 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <?php $historial = $pedidos->traerHistorialReclamo(trim($pedido->NRO_PEDIDO)); ?>
+            <?php if (!isset($historial)) { $historial = $pedidos->traerHistorialReclamo(trim($pedido->NRO_PEDIDO)); } ?>
 
             <!-- Estado del Reclamo -->
             <div class="status-bar p-3 border-bottom">

@@ -19,8 +19,8 @@
                     <?php
                     $total = 0;
                     
-                    // Obtener devoluciones del pedido
-                    $devolucionesArray = $pedidos->obtenerDevoluciones($pedido->NRO_PEDIDO);
+                    // Obtener devoluciones del pedido (el método ya rutea según país)
+                    $devolucionesArray = $pedidos->obtenerDevoluciones($pedido->NRO_PEDIDO, null, $pais);
                     $devolucionesPorArticulo = [];
                     $devolucionesPorArticuloBase = []; // Usando código base para mejor matching
                     
@@ -38,11 +38,21 @@
                         $devolucionesPorArticuloBase[$dev->COD_ARTICU_BASE][] = $dev;
                     }
                     
-                    $detalles = $pedidos->buscarDetallePedido($desde, $hasta, $numero);
+                    if (!isset($detalles)) {
+                        $detalles = $pedidos->buscarDetallePedido($desde, $hasta, $numero, $pais);
+                    }
                     if ($detalles) {
                         foreach($detalles as $detalle) {
                             $item = $detalle[0];
-                            $subtotal = $item->CANT_PEDID * $item->IMPORTE;
+                            
+                            // Excluir gift cards (OHGIFT) - son medio de pago, no artículos faltantes
+                            if (stripos($item->COD_ARTICU, 'OHGIFT') !== false) {
+                                continue;
+                            }
+                            
+                            // CORRECCIÓN: Usar PRECIO si IMPORTE no existe (Uruguay)
+                            $precioUnitario = $item->IMPORTE ?? $item->PRECIO ?? 0;
+                            $subtotal = $item->CANT_PEDID * $precioUnitario;
                             $total += $subtotal;
 
                             // Lógica para las imágenes
@@ -90,8 +100,11 @@
                             }
                             
                             $tieneNcrPendiente = ($cantidadDevuelta > 0 && $cantidadNcr < $cantidadDevuelta);
+                            
+                            // CORRECCIÓN: Usar ?? para FALTANTE (no existe en Uruguay)
+                            $esFaltante = ($item->FALTANTE ?? 0) == 1;
                     ?>
-                    <tr class="<?php echo $item->FALTANTE == 1 ? 'faltante-row' : ''; ?>">
+                    <tr class="<?php echo $esFaltante ? 'faltante-row' : ''; ?>">
                         <td>
                             <div class="d-flex align-items-center">
                                 <img src="<?php echo $imageUrl ? $imageUrl : '/api/placeholder/50/50'; ?>" 
@@ -111,7 +124,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="text-end">$ <?php echo number_format($item->IMPORTE, 2, ',', '.'); ?></td>
+                        <td class="text-end">$ <?php echo number_format($precioUnitario, 2, ',', '.'); ?></td>
                         <td class="text-end"><?php echo $item->CANT_PEDID; ?></td>
                         <td class="text-end">$ <?php echo number_format($subtotal, 2, ',', '.'); ?></td>
                         <td class="text-center">
@@ -132,11 +145,11 @@
                                         </span>
                                     <?php endif; ?>
                                 </div>
-                            <?php elseif ($item->FALTANTE == 1): ?>
+                            <?php elseif ($esFaltante): ?>
                                 <span class="badge bg-danger">
                                     <i class="fas fa-exclamation-triangle me-1"></i>Faltante
                                 </span>
-                            <?php elseif (isset($pedido->REINTEGRADO) && $pedido->REINTEGRADO == 1): ?>
+                            <?php elseif ((($pedido->REINTEGRADO ?? 0) == 1) || (($pedido->CANCELADO ?? 0) == 1)): ?>
                                 <span class="badge bg-danger" data-bs-toggle="tooltip" 
                                       title="Pedido cancelado - Reintegro realizado<?php echo (isset($pedido->NCR) && !empty($pedido->NCR)) ? ' - NCR: ' . $pedido->NCR : ' - NCR pendiente'; ?>">
                                     <i class="fas fa-times-circle me-1"></i>Cancelado
@@ -148,12 +161,12 @@
                                 </span>
                             <?php endif; ?>
                         </td>
-                        <?php if ($item->FALTANTE == 1): ?>
+                        <?php if ($esFaltante): ?>
                         <td>
                             <button type="button" class="btn btn-outline-danger btn ms-2" 
                                 onclick="abrirHistorial('<?php echo htmlspecialchars($item->COD_ARTICU); ?>', 
                                                         '<?php echo htmlspecialchars($description); ?>', 
-                                                        '<?php echo $item->IMPORTE; ?>', 
+                                                        '<?php echo $precioUnitario; ?>', 
                                                         '<?php echo $item->CANT_PEDID; ?>')">
                                 <i class="fas fa-history"></i> Ver Historial
                             </button>
@@ -181,6 +194,10 @@
 if ($detalles) {
     foreach($detalles as $detalle) {
         $item = $detalle[0];
+        // Excluir gift cards (OHGIFT) - son medio de pago, no artículos faltantes
+        if (stripos($item->COD_ARTICU, 'OHGIFT') !== false) {
+            continue;
+        }
         $imageName = substr($item->COD_ARTICU, 0, 13);
         $imageUrl = file_exists("../../Imagenes/".$imageName.".jpg") ? 
                 "../../Imagenes/".$imageName.".jpg" : "";

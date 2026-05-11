@@ -120,81 +120,47 @@ class Cliente{
 
         }
   
-        $options = [
-            'projection' => [
-                'NOMBRE_CLI' => 1,
-                'DNI' => 1,
-                'RANGO_ETARIO' => 1,
-                'E_MAIL' => 1,
-                'ARTICULOS' => 1
-            ],
-            'sort' => ['NOMBRE_CLI' => 1],
-            'collation' => ['locale' => 'es'],
-            'group' => [
-                '_id' => '$NOMBRE_CLI',
-                'nombre' => '$NOMBRE_CLI',
-                'dni' => ['$first' => '$DNI'],
-                'rango etario' => ['$first' => '$RANGO_ETARIO'],
-                'articulos' => ['$push' => '$ARTICULOS']
-            ]
+        $pipeline = [
+            ['$match' => $filter],
+            ['$unwind' => '$ARTICULOS'],
         ];
-       
 
-        $result = $mongoCollection->find($filter, $options);
+        // Filter individual articles after unwinding
+        if ($selectRubro != null || $selectCategoria != null) {
+            $articuloMatchFilter = [];
+            if ($selectRubro != null) {
+                $articuloMatchFilter['ARTICULOS.RUBRO'] = ['$in' => $selectRubro];
+            }
+            if ($selectCategoria != null) {
+                $articuloMatchFilter['ARTICULOS.CATEGORIA'] = ['$in' => $selectCategoria];
+            }
+            $pipeline[] = ['$match' => $articuloMatchFilter];
+        }
+
+        $pipeline[] = ['$group' => [
+            '_id'         => '$NOMBRE_CLI',
+            'NOMBRE_CLI'  => ['$first' => '$NOMBRE_CLI'],
+            'DNI'         => ['$first' => '$DNI'],
+            'RANGO_ETARIO'=> ['$first' => '$RANGO_ETARIO'],
+            'E_MAIL'      => ['$first' => '$E_MAIL'],
+            'ARTICULOS'   => ['$push'  => '$ARTICULOS'],
+        ]];
+        $pipeline[] = ['$sort' => ['NOMBRE_CLI' => 1]];
+
+        $result = $mongoCollection->aggregate($pipeline, [
+            'collation'    => ['locale' => 'es'],
+            'allowDiskUse' => true,
+        ]);
+
         $newArray = [];
 
         foreach ($result as $x => $document) {
-
-        $documentArray = $document->getArrayCopy();
-
-        // Acceder al campo _id
-        $id = (string) $documentArray['_id'];
-
-        $newArray[$x]['ID'] = $id;
-        // Acceder a los demás campos
-        $keys = array_keys($documentArray);
-        
-        foreach ($keys as $key) {
-            
-            
-            // Saltar el campo _id
-            if ($key === '_id') {
-                continue;
+            $documentArray = $document->getArrayCopy();
+            $newArray[$x]['ID'] = (string) $documentArray['_id'];
+            foreach ($documentArray as $key => $value) {
+                if ($key === '_id') continue;
+                $newArray[$x][$key] = $value;
             }
-                  
-       
-            if($key != 'ARTICULOS' ){
-                
-                $newArray[$x][$key] = $documentArray[$key];
-                
-            }else{
-                
-                foreach ($documentArray['ARTICULOS'] as $y => &$articulo) {
-                
-                    if($selectRubro != null || $selectCategoria != null){
-
-                        if(!in_array($articulo['RUBRO'], $selectRubro)){
-                            unset($documentArray['ARTICULOS'][$y]);
-                            continue;
-                        }
-
-                        if(!in_array($articulo['CATEGORIA'], $selectCategoria)){
-                            unset($documentArray['ARTICULOS'][$y]);
-                            continue;
-                        }
-                 
-           
-                    }
-
-                    $newArray[$x][$key] = $documentArray[$key];
-
-
-                }
-
-            }
-            
-        }
-
         }
 
         return ($newArray);

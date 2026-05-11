@@ -16,8 +16,10 @@ require_once '../../Class/Conexion.php';
 require_once '../../Class/Pedido.php';
 
 try {
-    // Obtener parámetro de sucursal
+    // Obtener parámetros
     $sucursal = isset($_GET['sucursal']) ? trim($_GET['sucursal']) : '';
+    // NUEVO: Obtener país seleccionado
+    $pais = isset($_GET['pais']) ? strtoupper(trim($_GET['pais'])) : 'AR';
 
     // Validar que se proporcione la sucursal
     if (empty($sucursal)) {
@@ -29,9 +31,9 @@ try {
         exit;
     }
 
-    // Crear instancia y buscar stock
+    // Crear instancia y buscar stock según país
     $pedido = new Pedido();
-    $articulos = $pedido->buscarStockArticulo($sucursal);
+    $articulos = $pedido->buscarStockArticulo($sucursal, $pais);
 
     // Devolver resultado como JSON
     header('Content-Type: application/json');

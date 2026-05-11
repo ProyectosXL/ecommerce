@@ -40,11 +40,35 @@ require_once 'config.php';
     <link rel="stylesheet" href="css/timeline.css">
     <link rel="stylesheet" href="css/modal.css">
     <link rel="stylesheet" href="css/reportes.css">
+    <!-- Logística Inversa -->
+    <link rel="stylesheet" href="../cambios-devoluciones/assets/css/styles.css">
 </head>
 <body>
     <div class="container py-4">
         <div class="card">
             <div class="card-header">
+                <!-- NUEVO: Toggle de país a nivel global -->
+                <div class="d-flex justify-content-end align-items-center mb-3">
+                    <label class="me-2 fw-bold">País:</label>
+                    <div class="btn-group" role="group" id="country-selector-global">
+                        <?php 
+                        // CORRECCIÓN: Preservar país seleccionado después de búsqueda
+                        $paisActual = isset($_POST['pais']) ? strtoupper(trim($_POST['pais'])) : 'AR';
+                        ?>
+                        <input type="radio" class="btn-check" name="country-global" id="country-ar-global" value="AR" <?php echo $paisActual === 'AR' ? 'checked' : ''; ?> autocomplete="off">
+                        <label class="btn btn-outline-primary d-flex align-items-center gap-2" for="country-ar-global">
+                            <img src="https://flagcdn.com/w20/ar.png" srcset="https://flagcdn.com/w40/ar.png 2x" width="20" alt="Argentina">
+                            Argentina
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="country-global" id="country-uy-global" value="UY" <?php echo $paisActual === 'UY' ? 'checked' : ''; ?> autocomplete="off">
+                        <label class="btn btn-outline-primary d-flex align-items-center gap-2" for="country-uy-global">
+                            <img src="https://flagcdn.com/w20/uy.png" srcset="https://flagcdn.com/w40/uy.png 2x" width="20" alt="Uruguay">
+                            Uruguay
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Pestañas de Navegación -->
                 <ul class="nav nav-tabs card-header-tabs" id="main-tabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -57,6 +81,11 @@ require_once 'config.php';
                             <i class="fas fa-chart-line me-2"></i>Reporte de Incidentes
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="logistica-tab" data-bs-toggle="tab" data-bs-target="#logistica-content" type="button" role="tab" aria-controls="logistica-content" aria-selected="false">
+                            <i class="fas fa-undo-alt me-2"></i>Logística Inversa
+                        </button>
+                    </li>
                 </ul>
             </div>
             <div class="card-body">
@@ -65,27 +94,56 @@ require_once 'config.php';
                     <div class="tab-pane fade show active" id="seguimiento-content" role="tabpanel" aria-labelledby="seguimiento-tab">
                         <?php include 'components/search-form.php'; ?>
 
+                        <div id="search-results-container">
                         <?php
                         if ($_SERVER["REQUEST_METHOD"] == "POST" && !empty($_POST['numero'])) {
                             $numero = trim($_POST['numero']);
                             $desde = isset($_POST['desde']) ? $_POST['desde'] : date('Y-m-d', strtotime('-30 days'));
                             $hasta = isset($_POST['hasta']) ? $_POST['hasta'] : date('Y-m-d');
+                            $pais = isset($_POST['pais']) ? strtoupper(trim($_POST['pais'])) : 'AR';
                             
-                            $resultado = $pedidos->buscarPedido($desde, $hasta, $numero);
+                            $resultado = $pedidos->buscarPedido($desde, $hasta, $numero, $pais);
                             
                             if ($resultado && !empty($resultado)) {
                                 foreach($resultado as $row) {
                                     $pedido = $row[0];
-                                    $detalleReclamo = $pedidos->listarReclamoDetalle($pedido->NRO_PEDIDO);
+                                    
+                                    // Usar método según país
+                                    if ($pais === 'UY') {
+                                        $detalleReclamo = $pedidos->listarReclamoDetalleUY($pedido->NRO_PEDIDO);
+                                    } else {
+                                        $detalleReclamo = $pedidos->listarReclamoDetalle($pedido->NRO_PEDIDO);
+                                    }
                                     
                                     // Cargar información de cancelación/reintegro
-                                    $infoCancelacion = $pedidos->verificarCancelacion(trim($pedido->NRO_PEDIDO), trim($pedido->NRO_ORDEN));
+                                    $nroOrden = isset($pedido->NRO_ORDEN) ? $pedido->NRO_ORDEN : ($pedido->ORDER_ID_TIENDA ?? '');
+                                    $infoCancelacion = $pedidos->verificarCancelacion(trim($pedido->NRO_PEDIDO), trim($nroOrden), $pais);
                                     if ($infoCancelacion) {
                                         $pedido->REINTEGRADO = 1;
                                         $pedido->NCR = $infoCancelacion->numero_ncr;
                                         $pedido->FECHA_NCR = $infoCancelacion->fecha_ncr;
                                         $pedido->FECHA_PEDI = $pedido->FECHA_PEDIDO;
                                     }
+
+                                    // Pre-cargar historial para timeline y modal (evita doble consulta)
+                                    $historial = $pedidos->traerHistorialReclamo(trim($pedido->NRO_PEDIDO));
+
+                                    // Si INCOMPLETO=1, verificar si el faltante ya fue resuelto o si solo hay OHGIFT
+                                    if (($pedido->INCOMPLETO ?? 0) == 1) {
+                                        $nroOrdenCheck = $pedido->NRO_ORDEN ?? ($pedido->ORDER_ID_TIENDA ?? '');
+                                        if (!$pedidos->pedidoTieneRealFaltante(trim($nroOrdenCheck))) {
+                                            // Solo tenía OHGIFT como faltante
+                                            $pedido->INCOMPLETO = 0;
+                                        } else {
+                                            // Tiene faltante real: verificar si ya fue resuelto en el historial
+                                            if ($historial && isset($historial[0]) && $historial[0]['ESTADO'] === 'resuelto') {
+                                                $pedido->INCOMPLETO = 0;
+                                                $pedido->FALTANTE_RESUELTO = 1;
+                                            }
+                                        }
+                                    }
+                                    // Pre-cargar detalle para reutilizarlo en detalle-pedido.php
+                                    $detalles = $pedidos->buscarDetallePedido($desde, $hasta, $numero, $pais);
                                     
                                     include 'components/pedido-info.php';
                                     include 'components/devoluciones.php';
@@ -98,10 +156,15 @@ require_once 'config.php';
                             }
                         }
                         ?>
+                        </div>
                     </div>
                     <!-- Contenido de la Pestaña de Reportes -->
                     <div class="tab-pane fade" id="reporte-content" role="tabpanel" aria-labelledby="reporte-tab">
                         <?php include 'components/reporte-incidentes.php'; ?>
+                    </div>
+                    <!-- Contenido de la Pestaña de Logística Inversa -->
+                    <div class="tab-pane fade" id="logistica-content" role="tabpanel" aria-labelledby="logistica-tab">
+                        <?php include 'components/logistica-inversa.php'; ?>
                     </div>
                 </div>
             </div>
@@ -123,8 +186,14 @@ require_once 'config.php';
     <script src="js/modal-handler.js"></script>
     <script src="js/ajax-requests.js"></script>
     <script src="js/reporte-incidentes.js"></script>
+    <!-- Logística Inversa -->
+    <script>window.LOGISTICA_API_BASE = '../cambios-devoluciones/api/';</script>
+    <script src="../cambios-devoluciones/assets/js/main.js"></script>
     
     <script>
+        // CORRECCIÓN: Sincronizar país seleccionado con valor del servidor
+        window.paisSeleccionado = '<?php echo $paisActual ?? 'AR'; ?>';
+        
         window.addEventListener('load', function() {
             hideSpinner();
         });

@@ -1,6 +1,24 @@
 <div id="reporte-container">
+    <!-- Overlay de Carga -->
+    <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="text-align: center; color: white;">
+            <div class="spinner-border text-light" role="status" style="width: 4rem; height: 4rem; border-width: 0.4rem;">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <h4 class="mt-3" id="loading-text">Cargando datos...</h4>
+            <p id="loading-country" class="mb-0"></p>
+        </div>
+    </div>
+    
     <div class="d-flex justify-content-between align-items-start mb-4">
-        <h4 class="mb-0">Dashboard de Incidentes por Faltantes</h4>
+        <div>
+            <h4 class="mb-2">Dashboard de Incidentes por Faltantes</h4>
+            <!-- Indicador de País Activo -->
+            <div id="pais-indicator" class="badge bg-info" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                <span id="pais-flag" class="me-2"></span>
+                <span id="pais-nombre">Consultando: Argentina</span>
+            </div>
+        </div>
         
         <!-- Info SLA -->
         <div class="alert alert-info mb-0 p-2 px-3" style="max-width: 600px;">
