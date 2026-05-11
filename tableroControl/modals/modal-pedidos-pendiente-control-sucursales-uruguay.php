@@ -1,6 +1,6 @@
 
 <!-- Modal para el detalle de Pedidos Pendientes de Control Sucursales - Uruguay -->
-<div class="modal fade" id="modalPedidosPendientesControlSucursalesUruguay" tabindex="-1" aria-labelledby="modalPedidosPendientesControlSucursalesUruguayLabel">
+<div class="modal fade" id="modalPedidosPendientesControlSucursalesUruguay" tabindex="-1" aria-labelledby="modalPedidosPendientesControlSucursalesUruguayLabel" data-modal-loader="controlSucursalesUy">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header d-flex justify-content-between align-items-center">
@@ -29,33 +29,12 @@
                                 <th>Días Pendiente</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php 
-                            $detallePedidosControl = $control->traerDetallePedidosPendientesControlSucursalesUruguay();
-                            if (!empty($detallePedidosControl)):
-                                foreach ($detallePedidosControl as $detalle): 
-                                    $diasPendiente = $detalle->DIAS_PENDIENTE;
-                                    $badgeClass = $diasPendiente > 3 ? 'bg-danger' : 'bg-warning text-dark';
-                                    ?>
-                                    <tr>
-                                        <td><?php echo $detalle->FECHA_FACTURADO->format('d/m/Y H:i'); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->ORDER_ID); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->FACTURA); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->NOMBRE_SUCURSAL); ?></td>
-                                        <td><span class="badge <?php echo $badgeClass; ?>"><?php echo $diasPendiente; ?> días</span></td>
-                                    </tr>
-                                <?php endforeach;
-                            else: ?>
-                                <tr>
-                                    <td colspan="8" class="text-center">No hay pedidos pendientes de control</td>
-                                </tr>
-                            <?php endif; ?>
+                        <tbody class="modal-lazy-tbody">
+                            <tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="modal-lazy-extra"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

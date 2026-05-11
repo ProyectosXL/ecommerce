@@ -1,5 +1,5 @@
 <!-- Modal para el detalle de pedidos de retiro en tienda -->
-<div class="modal fade" id="modalPedidosRetiroTienda" tabindex="-1" aria-labelledby="modalPedidosRetiroTiendaLabel" aria-hidden="true">
+<div class="modal fade" id="modalPedidosRetiroTienda" tabindex="-1" aria-labelledby="modalPedidosRetiroTiendaLabel" aria-hidden="true" data-modal-loader="retiroStockSucursal">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -32,51 +32,12 @@
                                 <th></th> <!-- Nueva columna para el ícono -->
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php 
-                            try {
-                                $detallePedidosRetiroTienda = $control->traerDetallePedidosRetiroTienda();
-                                $fechaActual = new DateTime();
-                                
-                                if (!empty($detallePedidosRetiroTienda)):
-                                    foreach ($detallePedidosRetiroTienda as $detalle):
-                                        $diasPendiente = $detalle->DIAS_PENDIENTE;
-                                        $excedeDias = $diasPendiente > 5; // Considerar exceso después de 5 días para retiro en tienda
-                                        ?>
-                                        <tr class="<?php echo $excedeDias ? 'text-danger' : ''; ?>">
-                                            <td><?php echo htmlspecialchars($detalle->SUCURSAL ?? ''); ?></td>
-                                            <td><?php echo $detalle->FECHA_HORA ? $detalle->FECHA_HORA->format('d/m/Y H:i') : ''; ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA ?? ''); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->CLIENTE ?? ''); ?></td>
-                                            <td><?php echo $detalle->DIAS_PENDIENTE; ?></td>
-                                            <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 0); ?></td>
-                                            <td class="text-center">
-                                                <?php if ($excedeDias): ?>
-                                                    <i class="fas fa-exclamation-circle text-danger" 
-                                                    data-bs-toggle="tooltip" 
-                                                    data-bs-placement="left"
-                                                    title="Excede los 5 días (<?php echo $diasPendiente; ?> días)"></i>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach;
-                                else: ?>
-                                    <tr>
-                                        <td colspan="8" class="text-center">No hay datos para mostrar</td>
-                                    </tr>
-                                <?php endif;
-                            } catch (Exception $e) {
-                                ?>
-                                <tr>
-                                    <td colspan="8" class="text-center text-danger">Error: <?php echo $e->getMessage(); ?></td>
-                                </tr>
-                                <?php
-                            }
-                            ?>
+                        <tbody class="modal-lazy-tbody">
+                            <tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="modal-lazy-extra"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

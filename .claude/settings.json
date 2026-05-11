@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\tableroControl\\\\modals\\\\\" -File | Select-Object -ExpandProperty FullName)"
+    ]
+  }
+}

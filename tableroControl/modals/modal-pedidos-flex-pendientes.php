@@ -1,6 +1,6 @@
 
             <!-- Modal para el detalle de Pedidos Flex -->
-            <div class="modal fade" id="modalFlexDetalle" tabindex="-1" aria-labelledby="modalFlexDetalleLabel">
+            <div class="modal fade" id="modalFlexDetalle" tabindex="-1" aria-labelledby="modalFlexDetalleLabel" data-modal-loader="flexCentral">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                     <div class="modal-header d-flex justify-content-between align-items-center">
@@ -27,28 +27,12 @@
                                             <th class="text-end">Total</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php 
-                                        $detalleFlex = $control->traerDetallePedidosFlex();
-                                        if (!empty($detalleFlex)):
-                                            foreach ($detalleFlex as $detalle): ?>
-                                                <tr>
-                                                    <td><?php echo (isset($detalle->FECHA_SINCRONIZADO) && $detalle->FECHA_SINCRONIZADO instanceof DateTime) ? $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i') : '-'; ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 0); ?></td>
-                                                </tr>
-                                            <?php endforeach;
-                                        else: ?>
-                                            <tr>
-                                                <td colspan="6" class="text-center">No hay pedidos pendientes</td>
-                                            </tr>
-                                        <?php endif; ?>
+                                    <tbody class="modal-lazy-tbody">
+                                        <tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="modal-lazy-extra"></div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

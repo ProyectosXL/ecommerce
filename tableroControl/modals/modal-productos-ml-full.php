@@ -1,6 +1,6 @@
 
 <!-- Modal para el detalle de productos ML Full -->
-<div class="modal fade" id="modalProductosMlFull" tabindex="-1">
+<div class="modal fade" id="modalProductosMlFull" tabindex="-1" data-modal-loader="productosMl">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header d-flex justify-content-between align-items-center">
@@ -35,40 +35,12 @@
                                 <th>Link Central</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php 
-                            $detalleProductos = $control->traerDetalleProductosMlFull();
-                            if (!empty($detalleProductos)):
-                                foreach ($detalleProductos as $detalle): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($detalle->CODIGO); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->DESCRIPCIO); ?></td>
-                                        <td class="text-end"><?php echo number_format($detalle->STOCK_CENTRAL, 0); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->ESTADO_FULL); ?></td>
-                                        <td>
-                                            <?php if (!empty($detalle->URL_FULL)): ?>
-                                                <a href="<?php echo htmlspecialchars($detalle->URL_FULL); ?>" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-external-link-alt"></i>
-                                                </a>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if (!empty($detalle->URL_CENTRAL)): ?>
-                                                <a href="<?php echo htmlspecialchars($detalle->URL_CENTRAL); ?>" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                                    <i class="fas fa-external-link-alt"></i>
-                                                </a>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach;
-                            else: ?>
-                                <tr>
-                                    <td colspan="6" class="text-center">No hay productos para mostrar</td>
-                                </tr>
-                            <?php endif; ?>
+                        <tbody class="modal-lazy-tbody">
+                            <tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="modal-lazy-extra"></div>
             </div>
         </div>
     </div>

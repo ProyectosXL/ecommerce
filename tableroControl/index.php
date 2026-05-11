@@ -29,20 +29,9 @@
 </head>
 
 <body>
-    <?php
-    require_once '../Class/Control.php';
-    require_once 'includes/data-loader.php';
-
-    date_default_timezone_set('America/Argentina/Buenos_Aires');
-    $ultimaActualizacion = new DateTime();
-    ?>
+    <?php date_default_timezone_set('America/Argentina/Buenos_Aires'); ?>
 
     <div class="container py-4">
-        <?php if ($error): ?>
-            <div class="alert alert-danger" role="alert">
-                Error: <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
         
         <!-- Header -->
         <?php include 'includes/header.php'; ?>

@@ -1,6 +1,6 @@
 
             <!-- Modal para el detalle de Pedidos sin Facturar Uruguay -->
-            <div class="modal fade" id="modalPedidosSinFacturarUruguay" tabindex="-1" aria-labelledby="modalPedidosSinFacturarUruguayLabel">
+            <div class="modal fade" id="modalPedidosSinFacturarUruguay" tabindex="-1" aria-labelledby="modalPedidosSinFacturarUruguayLabel" data-modal-loader="pedidosSinFacturarUy">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header d-flex justify-content-between align-items-center">
@@ -27,28 +27,12 @@
                                             <th class="text-end">Total</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php 
-                                        $detallePedidosUruguay = $control->traerDetallePedidosSinFactTiendasUruguay();
-                                        if (!empty($detallePedidosUruguay)):
-                                            foreach ($detallePedidosUruguay as $detalle): ?>
-                                                <tr>
-                                                    <td><?php echo $detalle->FECHA_HORA->format('d/m/Y H:i'); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 0); ?></td>
-                                                </tr>
-                                            <?php endforeach;
-                                        else: ?>
-                                            <tr>
-                                                <td colspan="6" class="text-center">No hay pedidos pendientes</td>
-                                            </tr>
-                                        <?php endif; ?>
+                                    <tbody class="modal-lazy-tbody">
+                                        <tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="modal-lazy-extra"></div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

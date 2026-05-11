@@ -1,6 +1,6 @@
 
             <!-- Modal para el detalle de Facturas sin Remito Uruguay -->
-            <div class="modal fade" id="modalFacturasSinRemitoUruguay" tabindex="-1" aria-labelledby="modalFacturasSinRemitoUruguayLabel">
+            <div class="modal fade" id="modalFacturasSinRemitoUruguay" tabindex="-1" aria-labelledby="modalFacturasSinRemitoUruguayLabel" data-modal-loader="facturasSinRemitoUy">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header d-flex justify-content-between align-items-center">
@@ -28,42 +28,12 @@
                                             <th></th> <!-- Nueva columna para el ícono -->
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php 
-                                        $detalleFacturasSinRemito = $control->traerDetalleFacturasSinRemitoUruguay();
-                                        $fechaActual = new DateTime();
-                                        
-                                        if (!empty($detalleFacturasSinRemito)):
-                                            foreach ($detalleFacturasSinRemito as $detalle):
-                                                $fechaFactura = clone $detalle->FECHA_FACTURA;
-                                                $diasTranscurridos = $fechaActual->diff($fechaFactura)->days;
-                                                $excedeDias = $diasTranscurridos > 10;
-                                                ?>
-                                                <tr class="<?php echo $excedeDias ? 'text-danger' : ''; ?>">
-                                                    <td><?php echo htmlspecialchars($detalle->SUCURSAL); ?></td>
-                                                    <td><?php echo $detalle->FECHA_FACTURA->format('d/m/Y'); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->FACTURA); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->COD_ARTICU); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->DESC_CTA_ARTICULO); ?></td>
-                                                    <td class="text-end"><?php echo number_format($detalle->CANTIDAD, 0); ?></td>
-                                                    <td class="text-center">
-                                                        <?php if ($excedeDias): ?>
-                                                            <i class="fas fa-exclamation-circle text-danger" 
-                                                            data-bs-toggle="tooltip" 
-                                                            data-bs-placement="left"
-                                                            title="Excede los 10 días (<?php echo $diasTranscurridos; ?> días)"></i>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach;
-                                        else: ?>
-                                            <tr>
-                                                <td colspan="7" class="text-center">No hay datos para mostrar</td>
-                                            </tr>
-                                        <?php endif; ?>
+                                    <tbody class="modal-lazy-tbody">
+                                        <tr><td colspan="7" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="modal-lazy-extra"></div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

@@ -1,7 +1,4 @@
-<?php
-// modal-remitos-sin-integrar.php
-?>
-<div class="modal fade" id="modalRemitosSinIntegrar" tabindex="-1" aria-labelledby="modalRemitosSinIntegrarLabel" aria-hidden="true">
+<div class="modal fade" id="modalRemitosSinIntegrar" tabindex="-1" aria-labelledby="modalRemitosSinIntegrarLabel" aria-hidden="true" data-modal-loader="remitosSinIngresar">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header d-flex justify-content-between align-items-center">
@@ -26,20 +23,12 @@
                                 <th class="text-end">Cantidad</th>
                             </tr>
                         </thead>
-                        <tbody>
-                        <?php if (isset($remitosSinIntegrar) && is_array($remitosSinIntegrar)): ?>
-                            <?php foreach ($remitosSinIntegrar as $remito): ?>
-                                <tr>
-                                    <td><?php echo $remito->FECHA_MOV->format('d/m/Y'); ?></td>
-                                    <td><?php echo htmlspecialchars($remito->COD_PRO_CL); ?></td>
-                                    <td><?php echo htmlspecialchars($remito->N_COMP); ?></td>
-                                    <td class="text-end"><?php echo number_format($remito->CANTIDAD, 0); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                        <tbody class="modal-lazy-tbody">
+                            <tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="modal-lazy-extra"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
