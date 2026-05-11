@@ -1,6 +1,6 @@
 
             <!-- Modal para el detalle de NC Promociones -->
-            <div class="modal fade" id="modalNcPromocionesDetalle" tabindex="-1">
+            <div class="modal fade" id="modalNcPromocionesDetalle" tabindex="-1" data-modal-loader="ncPromociones">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header d-flex justify-content-between align-items-center">
@@ -27,28 +27,12 @@
                                             <th class="text-end">Importe NC</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php 
-                                        $detalleNcPromociones = $control->traerDetalleNcPendPromociones();
-                                        if (!empty($detalleNcPromociones)):
-                                            foreach ($detalleNcPromociones as $detalle): ?>
-                                                <tr>
-                                                    <td><?php echo $detalle->FECHA->format('d/m/Y'); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->COD_PROMOCION_TARJETA); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->DESC_PROMOCION_TARJETA); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->PORC_REINTEGRO); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->COD_ARTICU); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->NC, 0); ?></td>
-                                                </tr>
-                                            <?php endforeach;
-                                        else: ?>
-                                            <tr>
-                                                <td colspan="6" class="text-center">No hay datos para mostrar</td>
-                                            </tr>
-                                        <?php endif; ?>
+                                    <tbody class="modal-lazy-tbody">
+                                        <tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="modal-lazy-extra"></div>
                         </div>
                     </div>
                 </div>

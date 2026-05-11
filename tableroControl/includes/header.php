@@ -11,8 +11,7 @@
         </h2>
         
         <small class="text-muted" id="ultimaActualizacion">
-            <i class="fas fa-clock"></i> 
-            Última actualización: <?php echo $ultimaActualizacion->format('d/m/Y H:i:s'); ?>
+            <i class="fas fa-clock"></i> Cargando...
         </small>
     </div>
 </div>

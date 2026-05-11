@@ -1,6 +1,6 @@
 
 <!-- Modal para el detalle de Órdenes Pendientes de Cierre - Uruguay -->
-<div class="modal fade" id="modalOrdenesPendientesCierreUruguay" tabindex="-1" aria-labelledby="modalOrdenesPendientesCierreUruguayLabel">
+<div class="modal fade" id="modalOrdenesPendientesCierreUruguay" tabindex="-1" aria-labelledby="modalOrdenesPendientesCierreUruguayLabel" data-modal-loader="ordenesCierreUy">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header d-flex justify-content-between align-items-center">
@@ -26,27 +26,12 @@
                                 <th class="text-end">Días Antigüedad</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php 
-                            $detalleOrdenesCierre = $control->traerDetalleOrdenesPendientesCierreUruguay();
-                            if (!empty($detalleOrdenesCierre)):
-                                foreach ($detalleOrdenesCierre as $detalle): ?>
-                                    <tr>
-                                        <td><?php echo $detalle->FECHA->format('d/m/Y H:i'); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->ORDER_ID); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->SUCURSAL); ?></td>
-                                        <td class="text-end"><?php echo htmlspecialchars($detalle->DIAS_ANTIGUEDAD); ?></td>
-                                    </tr>
-                                <?php endforeach;
-                            else: ?>
-                                <tr>
-                                    <td colspan="5" class="text-center">No hay órdenes pendientes de cierre</td>
-                                </tr>
-                            <?php endif; ?>
+                        <tbody class="modal-lazy-tbody">
+                            <tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="modal-lazy-extra"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

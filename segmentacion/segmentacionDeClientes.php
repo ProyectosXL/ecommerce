@@ -2,7 +2,7 @@
 require_once "Class/Cliente.php";
 require_once '../vendor/autoload.php';
 include "dataSegmentacionDeClientes.php";
-// var_dump($clientes);
+
 
 ?>
 

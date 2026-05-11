@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Test-Path \"C:\\\\xampp\" ; Test-Path \"D:\\\\xampp\" ; Get-PSDrive | Where-Object {$_.Name -in @\\(\"C\",\"D\",\"V\"\\)} | Select-Object Name, Root, DisplayRoot)",
+      "PowerShell(Get-WmiObject Win32_LogicalDisk)"
+    ]
+  }
+}

@@ -77,6 +77,7 @@ class Cliente{
 
         $mongoCollection = $this->cid_mongo->selectCollection("Ventas");
 
+
         $filter = [];
         $arrayBanco = []; 
         foreach ($selectBanco as $key => $banco) {
@@ -110,9 +111,9 @@ class Cliente{
         }
         
         if ($desde != null && $hasta != null) {
-
             $desdeDate = new MongoDB\BSON\UTCDateTime(strtotime($desde) * 1000);
             $hastaDate = new MongoDB\BSON\UTCDateTime(strtotime($hasta) * 1000);
+       
         
             $filter["FECHA"] = ['$gte' => $desdeDate, '$lte' => $hastaDate];
 

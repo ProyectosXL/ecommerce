@@ -1,6 +1,6 @@
 
             <!-- Modal para el detalle -->
-            <div class="modal fade" id="modalOrdenesSinIntegrar" tabindex="-1">
+            <div class="modal fade" id="modalOrdenesSinIntegrar" tabindex="-1" data-modal-loader="ordenesSinIntegrar">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header d-flex justify-content-between align-items-center">
@@ -25,26 +25,12 @@
                                             <th class="text-end">Total</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php 
-                                        $detalleOrdenes = $control->traerDetalleOrdenesSinIntegrar();
-                                        if (!empty($detalleOrdenes)):
-                                            foreach ($detalleOrdenes as $detalle): ?>
-                                                <tr>
-                                                    <td><?php echo $detalle->FECHA_ORDEN->format('d/m/Y H:i'); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->TIENDA); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->ORDER_NRO_TIENDA); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->TOTAL_ORDEN, 0); ?></td>
-                                                </tr>
-                                            <?php endforeach;
-                                        else: ?>
-                                            <tr>
-                                                <td colspan="4" class="text-center">No hay datos para mostrar</td>
-                                            </tr>
-                                        <?php endif; ?>
+                                    <tbody class="modal-lazy-tbody">
+                                        <tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="modal-lazy-extra"></div>
                         </div>
                     </div>
                 </div>

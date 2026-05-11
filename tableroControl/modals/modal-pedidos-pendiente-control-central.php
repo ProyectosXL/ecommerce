@@ -1,5 +1,5 @@
 <!-- Modal para el detalle de Pedidos Pendientes de Control Central -->
-<div class="modal fade" id="modalPedidosPendientesControlCentral" tabindex="-1">
+<div class="modal fade" id="modalPedidosPendientesControlCentral" tabindex="-1" data-modal-loader="controlCentral">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header d-flex justify-content-between align-items-center">
@@ -26,28 +26,12 @@
                                 <th>Sucursal Prepara</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php 
-                            $detallePedidosControlCentral = $control->traerDetallePedidosPendientesControlCentral();
-                            if (!empty($detallePedidosControlCentral)):
-                                foreach ($detallePedidosControlCentral as $detalle): ?>
-                                    <tr>
-                                        <td><?php echo $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i'); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->ORDER_ID); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
-                                        <td><?php echo htmlspecialchars($detalle->SUCURSAL_PREPARA); ?></td>
-                                    </tr>
-                                <?php endforeach;
-                            else: ?>
-                                <tr>
-                                    <td colspan="6" class="text-center">No hay pedidos pendientes</td>
-                                </tr>
-                            <?php endif; ?>
+                        <tbody class="modal-lazy-tbody">
+                            <tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="modal-lazy-extra"></div>
             </div>
         </div>
     </div>

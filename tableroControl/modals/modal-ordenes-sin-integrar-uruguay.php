@@ -1,6 +1,6 @@
 
             <!-- Modal para el detalle de Órdenes sin Integrar Uruguay -->
-            <div class="modal fade" id="modalOrdenesSinIntegrarUruguay" tabindex="-1" aria-labelledby="modalOrdenesSinIntegrarUruguayLabel">
+            <div class="modal fade" id="modalOrdenesSinIntegrarUruguay" tabindex="-1" aria-labelledby="modalOrdenesSinIntegrarUruguayLabel" data-modal-loader="ordenesSinIntegrarUy">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header d-flex justify-content-between align-items-center">
@@ -25,26 +25,12 @@
                                             <th class="text-end">Total Orden</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php 
-                                        $detalleOrdenesSinIntegrarUruguay = $control->traerDetalleOrdenesSinIntegrarUruguay();
-                                        if (!empty($detalleOrdenesSinIntegrarUruguay)):
-                                            foreach ($detalleOrdenesSinIntegrarUruguay as $detalle): ?>
-                                                <tr>
-                                                    <td><?php echo $detalle->FECHA_ORDEN->format('d/m/Y H:i'); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->TIENDA); ?></td>
-                                                    <td><?php echo htmlspecialchars($detalle->ORDER_NRO_TIENDA); ?></td>
-                                                    <td class="text-end">$<?php echo number_format($detalle->TOTAL_ORDEN, 2); ?></td>
-                                                </tr>
-                                            <?php endforeach;
-                                        else: ?>
-                                            <tr>
-                                                <td colspan="4" class="text-center">No hay órdenes sin integrar</td>
-                                            </tr>
-                                        <?php endif; ?>
+                                    <tbody class="modal-lazy-tbody">
+                                        <tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="modal-lazy-extra"></div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

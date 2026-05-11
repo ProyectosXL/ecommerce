@@ -1,5 +1,5 @@
 <!-- Modal para el detalle de pedidos recibidos pero no entregados -->
-<div class="modal fade" id="modalPedidosRecibidosNoEntregados" tabindex="-1" aria-labelledby="modalPedidosRecibidosNoEntregadosLabel" aria-hidden="true">
+<div class="modal fade" id="modalPedidosRecibidosNoEntregados" tabindex="-1" aria-labelledby="modalPedidosRecibidosNoEntregadosLabel" aria-hidden="true" data-modal-loader="retiroStockCentral">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -33,52 +33,12 @@
                                 <th></th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php 
-                            try {
-                                $detallePedidosRecibidosNoEntregados = $control->traerDetallePedidosRecibidosNoEntregados();
-                                $fechaActual = new DateTime();
-                                
-                                if (!empty($detallePedidosRecibidosNoEntregados)):
-                                    foreach ($detallePedidosRecibidosNoEntregados as $detalle):
-                                        $diasPendiente = $detalle->DIAS_PENDIENTE;
-                                        $excedeDias = $diasPendiente > 7;
-                                        ?>
-                                        <tr class="<?php echo $excedeDias ? 'text-danger' : ''; ?>">
-                                            <td><?php echo $detalle->FECHA_PEDIDO ? $detalle->FECHA_PEDIDO->format('d/m/Y H:i') : ''; ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->ORDER_ID); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->CLIENTE ?? ''); ?></td>
-                                            <td><?php echo htmlspecialchars($detalle->SUCURSAL_ENTREGA ?? ''); ?></td>
-                                            <td><?php echo $detalle->FECHA_RECIBIDO_TIENDA ? $detalle->FECHA_RECIBIDO_TIENDA->format('d/m/Y') : ''; ?></td>
-                                            <td><?php echo $detalle->DIAS_PENDIENTE; ?></td>
-                                            <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 0); ?></td>
-                                            <td class="text-center">
-                                                <?php if ($excedeDias): ?>
-                                                    <i class="fas fa-exclamation-circle text-danger" 
-                                                    data-bs-toggle="tooltip" 
-                                                    data-bs-placement="left"
-                                                    title="Excede los 7 días (<?php echo $diasPendiente; ?> días)"></i>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach;
-                                else: ?>
-                                    <tr>
-                                        <td colspan="9" class="text-center">No hay datos para mostrar</td>
-                                    </tr>
-                                <?php endif;
-                            } catch (Exception $e) {
-                                ?>
-                                <tr>
-                                    <td colspan="9" class="text-center text-danger">Error: <?php echo $e->getMessage(); ?></td>
-                                </tr>
-                                <?php
-                            }
-                            ?>
+                        <tbody class="modal-lazy-tbody">
+                            <tr><td colspan="9" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="modal-lazy-extra"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
