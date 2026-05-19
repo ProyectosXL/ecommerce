@@ -46,18 +46,35 @@ $orden       = (isset($_GET['orden'])       && trim($_GET['orden'])       !== ''
 $metodoEnvio = (isset($_GET['metodo_envio']) && trim($_GET['metodo_envio']) !== '') ? trim($_GET['metodo_envio']) : '';
 $busqueda    = (isset($_GET['factura'])     && trim($_GET['factura'])     !== '') ? trim($_GET['factura'])     : '';
 
-// ── Paginación: cada request trae hasta $porPagina filas → evita timeout de proxy ──
-$pagina    = max(1, intval($_GET['pagina'] ?? 1));
-$porPagina = 500;
+// ── Paginación por DÍA: cada request trae los pedidos de un solo día ──────────
+// Esto evita el problema de OFFSET acumulativo en SQL Server (cada página
+// siguiente escanea todas las filas anteriores → el SP se vuelve más lento
+// a medida que aumenta el número de página).
+$pagina = max(1, intval($_GET['pagina'] ?? 1));
+
+$fechaInicio = new DateTime($desde);
+$fechaFin    = new DateTime($hasta);
+
+// El número de página es el índice del día dentro del rango (1 = primer día)
+$diaActual = clone $fechaInicio;
+$diaActual->modify('+' . ($pagina - 1) . ' days');
+
+if ($diaActual > $fechaFin) {
+    echo json_encode(['html' => '', 'count' => 0, 'hayMas' => false], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$desdeDia = $diaActual->format('Y-m-d');
+$hastaDia  = $diaActual->format('Y-m-d');
+
+$proximoDia = clone $diaActual;
+$proximoDia->modify('+1 day');
+$hayMas = ($proximoDia <= $fechaFin);
 
 $arrayPedidos = $pedidos->traerPedidos(
-    $desde, $hasta, $tienda, $warehouse,
-    $estado, $orden, $pagina, $porPagina, $metodoEnvio
+    $desdeDia, $hastaDia, $tienda, $warehouse,
+    $estado, $orden, 1, 9999, $metodoEnvio
 );
-
-// hayMas: si el SP devolvió una página completa puede haber más (usar count ANTES de filtrar)
-$rawCount = count($arrayPedidos);
-$hayMas   = ($rawCount >= $porPagina);
 
 // Filtrar sin unidades
 $arrayPedidos = array_values(array_filter($arrayPedidos, function ($value) {

@@ -38,9 +38,22 @@ file_put_contents($paramsFile, json_encode($params, JSON_UNESCAPED_UNICODE));
 $scriptPath = __DIR__ . DIRECTORY_SEPARATOR . 'procesarExportacion.php';
 
 if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-    $phpBin = PHP_BINARY;
-    $cmd = 'start /B "" "' . $phpBin . '" "' . $scriptPath . '" "' . $paramsFile . '" > NUL 2>&1';
-    pclose(popen($cmd, 'r'));
+    // PHP_BINARY bajo IIS/FastCGI suele ser php-cgi.exe, que falla el check
+    // php_sapi_name() !== 'cli' en procesarExportacion.php.
+    // Buscar php.exe en el mismo directorio primero.
+    $phpDir = dirname(PHP_BINARY);
+    $phpCli = $phpDir . DIRECTORY_SEPARATOR . 'php.exe';
+    $phpBin = file_exists($phpCli) ? $phpCli : PHP_BINARY;
+
+    $cmd = 'start /B "" "' . $phpBin . '" "' . $scriptPath . '" "' . $paramsFile . '"';
+    $handle = popen($cmd, 'r');
+    if ($handle === false) {
+        $errorFile = $tmpDir . DIRECTORY_SEPARATOR . $jobId . '.error';
+        file_put_contents($errorFile, 'No se pudo lanzar el proceso de exportación en background.');
+        echo json_encode(['job_id' => $jobId, 'ok' => false, 'error' => 'No se pudo iniciar el proceso']);
+        exit;
+    }
+    pclose($handle);
 } else {
     // En Linux/Mac, PHP_BINARY bajo PHP-FPM es el binario FPM (no el CLI).
     // Buscar el binario CLI en rutas comunes primero.

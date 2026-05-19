@@ -19,6 +19,14 @@ $doneFile  = $tmpDir . DIRECTORY_SEPARATOR . $jobId . '.done';
 $errorFile = $tmpDir . DIRECTORY_SEPARATOR . $jobId . '.error';
 $csvFile   = $tmpDir . DIRECTORY_SEPARATOR . $jobId . '.csv';
 
+// Si pasaron más de 3 minutos sin done ni error, el proceso falló silenciosamente
+$paramsFile = $tmpDir . DIRECTORY_SEPARATOR . $jobId . '_params.json';
+if (!file_exists($doneFile) && !file_exists($errorFile) && file_exists($paramsFile)) {
+    if (time() - filemtime($paramsFile) > 180) {
+        file_put_contents($errorFile, 'El proceso tardó demasiado o no pudo iniciarse. Intente con un rango de fechas más pequeño.');
+    }
+}
+
 if (file_exists($errorFile)) {
     echo json_encode([
         'listo' => false,

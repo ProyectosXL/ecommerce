@@ -536,20 +536,27 @@ function filterIncompletos() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// EXPORTACIÓN
+// EXPORTACIÓN  (descarga sincrónica en streaming — sin proceso background)
 // ══════════════════════════════════════════════════════════════════════════════
 
-let _exportAbort = null;
+function _exportarConParams(params) {
+    const overlay = document.getElementById('exportOverlay');
+    overlay.style.display = 'flex';
+    window.location.href = 'exportarPedidos.php?' + new URLSearchParams(params).toString();
+    // El navegador no navega cuando el servidor responde Content-Disposition: attachment.
+    // Ocultamos el overlay luego de unos segundos (el browser ya está manejando la descarga).
+    setTimeout(() => { overlay.style.display = 'none'; }, 8000);
+}
 
 /** Exporta con los filtros activos de la última búsqueda. */
 function iniciarExportacion() {
-    _dispararDescarga(filtros);
+    _exportarConParams(filtros);
 }
 
 /** Exporta leyendo el formulario directamente, sin cargar la tabla. */
 function descargarDirecto() {
     const fd = new FormData(document.getElementById('formFiltros'));
-    _dispararDescarga({
+    _exportarConParams({
         desde:        fd.get('desde')        || '',
         hasta:        fd.get('hasta')        || '',
         tienda:       fd.get('tienda')       || '',
@@ -560,105 +567,6 @@ function descargarDirecto() {
         factura:      fd.get('factura')      || '',
     });
 }
-
-async function _dispararDescarga(params) {
-    if (_exportAbort) return; // ya hay una descarga en curso
-
-    _exportAbort = { aborted: false };
-
-    // Preparar modal
-    const bar  = document.getElementById('exportProgressBar');
-    const txt  = document.getElementById('exportProgressText');
-    const btn  = document.getElementById('btnCancelarExport');
-    bar.style.width = '0%';
-    bar.classList.add('progress-bar-animated', 'progress-bar-striped');
-    txt.textContent = 'Iniciando exportación…';
-    if (btn) btn.textContent = 'Cancelar';
-    $('#modalExportando').modal('show');
-
-    // 1. Lanzar el job en background (responde en < 1 segundo)
-    let jobId;
-    try {
-        const resp = await fetch('iniciarExportacion.php', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body:    new URLSearchParams(params).toString(),
-        });
-        if (!resp.ok) throw new Error('Error del servidor (' + resp.status + ')');
-        const json = await resp.json();
-        if (!json.ok || !json.job_id) throw new Error(json.error || 'No se pudo iniciar la exportación');
-        jobId = json.job_id;
-    } catch (err) {
-        $('#modalExportando').modal('hide');
-        swal('Error al exportar', err.message, 'error');
-        _exportAbort = null;
-        return;
-    }
-
-    // 2. Polling cada 2 segundos hasta que el proceso background termine
-    txt.textContent = 'Generando el archivo CSV…';
-    let pct = 5;
-
-    while (true) {
-        if (_exportAbort && _exportAbort.aborted) break;
-
-        await sleep(2000);
-
-        if (_exportAbort && _exportAbort.aborted) break;
-
-        let status;
-        try {
-            const poll = await fetch('estadoExportacion.php?job_id=' + encodeURIComponent(jobId));
-            status = await poll.json();
-        } catch (e) {
-            continue; // error transitorio de red, reintentar
-        }
-
-        if (status.error) {
-            $('#modalExportando').modal('hide');
-            swal('Error al exportar', status.mensaje || 'Error desconocido', 'error');
-            _exportAbort = null;
-            return;
-        }
-
-        if (status.listo) {
-            // Éxito: disparar descarga sin navegar
-            bar.style.width = '100%';
-            bar.classList.remove('progress-bar-animated', 'progress-bar-striped');
-            txt.textContent = '✓ ' + (status.total || 0).toLocaleString() + ' registros. Descargando…';
-            if (btn) btn.textContent = 'Cerrar';
-
-            const a = document.createElement('a');
-            a.href = 'descargarExportacion.php?job_id=' + encodeURIComponent(jobId);
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            setTimeout(() => $('#modalExportando').modal('hide'), 2500);
-            _exportAbort = null;
-            return;
-        }
-
-        // Actualizar barra de progreso aproximada
-        if (status.progreso) pct = Math.min(90, status.progreso);
-        else pct = Math.min(90, pct + 3);
-        bar.style.width = pct + '%';
-        if (pct > 20) txt.textContent = 'Generando el archivo CSV… (' + pct + '%)';
-    }
-
-    _exportAbort = null;
-}
-
-function cancelarExportacion() {
-    if (_exportAbort) { _exportAbort.aborted = true; _exportAbort = null; }
-    const btnCancel = document.getElementById('btnCancelarExport');
-    if (btnCancel) btnCancel.textContent = 'Cerrar';
-    $('#modalExportando').modal('hide');
-}
-
-$('#modalExportando').on('hidden.bs.modal', function () {
-    if (_exportAbort) { _exportAbort.aborted = true; _exportAbort = null; }
-});
 </script>
 
 </body>
