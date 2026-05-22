@@ -3,7 +3,7 @@
 
 require_once '../Class/conexion.php';
 $cid = new Conexion();
-$cid_central = $cid->conectar();
+$cid_central = $cid->conectarSql('central');
 
 $warehouse = $_POST['inputWarehouse'];
 $cuenta= $_POST['inputCuenta'];
