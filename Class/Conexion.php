@@ -20,7 +20,7 @@ class Conexion{
 
         require_once(__DIR__.'/classEnv.php');
 
-        $vars = new DotEnv(__DIR__ . '/../.env');
+        $vars = new DotEnv(__DIR__ . '/../../.env');
         $this->envVars = $vars->listVars();
         
         // Debug: ver qué variables se cargaron
