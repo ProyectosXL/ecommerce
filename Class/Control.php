@@ -130,19 +130,57 @@ class Control extends Conexion {
 
 
     public function traerNcPendPromociones() {
-        $sql = "SELECT MIN(CAST(A.FECHA AS DATE)) FECHA, COUNT(*) CANT_NC_PROMO, SUM(A.NC) IMPORTE_NC 
+        $sql = "SELECT MIN(CAST(A.FECHA AS DATE)) FECHA, COUNT(*) CANT_NC_PROMO, SUM(A.NC) IMPORTE_NC
                 FROM SJ_NC_ECOMMERCE_PEND A
                 WHERE A.NUM_NC = 'NO'
-                AND A.FECHA >= GETDATE()-60";
+                  AND A.FECHA >= GETDATE()-60
+                  AND NOT EXISTS (
+                      SELECT 1 FROM SJ_NC_PROMO_PROCESADAS P
+                      WHERE P.FECHA = CAST(A.FECHA AS DATE)
+                        AND P.COD_ARTICU COLLATE Latin1_General_BIN = A.COD_ARTICU
+                        AND P.NC = A.NC
+                  )";
         return $this->getDatos($sql);
     }
 
     public function traerDetalleNcPendPromociones() {
-        $sql = "SELECT A.FECHA, A.COD_PROMOCION_TARJETA, A.DESC_PROMOCION_TARJETA, A.PORC_REINTEGRO, A.COD_ARTICU, A.NC 
+        $sql = "SELECT A.FECHA, A.COD_PROMOCION_TARJETA, A.DESC_PROMOCION_TARJETA, A.PORC_REINTEGRO, A.COD_ARTICU, A.NC
                 FROM SJ_NC_ECOMMERCE_PEND A
                 WHERE A.NUM_NC = 'NO'
-                AND A.FECHA >= GETDATE()-60
+                  AND A.FECHA >= GETDATE()-60
+                  AND NOT EXISTS (
+                      SELECT 1 FROM SJ_NC_PROMO_PROCESADAS P
+                      WHERE P.FECHA = CAST(A.FECHA AS DATE)
+                        AND P.COD_ARTICU COLLATE Latin1_General_BIN = A.COD_ARTICU
+                        AND P.NC = A.NC
+                  )
                 ORDER BY A.FECHA DESC";
+        return $this->getDatosMultiples($sql);
+    }
+
+    public function marcarNcPromocionesComoProcessadas($registros, $numNc) {
+        $cid = $this->conectarSql('central');
+        if ($cid === false) {
+            throw new Exception("Error de conexión a la base de datos");
+        }
+        foreach ($registros as $r) {
+            $sql = "INSERT INTO SJ_NC_PROMO_PROCESADAS (FECHA, COD_ARTICU, NC, COD_PROMOCION_TARJETA, NUM_NC)
+                    VALUES (?, ?, ?, ?, ?)";
+            $params = [$r['fecha'], $r['cod_articu'], (float)$r['nc'], $r['cod_promo'], $numNc];
+            $result = sqlsrv_query($cid, $sql, $params);
+            if ($result === false) {
+                $errors = sqlsrv_errors();
+                sqlsrv_close($cid);
+                throw new Exception("Error al insertar: " . ($errors[0]['message'] ?? 'Error desconocido'));
+            }
+        }
+        sqlsrv_close($cid);
+    }
+
+    public function traerHistorialNcProcesadas() {
+        $sql = "SELECT NUM_NC, FECHA, COD_ARTICU, COD_PROMOCION_TARJETA, NC, FECHA_REGISTRO
+                FROM SJ_NC_PROMO_PROCESADAS
+                ORDER BY FECHA_REGISTRO DESC, NUM_NC, FECHA DESC";
         return $this->getDatosMultiples($sql);
     }
 

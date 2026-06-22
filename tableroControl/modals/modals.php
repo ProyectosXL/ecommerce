@@ -3,6 +3,7 @@
 
 <!-- Todos los modales -->
 <?php ob_start(); try { include 'modal-nc-promociones.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<?php ob_start(); try { include 'modal-historial-nc-promociones.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <?php ob_start(); try { include 'modal-nc-devoluciones.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <?php ob_start(); try { include 'modal-ordenes-sin-integrar.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <?php ob_start(); try { include 'modal-remitos-sin-integrar.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>

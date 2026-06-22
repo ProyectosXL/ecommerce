@@ -83,6 +83,13 @@ try {
             if (!empty($detalleNcPromociones)):
                 foreach ($detalleNcPromociones as $detalle): ?>
                     <tr>
+                        <td class="text-center">
+                            <input type="checkbox" class="nc-promo-check"
+                                data-fecha="<?php echo $detalle->FECHA->format('Y-m-d'); ?>"
+                                data-promo="<?php echo htmlspecialchars($detalle->COD_PROMOCION_TARJETA); ?>"
+                                data-articu="<?php echo htmlspecialchars($detalle->COD_ARTICU); ?>"
+                                data-nc="<?php echo $detalle->NC; ?>">
+                        </td>
                         <td><?php echo $detalle->FECHA->format('d/m/Y'); ?></td>
                         <td><?php echo htmlspecialchars($detalle->COD_PROMOCION_TARJETA); ?></td>
                         <td><?php echo htmlspecialchars($detalle->DESC_PROMOCION_TARJETA); ?></td>
@@ -93,7 +100,74 @@ try {
                     <?php
                 endforeach;
             else: ?>
-                <tr><td colspan="6" class="text-center">No hay datos para mostrar</td></tr>
+                <tr><td colspan="7" class="text-center">No hay datos para mostrar</td></tr>
+            <?php endif;
+            $html = ob_get_clean();
+            break;
+
+        case 'ncPromoHistorial':
+            $historialNc = $control->traerHistorialNcProcesadas();
+            // Agrupar por número de comprobante
+            $grupos = [];
+            foreach ($historialNc as $fila) {
+                $key = $fila->NUM_NC;
+                if (!isset($grupos[$key])) {
+                    $grupos[$key] = [
+                        'num_nc'   => $fila->NUM_NC,
+                        'cantidad' => 0,
+                        'total'    => 0,
+                        'registro' => $fila->FECHA_REGISTRO,
+                        'filas'    => []
+                    ];
+                }
+                $grupos[$key]['cantidad']++;
+                $grupos[$key]['total'] += (float)$fila->NC;
+                if ($fila->FECHA_REGISTRO > $grupos[$key]['registro']) {
+                    $grupos[$key]['registro'] = $fila->FECHA_REGISTRO;
+                }
+                $grupos[$key]['filas'][] = $fila;
+            }
+            ob_start();
+            if (!empty($grupos)):
+                $idx = 0;
+                foreach ($grupos as $grupo):
+                    $idx++;
+                    $collapseId = 'grpNc' . $idx; ?>
+                    <tr role="button" class="table-light" data-bs-toggle="collapse" data-bs-target="#<?php echo $collapseId; ?>" aria-expanded="false">
+                        <td class="text-center"><i class="fas fa-chevron-right"></i></td>
+                        <td><strong><?php echo htmlspecialchars($grupo['num_nc']); ?></strong></td>
+                        <td class="text-center"><?php echo $grupo['cantidad']; ?></td>
+                        <td class="text-end">$<?php echo number_format($grupo['total'], 0); ?></td>
+                        <td><?php echo $grupo['registro']->format('d/m/Y H:i'); ?></td>
+                    </tr>
+                    <tr class="collapse" id="<?php echo $collapseId; ?>">
+                        <td colspan="5" class="p-0">
+                            <table class="table table-sm mb-0">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Cód. Promoción</th>
+                                        <th>Cód. Artículo</th>
+                                        <th class="text-end">Importe NC</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($grupo['filas'] as $f): ?>
+                                        <tr>
+                                            <td><?php echo $f->FECHA->format('d/m/Y'); ?></td>
+                                            <td><?php echo htmlspecialchars($f->COD_PROMOCION_TARJETA); ?></td>
+                                            <td><?php echo htmlspecialchars($f->COD_ARTICU); ?></td>
+                                            <td class="text-end">$<?php echo number_format($f->NC, 0); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    <?php
+                endforeach;
+            else: ?>
+                <tr><td colspan="5" class="text-center">No hay NC procesadas registradas</td></tr>
             <?php endif;
             $html = ob_get_clean();
             break;
