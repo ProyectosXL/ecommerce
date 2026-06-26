@@ -533,6 +533,14 @@ function exportToExcelPedidosIncompletosCentral() {
     });
 }
 
+// Función para exportar pedidos sincronizados sin stock de Central
+function exportToExcelSincronizadosSinStock() {
+    // Nro. Pedido (índice 3) y Order ID (índice 4) como texto; se omite la última columna (ícono de alerta)
+    exportTableToExcel('#modalSincronizadosSinStock table', "Sincronizados sin Stock Central", "sincronizados_sin_stock_central", true, {
+        textColumns: [3, 4]
+    });
+}
+
 // Función para exportar pedidos incompletos de Sucursales
 function exportToExcelPedidosIncompletosSucursales() {
     exportTableToExcel('#modalPedidosIncompletosSucursales table', "Pedidos Incompletos Sucursales", "pedidos_incompletos_sucursales", false, {

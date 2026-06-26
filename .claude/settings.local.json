@@ -2,7 +2,22 @@
   "permissions": {
     "allow": [
       "PowerShell(Test-Path \"C:\\\\xampp\" ; Test-Path \"D:\\\\xampp\" ; Get-PSDrive | Where-Object {$_.Name -in @\\(\"C\",\"D\",\"V\"\\)} | Select-Object Name, Root, DisplayRoot)",
-      "PowerShell(Get-WmiObject Win32_LogicalDisk)"
+      "PowerShell(Get-WmiObject Win32_LogicalDisk)",
+      "Bash(cd /c/xampp/htdocs/ecommerce/tableroControl && find . -type f | head -100)",
+      "Read(//c/c/xampp/htdocs/ecommerce/**)",
+      "Read(//c/xampp/htdocs/**)",
+      "Bash(php -v)",
+      "Bash(ls /c/xampp/php/php.exe 2>/dev/null && echo \"found xampp php\")",
+      "Read(//c/xampp/php/**)",
+      "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/inspect.php\")",
+      "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/inspect2.php\")",
+      "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/inspect3.php\")",
+      "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/inspect4.php\")",
+      "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/inspect5.php\")",
+      "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/inspect6.php\")",
+      "Bash(/c/xampp/php/php.exe -l ../Class/Control.php)",
+      "Bash(grep -v \"^$\")",
+      "Bash(/c/xampp/php/php.exe -r '$_GET[\"card\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/data-loader-operaciones-central.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); preg_match\\(\"/card-value\\\\\">\\([0-9]+\\)/\",$j[\"html\"]??\"\",$m\\); echo \"Card cuenta: \".\\($m[1]??\"\\(sin datos\\)\"\\).\"\\\\n\";')"
     ]
   }
 }

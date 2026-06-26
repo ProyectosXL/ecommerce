@@ -357,6 +357,35 @@ try {
             $html = ob_get_clean();
             break;
 
+        case 'sincronizadosSinStock':
+            $detalleSincronizadosSinStock = $control->traerDetallePedidosSincronizadosSinStock();
+            ob_start();
+            if (!empty($detalleSincronizadosSinStock)):
+                foreach ($detalleSincronizadosSinStock as $detalle):
+                    $excedeDias = $detalle->DIAS_SINCRONIZADO >= 2; ?>
+                    <tr class="<?php echo $excedeDias ? 'text-danger' : ''; ?>">
+                        <td><?php echo $detalle->FECHA_SINCRONIZADO ? $detalle->FECHA_SINCRONIZADO->format('d/m/Y H:i') : ''; ?></td>
+                        <td class="text-end"><?php echo htmlspecialchars($detalle->DIAS_SINCRONIZADO); ?></td>
+                        <td><?php echo htmlspecialchars($detalle->CANAL); ?></td>
+                        <td><?php echo htmlspecialchars($detalle->NRO_PEDIDO); ?></td>
+                        <td><?php echo htmlspecialchars($detalle->ORDER_ID_TIENDA); ?></td>
+                        <td><?php echo htmlspecialchars($detalle->CLIENTE); ?></td>
+                        <td class="text-end"><?php echo htmlspecialchars($detalle->ART_SIN_STOCK); ?></td>
+                        <td class="text-end">$<?php echo number_format($detalle->TOTAL_PEDI, 0); ?></td>
+                        <td class="text-center">
+                            <?php if ($excedeDias): ?>
+                                <i class="fas fa-exclamation-circle text-danger" data-bs-toggle="tooltip" data-bs-placement="left" title="Lleva <?php echo $detalle->DIAS_SINCRONIZADO; ?> días en estado sincronizado"></i>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php
+                endforeach;
+            else: ?>
+                <tr><td colspan="9" class="text-center">No hay pedidos sincronizados sin stock</td></tr>
+            <?php endif;
+            $html = ob_get_clean();
+            break;
+
         // ── Operaciones Sucursales ─────────────────────────────────────────────
 
         case 'ordenesCierreVtex':

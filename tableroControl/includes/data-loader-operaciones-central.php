@@ -52,6 +52,12 @@ try {
                 include __DIR__ . '/../tabs/cards/card-incompletos-central.php';
                 $html = ob_get_clean();
                 break;
+            case 'sincronizadosSinStock':
+                $pedidosSincronizadosSinStock = $control->traerPedidosSincronizadosSinStock();
+                ob_start();
+                include __DIR__ . '/../tabs/cards/card-sincronizados-sin-stock.php';
+                $html = ob_get_clean();
+                break;
         }
         echo json_encode([
             'success'   => true,
@@ -65,6 +71,7 @@ try {
         $remitosSinIntegrar              = $control->traerRemitosSinIntegrar();
         $pedidosPendientesControlCentral = $control->traerResumenPedidosPendientesControlCentral();
         $pedidosIncompletosCentral       = $control->traerPedidosIncompletosCentral();
+        $pedidosSincronizadosSinStock    = $control->traerPedidosSincronizadosSinStock();
 
         $totalPendientes = 0;
         if ($pedidosPendientesPreparar && !empty($pedidosPendientesPreparar->CANT_PED_PEND))
@@ -79,6 +86,8 @@ try {
             $totalPendientes += $pedidosPendientesControlCentral->CANTIDAD_PEDIDOS;
         if ($pedidosIncompletosCentral && !empty($pedidosIncompletosCentral->CANT_PEDIDOS_INCOMPLETOS))
             $totalPendientes += $pedidosIncompletosCentral->CANT_PEDIDOS_INCOMPLETOS;
+        if ($pedidosSincronizadosSinStock && !empty($pedidosSincronizadosSinStock->CANT_PEDIDOS))
+            $totalPendientes += $pedidosSincronizadosSinStock->CANT_PEDIDOS;
 
         ob_start();
         ?>
@@ -91,6 +100,7 @@ try {
         <div class="row mt-4">
             <?php include __DIR__ . '/../tabs/cards/card-control-central.php'; ?>
             <?php include __DIR__ . '/../tabs/cards/card-incompletos-central.php'; ?>
+            <?php include __DIR__ . '/../tabs/cards/card-sincronizados-sin-stock.php'; ?>
         </div>
         <?php
         $html = ob_get_clean();

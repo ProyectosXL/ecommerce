@@ -24,6 +24,8 @@
 <?php ob_start(); try { include 'modal-ranking-pedidos-control-sucursales.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <!-- Modales para pedidos incompletos -->
 <?php ob_start(); try { include 'modal-pedidos-incompletos-central.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
+<!-- Modal pedidos sincronizados sin stock -->
+<?php ob_start(); try { include 'modal-pedidos-sincronizados-sin-stock.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <?php ob_start(); try { include 'modal-pedidos-incompletos-sucursales.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
 <!-- Modal para Uruguay -->
 <?php ob_start(); try { include 'modal-pedidos-sin-facturar-uruguay.php'; ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); } ?>
