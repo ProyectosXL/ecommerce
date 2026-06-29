@@ -328,6 +328,206 @@ public function actualizarEstadoYCantidad($nComp) {
 }
 
 /**
+ * Busca artículos en STA11 por código o descripción (para Select2 AJAX).
+ * Devuelve formato {results: [{id, text}]} compatible con Select2.
+ */
+public function buscarArticulos($term) {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    try {
+        $like = '%' . $term . '%';
+        $sql = "SELECT TOP 30 COD_ARTICU, DESCRIPCIO
+                FROM STA11
+                WHERE COD_ARTICU LIKE ? OR DESCRIPCIO LIKE ?
+                ORDER BY COD_ARTICU";
+        $result = sqlsrv_query($cid_central, $sql, array($like, $like));
+
+        if ($result === false) {
+            throw new Exception($this->primerErrorSql());
+        }
+
+        $results = [];
+        while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
+            $results[] = [
+                'id'   => $row['COD_ARTICU'],
+                'text' => $row['COD_ARTICU'] . ' — ' . trim($row['DESCRIPCIO'])
+            ];
+        }
+
+        sqlsrv_close($cid_central);
+        return ['results' => $results];
+
+    } catch (Exception $e) {
+        sqlsrv_close($cid_central);
+        return ['results' => [], 'error' => $e->getMessage()];
+    }
+}
+
+/**
+ * Devuelve todos los depósitos habilitados de STA22 para Select2.
+ */
+public function buscarDepositos() {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    try {
+        $sql = "SELECT COD_STA22, NOMBRE_SUC
+                FROM STA22
+                WHERE INHABILITA = 0
+                ORDER BY COD_STA22";
+        $result = sqlsrv_query($cid_central, $sql);
+
+        if ($result === false) {
+            throw new Exception($this->primerErrorSql());
+        }
+
+        $results = [];
+        while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
+            $results[] = [
+                'id'   => $row['COD_STA22'],
+                'text' => $row['COD_STA22'] . ' — ' . trim($row['NOMBRE_SUC'])
+            ];
+        }
+
+        sqlsrv_close($cid_central);
+        return ['results' => $results];
+
+    } catch (Exception $e) {
+        sqlsrv_close($cid_central);
+        return ['results' => [], 'error' => $e->getMessage()];
+    }
+}
+
+/**
+ * Verifica el estado previo para el alta de una partida (herramienta RO_SP_ALTA_PARTIDAS).
+ * Devuelve si el artículo/depósito ya tiene partida en STA10, el stock disponible en STA19
+ * y si el artículo (STA11) y el depósito (STA22) existen en las tablas que requiere el SP.
+ */
+public function verificarPartida($codArticu, $codDepo) {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    try {
+        $params = array($codArticu, $codDepo);
+
+        // ¿Ya existe partida en STA10 para ese artículo y depósito?
+        $sqlSta10 = "SELECT COUNT(*) AS total FROM STA10 WHERE COD_ARTICU = ? AND COD_DEPOSI = ?";
+        $rSta10 = sqlsrv_query($cid_central, $sqlSta10, $params);
+        if ($rSta10 === false) {
+            throw new Exception('Error al consultar STA10: ' . $this->primerErrorSql());
+        }
+        $rowSta10 = sqlsrv_fetch_array($rSta10, SQLSRV_FETCH_ASSOC);
+        $existeEnSta10 = ($rowSta10['total'] ?? 0) > 0;
+
+        // Stock disponible en STA19 (cantidad sugerida)
+        $sqlSta19 = "SELECT SUM(CANT_STOCK) AS stock FROM STA19 WHERE COD_ARTICU = ? AND COD_DEPOSI = ?";
+        $rSta19 = sqlsrv_query($cid_central, $sqlSta19, $params);
+        if ($rSta19 === false) {
+            throw new Exception('Error al consultar STA19: ' . $this->primerErrorSql());
+        }
+        $rowSta19 = sqlsrv_fetch_array($rSta19, SQLSRV_FETCH_ASSOC);
+        $stockSta19 = $rowSta19['stock'];
+
+        // Existencia del artículo en STA11
+        $sqlSta11 = "SELECT COUNT(*) AS total FROM STA11 WHERE COD_ARTICU LIKE ?";
+        $rSta11 = sqlsrv_query($cid_central, $sqlSta11, array($codArticu));
+        if ($rSta11 === false) {
+            throw new Exception('Error al consultar STA11: ' . $this->primerErrorSql());
+        }
+        $rowSta11 = sqlsrv_fetch_array($rSta11, SQLSRV_FETCH_ASSOC);
+        $existeEnSta11 = ($rowSta11['total'] ?? 0) > 0;
+
+        // Existencia del depósito en STA22
+        $sqlSta22 = "SELECT COUNT(*) AS total FROM STA22 WHERE COD_STA22 LIKE ?";
+        $rSta22 = sqlsrv_query($cid_central, $sqlSta22, array($codDepo));
+        if ($rSta22 === false) {
+            throw new Exception('Error al consultar STA22: ' . $this->primerErrorSql());
+        }
+        $rowSta22 = sqlsrv_fetch_array($rSta22, SQLSRV_FETCH_ASSOC);
+        $existeEnSta22 = ($rowSta22['total'] ?? 0) > 0;
+
+        sqlsrv_close($cid_central);
+
+        return [
+            'success'        => true,
+            'existeEnSta10'  => $existeEnSta10,
+            'stockSta19'     => $stockSta19 !== null ? (float)$stockSta19 : null,
+            'existeEnSta11'  => $existeEnSta11,
+            'existeEnSta22'  => $existeEnSta22
+        ];
+
+    } catch (Exception $e) {
+        sqlsrv_close($cid_central);
+        return [
+            'success' => false,
+            'message' => 'Error al verificar partida: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Ejecuta el stored procedure RO_SP_ALTA_PARTIDAS para dar de alta una partida en STA10.
+ * Si $cantidad viene vacío/null, el SP toma la cantidad del stock de STA19.
+ */
+public function altaPartida($codArticu, $codDepo, $nPartida, $cantidad = null) {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    $stmt = null;
+    try {
+        $cantParam = ($cantidad === '' || $cantidad === null) ? null : (int)$cantidad;
+
+        $sql = "EXEC RO_SP_ALTA_PARTIDAS @COD_ARTICU = ?, @COD_DEPO = ?, @N_PARTIDA = ?, @CANTIDAD = ?";
+        $params = array($codArticu, $codDepo, $nPartida, $cantParam);
+
+        $stmt = sqlsrv_prepare($cid_central, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception('Error al preparar stored procedure: ' . $this->primerErrorSql());
+        }
+
+        $result = sqlsrv_execute($stmt);
+
+        if ($result === false) {
+            // Los RAISERROR del SP llegan acá; mostrar el texto del primer error.
+            throw new Exception($this->primerErrorSql());
+        }
+
+        sqlsrv_free_stmt($stmt);
+        sqlsrv_close($cid_central);
+
+        return [
+            'success' => true,
+            'message' => "Partida $nPartida dada de alta para el artículo $codArticu / depósito $codDepo."
+        ];
+
+    } catch (Exception $e) {
+        if (isset($stmt) && $stmt !== false && $stmt !== null) {
+            sqlsrv_free_stmt($stmt);
+        }
+        sqlsrv_close($cid_central);
+
+        return [
+            'success' => false,
+            'message' => $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Devuelve el mensaje del primer error de SQL Server (texto del RAISERROR),
+ * en lugar del dump completo de sqlsrv_errors().
+ */
+private function primerErrorSql() {
+    $errores = sqlsrv_errors();
+    if (is_array($errores) && isset($errores[0]['message'])) {
+        return $errores[0]['message'];
+    }
+    return 'Error desconocido en la base de datos.';
+}
+
+/**
  * Obtiene información detallada de un remito
  */
 public function obtenerDetalleRemito($nComp) {

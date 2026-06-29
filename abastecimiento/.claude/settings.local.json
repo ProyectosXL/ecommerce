@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l \"c:/xampp/htdocs/ecommerce/Class/Remito.php\")",
+      "Bash(php -l \"c:/xampp/htdocs/ecommerce/abastecimiento/Controller/importarRemitos.php\")",
+      "PowerShell($php = \\(Get-Command php -ErrorAction SilentlyContinue\\).Source; if \\(-not $php\\) { $php = \"C:\\\\xampp\\\\php\\\\php.exe\" }; & $php -l \"C:\\\\xampp\\\\htdocs\\\\ecommerce\\\\Class\\\\Remito.php\"; & $php -l \"C:\\\\xampp\\\\htdocs\\\\ecommerce\\\\abastecimiento\\\\Controller\\\\importarRemitos.php\")",
+      "PowerShell($node = \\(Get-Command node -ErrorAction SilentlyContinue\\).Source; if \\($node\\) { & $node --check \"C:\\\\xampp\\\\htdocs\\\\ecommerce\\\\abastecimiento\\\\js\\\\importarRemitos.js\"; if \\($?\\) { \"JS OK\" } } else { \"node not available\" })",
+      "Bash(grep -r \"INFORMATION_SCHEMA\\\\|COL_NAME\" \"c:\\\\xampp\\\\htdocs\\\\ecommerce\" --include=\"*.php\" 2>/dev/null | head -5)",
+      "Read(//c/xampp/htdocs/ecommerce/**)",
+      "PowerShell(& \"C:\\\\xampp\\\\php\\\\php.exe\" -l \"C:\\\\xampp\\\\htdocs\\\\ecommerce\\\\Class\\\\Remito.php\")",
+      "PowerShell(& \"C:\\\\xampp\\\\php\\\\php.exe\" -l \"C:\\\\xampp\\\\htdocs\\\\ecommerce\\\\abastecimiento\\\\Controller\\\\importarRemitos.php\")",
+      "PowerShell(node --check \"C:\\\\xampp\\\\htdocs\\\\ecommerce\\\\abastecimiento\\\\js\\\\importarRemitos.js\")",
+      "PowerShell(if \\($?\\) { \"JS OK\" })"
+    ]
+  }
+}

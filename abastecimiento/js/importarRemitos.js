@@ -92,6 +92,41 @@ class RemitoManager {
         document.getElementById('modalActualizarRemito').addEventListener('hidden.bs.modal', () => {
             this.limpiarModalActualizarRemito();
         });
+
+        // Alta de Partidas
+        document.getElementById('btnAltaPartida').addEventListener('click', () => {
+            this.abrirModalAltaPartida();
+        });
+
+        document.getElementById('btnVerificarPartida').addEventListener('click', () => {
+            this.verificarPartida();
+        });
+
+        document.getElementById('btnEjecutarAltaPartida').addEventListener('click', () => {
+            this.ejecutarAltaPartida();
+        });
+
+        // Al cambiar artículo o depósito (Select2) o escribir en partida, invalidar la verificación
+        $('#inputCodArticu, #inputCodDepo').on('change', () => {
+            document.getElementById('btnEjecutarAltaPartida').disabled = true;
+            document.getElementById('infoPartida').classList.add('d-none');
+            document.getElementById('alertaPartida').classList.add('d-none');
+        });
+        document.getElementById('inputNPartida').addEventListener('input', () => {
+            document.getElementById('btnEjecutarAltaPartida').disabled = true;
+        });
+
+        // Inicializar Select2 la primera vez que se abre el modal
+        document.getElementById('modalAltaPartida').addEventListener('shown.bs.modal', () => {
+            if (!this.select2AltaPartidaInit) {
+                this.inicializarSelect2AltaPartida();
+                this.select2AltaPartidaInit = true;
+            }
+        });
+
+        document.getElementById('modalAltaPartida').addEventListener('hidden.bs.modal', () => {
+            this.limpiarModalAltaPartida();
+        });
     }
 
     inicializarDataTable() {
@@ -884,6 +919,259 @@ formatearEstado(estado) {
     
     const estadoInfo = estados[estado] || { texto: estado, clase: '' };
     return `<span class="${estadoInfo.clase}">${estadoInfo.texto}</span>`;
+}
+
+// ===== Alta de Partidas (RO_SP_ALTA_PARTIDAS) =====
+
+inicializarSelect2AltaPartida() {
+    const $modal = $('#modalAltaPartida');
+    const endpoint = '/ecommerce/Abastecimiento/Controller/importarRemitos.php';
+
+    // Artículo: búsqueda AJAX (mínimo 2 caracteres)
+    $('#inputCodArticu').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $modal,
+        placeholder: 'Buscar por código o descripción...',
+        allowClear: true,
+        minimumInputLength: 2,
+        language: {
+            inputTooShort: () => 'Escribí al menos 2 caracteres para buscar',
+            searching: () => 'Buscando...',
+            noResults: () => 'Sin resultados'
+        },
+        ajax: {
+            url: endpoint,
+            type: 'POST',
+            dataType: 'json',
+            delay: 300,
+            data: (params) => ({ action: 'buscarArticulos', term: params.term }),
+            processResults: (data) => ({ results: data.results || [] })
+        }
+    });
+
+    // Depósito: carga completa con filtro local (pocos registros)
+    $('#inputCodDepo').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $modal,
+        placeholder: 'Seleccionar depósito...',
+        allowClear: true,
+        minimumInputLength: 0,
+        language: {
+            searching: () => 'Cargando depósitos...',
+            noResults: () => 'Sin resultados'
+        },
+        ajax: {
+            url: endpoint,
+            type: 'POST',
+            dataType: 'json',
+            delay: 0,
+            cache: true,
+            data: () => ({ action: 'buscarDepositos' }),
+            processResults: (data) => ({ results: data.results || [] })
+        }
+    });
+}
+
+abrirModalAltaPartida() {
+    const modal = new bootstrap.Modal(document.getElementById('modalAltaPartida'));
+    modal.show();
+    setTimeout(() => {
+        document.getElementById('inputCodArticu').focus();
+    }, 500);
+}
+
+limpiarModalAltaPartida() {
+    // Limpiar Select2 (requiere la API de jQuery)
+    $('#inputCodArticu').val(null).trigger('change');
+    $('#inputCodDepo').val(null).trigger('change');
+    document.getElementById('inputNPartida').value = '';
+    document.getElementById('inputCantidad').value = '';
+    document.getElementById('inputCantidad').placeholder = 'Automático';
+    document.getElementById('infoPartida').classList.add('d-none');
+    document.getElementById('alertaPartida').classList.add('d-none');
+    document.getElementById('btnEjecutarAltaPartida').disabled = true;
+
+    document.getElementById('detalleStock').textContent = '-';
+    document.getElementById('detalleSta10').textContent = '-';
+    document.getElementById('detalleSta11').textContent = '-';
+    document.getElementById('detalleSta22').textContent = '-';
+}
+
+async verificarPartida() {
+    const codArticu = ($('#inputCodArticu').val() || '').trim();
+    const codDepo   = ($('#inputCodDepo').val()   || '').trim();
+    const btnVerificar = document.getElementById('btnVerificarPartida');
+    const originalText = btnVerificar.innerHTML;
+
+    if (!codArticu || !codDepo) {
+        this.mostrarToast('Ingrese código de artículo y depósito', 'error');
+        return;
+    }
+
+    try {
+        btnVerificar.innerHTML = '<span class="loading-spinner"></span> Verificando...';
+        btnVerificar.disabled = true;
+
+        const formData = new FormData();
+        formData.append('action', 'verificarPartida');
+        formData.append('codArticu', codArticu);
+        formData.append('codDepo', codDepo);
+
+        const response = await fetch('/ecommerce/Abastecimiento/Controller/importarRemitos.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Verificación partida:', data);
+
+        if (!data.success) {
+            this.ocultarInfoPartida();
+            this.mostrarAlertaPartida('Error al verificar: ' + (data.message || 'Error desconocido'), 'danger');
+            document.getElementById('btnEjecutarAltaPartida').disabled = true;
+            return;
+        }
+
+        // Mostrar info
+        const stockTexto = (data.stockSta19 !== null && data.stockSta19 !== undefined)
+            ? this.formatearNumero(data.stockSta19)
+            : 'Sin stock';
+        document.getElementById('detalleStock').textContent = stockTexto;
+        document.getElementById('detalleSta10').textContent = data.existeEnSta10 ? 'Ya existe' : 'No existe';
+        document.getElementById('detalleSta11').textContent = data.existeEnSta11 ? 'Sí' : 'No';
+        document.getElementById('detalleSta22').textContent = data.existeEnSta22 ? 'Sí' : 'No';
+        document.getElementById('infoPartida').classList.remove('d-none');
+        document.getElementById('infoPartida').classList.add('fade-in-up');
+
+        // Sugerir cantidad si el campo está vacío
+        const inputCantidad = document.getElementById('inputCantidad');
+        if (!inputCantidad.value && data.stockSta19 !== null && data.stockSta19 !== undefined) {
+            inputCantidad.placeholder = `Automático (STA19: ${stockTexto})`;
+        }
+
+        const btnEjecutar = document.getElementById('btnEjecutarAltaPartida');
+
+        // Reglas de habilitación según las validaciones del SP
+        if (data.existeEnSta10) {
+            this.mostrarAlertaPartida('Este artículo ya tiene una partida registrada para ese depósito. No es necesario volver a darla de alta.', 'warning');
+            btnEjecutar.disabled = true;
+        } else if (!data.existeEnSta11) {
+            this.mostrarAlertaPartida('El código de artículo no existe en el sistema.', 'danger');
+            btnEjecutar.disabled = true;
+        } else if (!data.existeEnSta22) {
+            this.mostrarAlertaPartida('El depósito seleccionado no existe en el sistema.', 'danger');
+            btnEjecutar.disabled = true;
+        } else if ((data.stockSta19 === null || data.stockSta19 === undefined) && !inputCantidad.value) {
+            this.mostrarAlertaPartida('No hay stock disponible registrado para este artículo y depósito. Ingresá una cantidad manualmente.', 'warning');
+            btnEjecutar.disabled = true;
+        } else {
+            this.mostrarAlertaPartida('Verificación correcta. Podés proceder con el alta.', 'success');
+            btnEjecutar.disabled = false;
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        this.ocultarInfoPartida();
+        this.mostrarAlertaPartida('Error de conexión: ' + error.message, 'danger');
+        document.getElementById('btnEjecutarAltaPartida').disabled = true;
+    } finally {
+        btnVerificar.innerHTML = originalText;
+        btnVerificar.disabled = false;
+    }
+}
+
+ocultarInfoPartida() {
+    document.getElementById('infoPartida').classList.add('d-none');
+}
+
+mostrarAlertaPartida(mensaje, tipo) {
+    const alerta = document.getElementById('alertaPartida');
+    const alertDiv = alerta.querySelector('.alert');
+    const mensajeSpan = document.getElementById('mensajeAlertaPartida');
+
+    alertDiv.classList.remove('alert-info', 'alert-success', 'alert-warning', 'alert-danger');
+    alertDiv.classList.add(`alert-${tipo}`);
+
+    const iconos = {
+        success: 'check-circle',
+        warning: 'exclamation-triangle',
+        danger: 'x-circle',
+        info: 'info-circle'
+    };
+    const icono = iconos[tipo] || 'info-circle';
+    mensajeSpan.innerHTML = `<i class="bi bi-${icono} me-2"></i>${mensaje}`;
+
+    alerta.classList.remove('d-none');
+    alerta.classList.add('fade-in-up');
+}
+
+async ejecutarAltaPartida() {
+    const codArticu = ($('#inputCodArticu').val() || '').trim();
+    const codDepo   = ($('#inputCodDepo').val()   || '').trim();
+    const nPartida  = document.getElementById('inputNPartida').value.trim();
+    const cantidad = document.getElementById('inputCantidad').value.trim();
+    const btnEjecutar = document.getElementById('btnEjecutarAltaPartida');
+    const originalText = btnEjecutar.innerHTML;
+
+    if (!codArticu || !codDepo || !nPartida) {
+        this.mostrarToast('Artículo, depósito y número de partida son requeridos', 'error');
+        return;
+    }
+
+    const cantidadTexto = cantidad ? cantidad : 'la del stock (STA19)';
+    const confirmacion = await this.mostrarConfirmacion(
+        'Confirmar Alta de Partida',
+        `¿Dar de alta la partida ${nPartida} para el artículo ${codArticu} en el depósito ${codDepo} con cantidad ${cantidadTexto}? Esta acción inserta en STA10 y no se puede deshacer.`,
+        'Sí, Dar de Alta',
+        'Cancelar'
+    );
+
+    if (!confirmacion) {
+        return;
+    }
+
+    try {
+        btnEjecutar.innerHTML = '<span class="loading-spinner"></span> Ejecutando...';
+        btnEjecutar.disabled = true;
+
+        const formData = new FormData();
+        formData.append('action', 'altaPartida');
+        formData.append('codArticu', codArticu);
+        formData.append('codDepo', codDepo);
+        formData.append('nPartida', nPartida);
+        formData.append('cantidad', cantidad);
+
+        const response = await fetch('/ecommerce/Abastecimiento/Controller/importarRemitos.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Alta partida resultado:', data);
+
+        if (data.success) {
+            this.mostrarToast(data.message, 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalAltaPartida'));
+            modal.hide();
+        } else {
+            this.mostrarToast('Error: ' + data.message, 'error');
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        this.mostrarToast('Error de conexión: ' + error.message, 'error');
+    } finally {
+        btnEjecutar.innerHTML = originalText;
+        btnEjecutar.disabled = false;
+    }
 }
 }
 

@@ -14,6 +14,9 @@
     <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="/ecommerce/Abastecimiento/css/importarRemitos.css" rel="stylesheet">
 </head>
@@ -34,6 +37,9 @@
                         </button>
                         <button type="button" class="btn btn-info-custom" id="btnActualizarRemito" title="Forzar Remito Individual">
                             <i class="bi bi-pencil-square"></i> Forzar Remito
+                        </button>
+                        <button type="button" class="btn btn-purple-custom" id="btnAltaPartida">
+                            <i class="bi bi-box-seam"></i> Alta de Partidas
                         </button>
                         <button type="button" class="btn btn-warning-custom" onclick="window.remitoManager && window.remitoManager.exportarExcel()" title="Exportar Excel">
                             <i class="bi bi-file-earmark-excel"></i> Exportar
@@ -266,6 +272,107 @@
         </div>
     </div>
 
+    <!-- Modal para Alta de Partidas (RO_SP_ALTA_PARTIDAS) -->
+    <div class="modal fade" id="modalAltaPartida" tabindex="-1" aria-labelledby="modalAltaPartidaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAltaPartidaLabel">
+                        <i class="bi bi-box-seam text-secondary me-2"></i>
+                        Alta de Partidas
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputCodArticu" class="form-label">
+                                <i class="bi bi-upc-scan me-1"></i> Código de Artículo:
+                            </label>
+                            <select class="form-select" id="inputCodArticu" style="width:100%"></select>
+                            <div class="form-text">Escribí al menos 2 caracteres para buscar.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="inputCodDepo" class="form-label">
+                                <i class="bi bi-building me-1"></i> Depósito:
+                            </label>
+                            <select class="form-select" id="inputCodDepo" style="width:100%"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="inputNPartida" class="form-label">
+                                <i class="bi bi-hash me-1"></i> Número de Partida:
+                            </label>
+                            <input type="text" class="form-control" id="inputNPartida" placeholder="N_PARTIDA" maxlength="50">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="inputCantidad" class="form-label">
+                                <i class="bi bi-123 me-1"></i> Cantidad (opcional):
+                            </label>
+                            <input type="number" class="form-control" id="inputCantidad" placeholder="Automático" min="0" step="1">
+                            <div class="form-text">Dejar vacío para tomar el stock de STA19.</div>
+                        </div>
+                        <div class="col-12">
+                            <button class="btn btn-outline-primary" type="button" id="btnVerificarPartida">
+                                <i class="bi bi-search"></i> Verificar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Información de la verificación -->
+                    <div id="infoPartida" class="d-none mt-3">
+                        <div class="card bg-light border-0 mb-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0"><i class="bi bi-info-circle me-1"></i> Resultado de la verificación</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Stock disponible:</small>
+                                        <div class="fw-bold" id="detalleStock">-</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Partida ya registrada:</small>
+                                        <div class="fw-bold" id="detalleSta10">-</div>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <small class="text-muted">Artículo válido:</small>
+                                        <div class="fw-bold" id="detalleSta11">-</div>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <small class="text-muted">Depósito válido:</small>
+                                        <div class="fw-bold" id="detalleSta22">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alertas -->
+                    <div id="alertaPartida" class="d-none">
+                        <div class="alert alert-info mb-3" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span id="mensajeAlertaPartida"></span>
+                        </div>
+                    </div>
+
+                    <!-- Instrucciones -->
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Importante:</strong> Usá esta herramienta únicamente cuando un artículo importado no tiene su partida registrada por error. Si no indicás cantidad, se usa el stock disponible automáticamente.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnEjecutarAltaPartida" disabled>
+                        <i class="bi bi-gear me-1"></i> Ejecutar Alta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- jQuery (necesario para DataTables) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- Bootstrap 5 JS -->
@@ -277,6 +384,8 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- Custom JS -->
     <script src="/ecommerce/Abastecimiento/js/importarRemitos.js"></script>
 </body>

@@ -99,9 +99,62 @@ try {
                 echo json_encode($resultado);
                 break;
                             
+            case 'buscarArticulos':
+                $term = trim($_POST['term'] ?? '');
+                if (strlen($term) < 2) {
+                    echo json_encode(['results' => []]);
+                    break;
+                }
+                $remito = new Remito();
+                echo json_encode($remito->buscarArticulos($term));
+                break;
+
+            case 'buscarDepositos':
+                $remito = new Remito();
+                echo json_encode($remito->buscarDepositos());
+                break;
+
+            case 'verificarPartida':
+                $codArticu = trim($_POST['codArticu'] ?? '');
+                $codDepo   = trim($_POST['codDepo'] ?? '');
+
+                if (empty($codArticu) || empty($codDepo)) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Código de artículo y depósito son requeridos'
+                    ]);
+                    break;
+                }
+
+                $remito = new Remito();
+                $resultado = $remito->verificarPartida($codArticu, $codDepo);
+
+                echo json_encode($resultado);
+                break;
+
+            case 'altaPartida':
+                $codArticu = trim($_POST['codArticu'] ?? '');
+                $codDepo   = trim($_POST['codDepo'] ?? '');
+                $nPartida  = trim($_POST['nPartida'] ?? '');
+                $cantidad  = isset($_POST['cantidad']) ? trim($_POST['cantidad']) : '';
+
+                if (empty($codArticu) || empty($codDepo) || empty($nPartida)) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Código de artículo, depósito y número de partida son requeridos'
+                    ]);
+                    break;
+                }
+
+                $remito = new Remito();
+                $resultado = $remito->altaPartida($codArticu, $codDepo, $nPartida, $cantidad);
+
+                echo json_encode($resultado);
+                break;
+
             default:
                 echo json_encode([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Acción no válida: ' . $action
                 ]);
                 break;
