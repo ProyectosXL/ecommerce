@@ -17,7 +17,10 @@
       "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/inspect6.php\")",
       "Bash(/c/xampp/php/php.exe -l ../Class/Control.php)",
       "Bash(grep -v \"^$\")",
-      "Bash(/c/xampp/php/php.exe -r '$_GET[\"card\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/data-loader-operaciones-central.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); preg_match\\(\"/card-value\\\\\">\\([0-9]+\\)/\",$j[\"html\"]??\"\",$m\\); echo \"Card cuenta: \".\\($m[1]??\"\\(sin datos\\)\"\\).\"\\\\n\";')"
+      "Bash(/c/xampp/php/php.exe -r '$_GET[\"card\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/data-loader-operaciones-central.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); preg_match\\(\"/card-value\\\\\">\\([0-9]+\\)/\",$j[\"html\"]??\"\",$m\\); echo \"Card cuenta: \".\\($m[1]??\"\\(sin datos\\)\"\\).\"\\\\n\";')",
+      "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/test3.php\")",
+      "Bash(/c/xampp/php/php.exe -r '$_GET[\"card\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/data-loader-operaciones-central.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); echo \"success=\".\\($j[\"success\"]?\"1\":\"0\"\\).\"\\\\n\"; preg_match\\(\"/card-value\\\\\">\\([0-9]+\\)/\",$j[\"html\"]??\"\",$m\\); echo \"card cuenta: \".\\($m[1]??\"\\(sin datos\\)\"\\).\"\\\\n\";')",
+      "Bash(/c/xampp/php/php.exe -r '$_GET[\"modal\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/modal-loader.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); echo \"success=\".\\($j[\"success\"]?\"1\":\"0\"\\).\"\\\\n\"; echo \"filas tr: \".substr_count\\($j[\"html\"]??\"\",\"<tr\"\\).\"\\\\n\"; echo \"con resaltado text-danger: \".substr_count\\($j[\"html\"]??\"\",\"text-danger\"\\).\"\\\\n\";')"
     ]
   }
 }

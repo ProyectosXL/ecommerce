@@ -1468,11 +1468,9 @@ public function traerDetallePedidosIncompletosSucursales() {
 // Resumen de pedidos ecommerce de Central en estado SINCRONIZADO (sin avanzar) que tienen
 // al menos un artículo sin stock disponible en el depósito 01 de Central y no están cancelados.
 public function traerPedidosSincronizadosSinStock() {
-    $sql = "SELECT COUNT(*) AS CANT_PEDIDOS,
-                MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA,
-                SUM(TOTAL_PEDI) AS TOTAL_PEDIDOS
-            FROM (
-                SELECT CAST(C.FECHA_SINCRONIZADO AS DATETIME) FECHA_SINCRONIZADO,
+    $sql = "WITH CAND AS (
+                SELECT A.TALON_PED, A.NRO_PEDIDO,
+                       CAST(C.FECHA_SINCRONIZADO AS DATETIME) FECHA_SINCRONIZADO,
                        CAST(A.TOTAL_PEDI AS DECIMAL(10,0)) TOTAL_PEDI
                 FROM GVA21 A
                 INNER JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE C
@@ -1491,16 +1489,24 @@ public function traerPedidosSincronizadosSinStock() {
                     AND ISNULL(C.ENTREGADO, 0) = 0
                     AND ISNULL(C.RECIBIDO_TIENDA, 0) = 0
                     AND ISNULL(C.INCOMPLETO, 0) = 0
-                    AND EXISTS (
-                        SELECT 1
-                        FROM GVA03 R
-                        LEFT JOIN (SELECT COD_ARTICU, STOCK_DISPONIBLE FROM STOCK_CENTRAL WHERE COD_DEPOSI = '01') S
-                            ON R.COD_ARTICU = S.COD_ARTICU COLLATE Latin1_General_BIN
-                        WHERE R.TALON_PED = A.TALON_PED
-                            AND R.NRO_PEDIDO = A.NRO_PEDIDO
-                            AND ISNULL(S.STOCK_DISPONIBLE, 0) <= 0
-                    )
-            ) X";
+            ),
+            STK AS (
+                SELECT COD_ARTICU FROM STOCK_CENTRAL WHERE COD_DEPOSI = '01' AND STOCK_DISPONIBLE <= 0
+            ),
+            PEDIDOS_SIN_STOCK AS (
+                SELECT CAND.TALON_PED, CAND.NRO_PEDIDO,
+                       MIN(CAND.FECHA_SINCRONIZADO) FECHA_SINCRONIZADO,
+                       MIN(CAND.TOTAL_PEDI) TOTAL_PEDI
+                FROM CAND
+                INNER JOIN GVA03 R ON R.TALON_PED = CAND.TALON_PED AND R.NRO_PEDIDO = CAND.NRO_PEDIDO
+                INNER JOIN STK ON R.COD_ARTICU = STK.COD_ARTICU COLLATE Latin1_General_BIN
+                WHERE R.COD_ARTICU NOT LIKE 'PACK-BO-%'
+                GROUP BY CAND.TALON_PED, CAND.NRO_PEDIDO
+            )
+            SELECT COUNT(*) AS CANT_PEDIDOS,
+                   MIN(FECHA_SINCRONIZADO) AS FECHA_MAS_ANTIGUA,
+                   SUM(TOTAL_PEDI) AS TOTAL_PEDIDOS
+            FROM PEDIDOS_SIN_STOCK";
 
     return $this->getDatos($sql);
 }
@@ -1508,53 +1514,50 @@ public function traerPedidosSincronizadosSinStock() {
 // Detalle de los pedidos del resumen anterior, con la cantidad de artículos sin stock y los
 // días que llevan en estado sincronizado (para resaltar los que superan los 2 días).
 public function traerDetallePedidosSincronizadosSinStock() {
-    $sql = "SELECT CAST(C.FECHA_SINCRONIZADO AS DATETIME) FECHA_SINCRONIZADO,
-                DATEDIFF(DAY, C.FECHA_SINCRONIZADO, GETDATE()) DIAS_SINCRONIZADO,
-                CASE WHEN A.TALON_PED = '98' THEN 'MERCADO LIBRE'
-                     WHEN A.TALON_PED = '99' THEN 'VTEX'
+    $sql = "WITH CAND AS (
+                SELECT A.TALON_PED, A.NRO_PEDIDO, A.ORDER_ID_TIENDA,
+                       CAST(C.FECHA_SINCRONIZADO AS DATETIME) FECHA_SINCRONIZADO,
+                       CAST(A.TOTAL_PEDI AS DECIMAL(10,0)) TOTAL_PEDI
+                FROM GVA21 A
+                INNER JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE C
+                    ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
+                WHERE A.COD_CLIENT = '000000'
+                    AND A.COD_SUCURS = '01'
+                    AND A.FECHA_PEDI >= CAST(GETDATE() - 15 AS DATE)
+                    AND ISNULL(C.SINCRONIZADO, 0) = 1
+                    AND ISNULL(C.CANCELADO, 0) = 0
+                    -- No debe haber avanzado a ningún otro estado posterior a sincronizado
+                    AND ISNULL(C.ASIGNADO_PICK, 0) = 0
+                    AND ISNULL(C.PREPARADO, 0) = 0
+                    AND ISNULL(C.FACTURADO, 0) = 0
+                    AND ISNULL(C.CONTROLADO, 0) = 0
+                    AND ISNULL(C.DESPACHADO, 0) = 0
+                    AND ISNULL(C.ENTREGADO, 0) = 0
+                    AND ISNULL(C.RECIBIDO_TIENDA, 0) = 0
+                    AND ISNULL(C.INCOMPLETO, 0) = 0
+            ),
+            STK AS (
+                SELECT COD_ARTICU FROM STOCK_CENTRAL WHERE COD_DEPOSI = '01' AND STOCK_DISPONIBLE <= 0
+            )
+            SELECT CAND.FECHA_SINCRONIZADO,
+                DATEDIFF(DAY, CAND.FECHA_SINCRONIZADO, GETDATE()) DIAS_SINCRONIZADO,
+                CASE WHEN CAND.TALON_PED = '98' THEN 'MERCADO LIBRE'
+                     WHEN CAND.TALON_PED = '99' THEN 'VTEX'
                      ELSE 'OTROS'
                 END CANAL,
-                A.NRO_PEDIDO,
-                A.ORDER_ID_TIENDA,
+                CAND.NRO_PEDIDO,
+                CAND.ORDER_ID_TIENDA,
                 UPPER(D.RAZON_SOCI) CLIENTE,
-                (
-                    SELECT COUNT(*)
-                    FROM GVA03 R
-                    LEFT JOIN (SELECT COD_ARTICU, STOCK_DISPONIBLE FROM STOCK_CENTRAL WHERE COD_DEPOSI = '01') S
-                        ON R.COD_ARTICU = S.COD_ARTICU COLLATE Latin1_General_BIN
-                    WHERE R.TALON_PED = A.TALON_PED
-                        AND R.NRO_PEDIDO = A.NRO_PEDIDO
-                        AND ISNULL(S.STOCK_DISPONIBLE, 0) <= 0
-                ) ART_SIN_STOCK,
-                CAST(A.TOTAL_PEDI AS DECIMAL(10,0)) TOTAL_PEDI
-            FROM GVA21 A
-            INNER JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE C
-                ON A.NRO_PEDIDO = C.NRO_PEDIDO AND A.TALON_PED = C.TALON_PED
-            LEFT JOIN GVA38 D ON A.TALON_PED = D.TALONARIO AND A.NRO_PEDIDO = D.N_COMP
-            WHERE A.COD_CLIENT = '000000'
-                AND A.COD_SUCURS = '01'
-                AND A.FECHA_PEDI >= CAST(GETDATE() - 15 AS DATE)
-                AND ISNULL(C.SINCRONIZADO, 0) = 1
-                AND ISNULL(C.CANCELADO, 0) = 0
-                -- No debe haber avanzado a ningún otro estado posterior a sincronizado
-                AND ISNULL(C.ASIGNADO_PICK, 0) = 0
-                AND ISNULL(C.PREPARADO, 0) = 0
-                AND ISNULL(C.FACTURADO, 0) = 0
-                AND ISNULL(C.CONTROLADO, 0) = 0
-                AND ISNULL(C.DESPACHADO, 0) = 0
-                AND ISNULL(C.ENTREGADO, 0) = 0
-                AND ISNULL(C.RECIBIDO_TIENDA, 0) = 0
-                AND ISNULL(C.INCOMPLETO, 0) = 0
-                AND EXISTS (
-                    SELECT 1
-                    FROM GVA03 R
-                    LEFT JOIN (SELECT COD_ARTICU, STOCK_DISPONIBLE FROM STOCK_CENTRAL WHERE COD_DEPOSI = '01') S
-                        ON R.COD_ARTICU = S.COD_ARTICU COLLATE Latin1_General_BIN
-                    WHERE R.TALON_PED = A.TALON_PED
-                        AND R.NRO_PEDIDO = A.NRO_PEDIDO
-                        AND ISNULL(S.STOCK_DISPONIBLE, 0) <= 0
-                )
-            ORDER BY C.FECHA_SINCRONIZADO ASC";
+                COUNT(*) ART_SIN_STOCK,
+                CAND.TOTAL_PEDI
+            FROM CAND
+            INNER JOIN GVA03 R ON R.TALON_PED = CAND.TALON_PED AND R.NRO_PEDIDO = CAND.NRO_PEDIDO
+            INNER JOIN STK ON R.COD_ARTICU = STK.COD_ARTICU COLLATE Latin1_General_BIN
+            LEFT JOIN GVA38 D ON CAND.TALON_PED = D.TALONARIO AND CAND.NRO_PEDIDO = D.N_COMP
+            WHERE R.COD_ARTICU NOT LIKE 'PACK-BO-%'
+            GROUP BY CAND.TALON_PED, CAND.NRO_PEDIDO, CAND.ORDER_ID_TIENDA,
+                     CAND.FECHA_SINCRONIZADO, CAND.TOTAL_PEDI, D.RAZON_SOCI
+            ORDER BY CAND.FECHA_SINCRONIZADO ASC";
 
     return $this->getDatosMultiples($sql);
 }
