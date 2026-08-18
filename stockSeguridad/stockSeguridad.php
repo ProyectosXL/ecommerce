@@ -84,8 +84,17 @@ $matrizStockSeguridad = new Matriz();
 
     <?php
 
- 
+
         $todasLasSucursales = $matrizStockSeguridad->traerMatriz();
+        $todasLasSucursales = json_decode($todasLasSucursales);
+
+        $columnasFijas = ['ID', 'WAREHOUSE_ID', 'VTEX_CUENTA', 'DESC_SUCURSAL'];
+        $columnasRubro = !empty($todasLasSucursales)
+            ? array_filter(
+                array_diff(array_keys(get_object_vars($todasLasSucursales[0])), $columnasFijas),
+                fn($columna) => !is_numeric($columna)
+            )
+            : [];
 
     ?>
         <div class="table-responsive mt-4">
@@ -95,30 +104,13 @@ $matrizStockSeguridad = new Matriz();
                     <th scope="col" style="width: 1%; display:none;">WAREHOUSE</th>
                     <th scope="col" style="width: 10%">CUENTA VTEX</th>
                     <th scope="col" style="width: 10%">SUCURSAL</th>
-                    <th scope="col" style="width: 1%">ACCESORIOS<BR>DE CUERO</th>
-                    <th scope="col" style="width: 1%">ACCESORIOS<BR>DE VINILICO</th>
-                    <th scope="col" style="width: 1%">BILLETERAS<BR>DE CUERO</th>
-                    <th scope="col" style="width: 1%">BILLETERAS<BR>DE VINILICO</th>
-                    <th scope="col" style="width: 1%">CALZADOS</th>
-                    <th scope="col" style="width: 1%">CAMPERAS</th>
-                    <th scope="col" style="width: 1%">CARTERAS<BR>DE CUERO</th>
-                    <th scope="col" style="width: 1%">CARTERAS<BR>DE VINILICO</th>
-                    <th scope="col" style="width: 1%">CHALINAS</th>
-                    <th scope="col" style="width: 1%">CINTOS<BR>DE CUERO</th>
-                    <th scope="col" style="width: 1%">CINTOS<BR>DE VINILICO</th>
-                    <th scope="col" style="width: 1%">COSMETICA</th>
-                    <th scope="col" style="width: 1%">EQUIPAJES</th>
-                    <th scope="col" style="width: 1%">INDUMENTARIA</th>
-                    <th scope="col" style="width: 1%">LENTES</th>
-                    <th scope="col" style="width: 1%">LLAVEROS</th>
-                    <th scope="col" style="width: 1%">PACKAGING</th>
-                    <th scope="col" style="width: 1%">PARAGUAS</th>
-                    <th scope="col" style="width: 1%">RELOJES</th>
+                    <?php foreach ($columnasRubro as $columna) { ?>
+                        <th scope="col" style="width: 1%"><?= str_replace('_', ' ', $columna) ?></th>
+                    <?php } ?>
                 </thead>
 
                 <tbody id="table">
                     <?php
-                    $todasLasSucursales = json_decode($todasLasSucursales);
                     foreach ($todasLasSucursales as $valor => $value) {
                     ?>
 
@@ -127,25 +119,9 @@ $matrizStockSeguridad = new Matriz();
                             <td style="display:none;"><?= $value->WAREHOUSE_ID; ?></td>
                             <td><?= $value->VTEX_CUENTA; ?></td>
                             <td><?= $value->DESC_SUCURSAL; ?></td>
-                            <td><input type="number" class="inputNumber" name="ACCESORIOS_DE_VINILICO" value="<?= $value->ACCESORIOS_DE_CUERO ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="ACCESORIOS_DE_VINILICO" value="<?= $value->ACCESORIOS_DE_VINILICO ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="BILLETERAS_DE_CUERO" value="<?= $value->BILLETERAS_DE_CUERO ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="BILLETERAS_DE_VINILICO" value="<?= $value->BILLETERAS_DE_VINILICO ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="CALZADOS" value="<?= $value->CALZADOS ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="CAMPERAS" value="<?= $value->CAMPERAS ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="CARTERAS_DE_CUERO" value="<?= $value->CARTERAS_DE_CUERO ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="CARTERAS_DE_VINILICO" value="<?= $value->CARTERAS_DE_VINILICO ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="CHALINAS" value="<?= $value->CHALINAS ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="CINTOS_DE_CUERO" value="<?= $value->CINTOS_DE_CUERO ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="CINTOS_DE_VINILICO" value="<?= $value->CINTOS_DE_VINILICO ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="COSMETICA" value="<?= $value->COSMETICA ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="EQUIPAJES" value="<?= $value->EQUIPAJES ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="INDUMENTARIA" value="<?= $value->INDUMENTARIA ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="LENTES" value="<?= $value->LENTES ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="LLAVEROS" value="<?= $value->LLAVEROS ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="COSMETICA" value="<?= $value->PACKAGING ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="PARAGUAS" value="<?= $value->PARAGUAS ?>" disabled></td>
-                            <td><input type="number" class="inputNumber" name="RELOJES" value="<?= $value->RELOJES ?>" disabled></td>
+                            <?php foreach ($columnasRubro as $columna) { ?>
+                                <td><input type="number" class="inputNumber" name="<?= $columna ?>" value="<?= $value->$columna ?>" disabled></td>
+                            <?php } ?>
                         </tr>
                     <?php
                     }

@@ -29,8 +29,8 @@ class Rubro
     public function traerRubros($db = 'central')
     {
 
-        $sql = "SELECT REPLACE(REPLACE(PATH_CLASIF, 'Todos(1)/',''), RIGHT(PATH_CLASIF,3),'') RUBRO, PATH_CLASIF FROM GC_ECOMMERCE_CLASIFICADOR_ARTICULOS
-		        WHERE PATH_CLASIF NOT LIKE '%DISC%' AND PATH_CLASIF NOT LIKE '%OUTLET%'
+        $sql = "SELECT REPLACE(REPLACE(RUTA, 'Todos(1)/',''), RIGHT(RUTA,3),'') RUBRO, RUTA AS PATH_CLASIF FROM GC_VIEW_ECOMMERCE_CLASIFICADOR_ARTICULOS
+		        WHERE NIVEL = 2 AND RUTA NOT LIKE '%DISC%' AND RUTA NOT LIKE '%OUTLET%'
         ";
 
         $rows = $this->retornarArray($sql,$db);

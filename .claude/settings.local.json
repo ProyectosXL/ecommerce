@@ -20,7 +20,20 @@
       "Bash(/c/xampp/php/php.exe -r '$_GET[\"card\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/data-loader-operaciones-central.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); preg_match\\(\"/card-value\\\\\">\\([0-9]+\\)/\",$j[\"html\"]??\"\",$m\\); echo \"Card cuenta: \".\\($m[1]??\"\\(sin datos\\)\"\\).\"\\\\n\";')",
       "Bash(/c/xampp/php/php.exe \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/40673225-8fa5-4300-a517-9cb705ee3e0c/scratchpad/test3.php\")",
       "Bash(/c/xampp/php/php.exe -r '$_GET[\"card\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/data-loader-operaciones-central.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); echo \"success=\".\\($j[\"success\"]?\"1\":\"0\"\\).\"\\\\n\"; preg_match\\(\"/card-value\\\\\">\\([0-9]+\\)/\",$j[\"html\"]??\"\",$m\\); echo \"card cuenta: \".\\($m[1]??\"\\(sin datos\\)\"\\).\"\\\\n\";')",
-      "Bash(/c/xampp/php/php.exe -r '$_GET[\"modal\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/modal-loader.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); echo \"success=\".\\($j[\"success\"]?\"1\":\"0\"\\).\"\\\\n\"; echo \"filas tr: \".substr_count\\($j[\"html\"]??\"\",\"<tr\"\\).\"\\\\n\"; echo \"con resaltado text-danger: \".substr_count\\($j[\"html\"]??\"\",\"text-danger\"\\).\"\\\\n\";')"
+      "Bash(/c/xampp/php/php.exe -r '$_GET[\"modal\"]=\"sincronizadosSinStock\"; ob_start\\(\\); include \"includes/modal-loader.php\"; $j=json_decode\\(ob_get_clean\\(\\),true\\); echo \"success=\".\\($j[\"success\"]?\"1\":\"0\"\\).\"\\\\n\"; echo \"filas tr: \".substr_count\\($j[\"html\"]??\"\",\"<tr\"\\).\"\\\\n\"; echo \"con resaltado text-danger: \".substr_count\\($j[\"html\"]??\"\",\"text-danger\"\\).\"\\\\n\";')",
+      "Bash(which php *)",
+      "Bash(\"/c/xampp/php/php.exe\" -l \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\stockSeguridad\\\\stockSeguridad.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" -l \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\stockSeguridad\\\\Class\\\\rubro.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" -l \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\stockSeguridad\\\\parametrizar.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" -l \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\stockSeguridad\\\\Controller\\\\guardarForm.php\")",
+      "Bash(command -v node)",
+      "Bash(node --check \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\assets\\\\js\\\\stockSeguridad.js\")",
+      "Read(//c/xampp/apache/logs//**)",
+      "Bash(tail -n 200 \"/c/xampp/apache/logs/error.log\" | grep -i \"stockSeguridad\\\\|guardarForm\\\\|rubro\" )",
+      "Read(//c/xampp/apache/logs/**)",
+      "Bash(grep -i \"PHP Warning\\\\|PHP Fatal\\\\|PHP Notice\\\\|PHP Error\" \"/c/xampp/apache/logs/error.log\" | grep -i \"stockSeguridad\\\\|guardarForm\\\\|rubro.php\\\\|matriz.php\" | tail -n 100)",
+      "Bash(grep -n \"\" \"/c/xampp/apache/logs/error.log\" | grep -i \"2026-08-18\\\\|Aug 18 1[3-9]\\\\|Aug 18 2[0-3]\" | grep -i \"stockSeguridad\\\\|guardarForm\\\\|rubro\\\\|matriz\\\\|sqlsrv\" | tail -n 150)",
+      "Bash(tail -n 400 \"/c/xampp/apache/logs/error.log\" | grep -v \"Constructor Conexion\\\\|Propiedades asignadas\\\\|host_central\\\\|database_central\\\\|user: sa\\\\|pass:\\\\|Variables de entorno\\\\|HOST_CENTRAL\\\\|DATABASE_CENTRAL\\\\|HOST_LOCALES\\\\|DATABASE_LOCALES\\\\|HOST_MONGO\\\\|DATABASE_MONGO\\\\|CHARACTER\\\\|USER:\\\\|PASS:\\\\|ENV:\" )"
     ]
   }
 }

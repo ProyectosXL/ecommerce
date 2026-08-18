@@ -23,28 +23,8 @@ function retornarDatos(db = null) {
   let cad = "";
   let rubros = [];
   let cantidad = [];
-  
-  let warehouse = ''
-  let cuenta = ''
-  let localCuenta = ''
-  let tablaRubros = ''
-  if(db == 'uy'){
 
-  warehouse = document.getElementById("inputWarehouse2Uy").value;
-  cuenta = document.getElementById("inputCuentaEditarUy").value;
-  localCuenta=document.getElementById("localCuentaUy").value;
-  tablaRubros = document.querySelectorAll(".Rubro");
-
-
-  }else{
-    warehouse = document.getElementById("inputWarehouse2").value;
-    cuenta = document.getElementById("inputCuentaEditar").value;
-    localCuenta=document.getElementById("localCuenta").value;
-    tablaRubros = document.querySelectorAll(".Rubro");
-  
-  }
-
-
+  let tablaRubros = document.querySelectorAll(".Rubro");
   tablaRubros.forEach((rubro) => {
     rubros.push(rubro.innerHTML);
   });
@@ -53,17 +33,37 @@ function retornarDatos(db = null) {
     cantidad.push(parseInt(cant.value));
   });
 
-  cad =
-    "warehouse=" +
-    encodeURIComponent(warehouse) +
-    "&cuenta=" +
-    encodeURIComponent(cuenta) +
-    "&rubros=" +
-    JSON.stringify(rubros) +
-    "&cantidad=" +
-    JSON.stringify(cantidad)+
-    "&local=" +
-    JSON.stringify(localCuenta);
+  if (db == 'uy') {
+    let warehouse = document.getElementById("inputWarehouse2Uy").value;
+    let cuenta = document.getElementById("inputCuentaEditarUy").value;
+    let localCuenta = document.getElementById("localCuentaUy").value;
+
+    cad =
+      "warehouse=" +
+      encodeURIComponent(warehouse) +
+      "&cuenta=" +
+      encodeURIComponent(cuenta) +
+      "&rubros=" +
+      JSON.stringify(rubros) +
+      "&cantidad=" +
+      JSON.stringify(cantidad)+
+      "&local=" +
+      JSON.stringify(localCuenta);
+  } else {
+    let warehouses = [];
+    document.querySelectorAll(".checkWarehouse2:checked").forEach((chk) => {
+      warehouses.push({ warehouse: chk.value, cuenta: chk.dataset.cuenta });
+    });
+
+    cad =
+      "warehouses=" +
+      encodeURIComponent(JSON.stringify(warehouses)) +
+      "&rubros=" +
+      JSON.stringify(rubros) +
+      "&cantidad=" +
+      JSON.stringify(cantidad);
+  }
+
   console.log("cadena: " + cad);
   return cad;
 }
@@ -101,29 +101,7 @@ btnAgregarRubro.addEventListener("click", () => {
     let newInput = document.createElement("input");
     newInput.type = "number";
     newInput.classList = "cantidad";
-    /****************************** */
-    let warehouse = document.getElementById('inputWarehouse2').value;
-    conexion1 = new XMLHttpRequest();
-
-    conexion1.onreadystatechange = () => {
-   
-      if (conexion1.readyState == 4 && conexion1.status == 200) {
-        
-        newCell.appendChild(newInput);
-       
-      }
-    };
-  
-    conexion1.open(
-      "GET",
-      "Class/matriz.php?warehouse="+warehouse+"&rubro=" + rubroSeleccionado,
-      true
-    );
-    conexion1.send();
-    /****************************** */
-
-   
-    
+    newCell.appendChild(newInput);
   }
 });
 
@@ -170,9 +148,14 @@ btnAgregarRubroUy.addEventListener("click", () => {
 document
   .getElementById("inputWarehouse")
   .addEventListener("change", completarModal);
+
 document
-  .getElementById("inputWarehouse2")
-  .addEventListener("change", completarModal);
+  .getElementById("checkTodosWarehouse")
+  .addEventListener("change", (e) => {
+    document.querySelectorAll(".checkWarehouse2").forEach((chk) => {
+      chk.checked = e.target.checked;
+    });
+  });
 
 let cuentas;
 
@@ -187,16 +170,9 @@ function completarModal(e) {
   let warehouse = document.getElementById(`${idModal}`).value;
   console.log("id: " + warehouse);
   let descripcionWarehouse=((document.getElementById(`${idModal}`).selectedOptions[0].innerHTML).split(" - "))[1];//obtengo el local del warehouse
-  document.getElementById('localCuenta').value=descripcionWarehouse;
 
-  if (idModal.includes("2")) {
-    console.log("entraste");
-    inputCuenta = document.getElementById("inputCuentaEditar");
-    tipoCuenta = "Editar";
-  } else {
-    inputCuenta = document.getElementById("inputCuenta");
-    tipoCuenta = "Activar";
-  }
+  inputCuenta = document.getElementById("inputCuenta");
+  tipoCuenta = "Activar";
 
   conexion1.onreadystatechange = () => {
     if (conexion1.readyState == 4 && conexion1.status == 200) {
@@ -254,8 +230,8 @@ var btnClose = document.querySelectorAll(".btnClose");
 btnClose.forEach((el) => el.addEventListener("click", limpiarForm));
 
 function limpiarForm() {
-  document.getElementById("inputWarehouse2").options.selectedIndex = 0;
-  document.getElementById("inputCuentaEditar").value = "";
+  document.querySelectorAll(".checkWarehouse2").forEach((chk) => (chk.checked = false));
+  document.getElementById("checkTodosWarehouse").checked = false;
   document.getElementById("inputRubro").options.selectedIndex = 0;
   let filas = document
     .getElementById("tablaRubroStockSeguridad")
