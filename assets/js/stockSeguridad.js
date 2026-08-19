@@ -26,7 +26,7 @@ function retornarDatos(db = null) {
 
   let tablaRubros = document.querySelectorAll(".Rubro");
   tablaRubros.forEach((rubro) => {
-    rubros.push(rubro.innerHTML);
+    rubros.push(rubro.dataset.path);
   });
   let colCantidad = document.querySelectorAll(".cantidad");
   colCantidad.forEach((cant) => {
@@ -90,12 +90,15 @@ function procesarEventos() {
 
 btnAgregarRubro.addEventListener("click", () => {
   if (!document.getElementById("inputRubro").value.includes("Seleccione rubro")) {
-    let rubroSeleccionado = document.getElementById("inputRubro").value;
+    let inputRubro = document.getElementById("inputRubro");
+    let rubroSeleccionado = inputRubro.value;
+    let nombreRubro = inputRubro.selectedOptions[0].text;
     let tablaRubro = document.getElementById("tablaRubroStockSeguridad");
     let newRow = tablaRubro.insertRow(1);
     let newCell = newRow.insertCell(0);
     newCell.classList = "Rubro";
-    let newText = document.createTextNode(`${rubroSeleccionado}`);
+    newCell.dataset.path = rubroSeleccionado;
+    let newText = document.createTextNode(`${nombreRubro}`);
     newCell.appendChild(newText);
     newCell = newRow.insertCell(1);
     let newInput = document.createElement("input");
@@ -108,12 +111,15 @@ btnAgregarRubro.addEventListener("click", () => {
 
 btnAgregarRubroUy.addEventListener("click", () => {
   if (!document.getElementById("inputRubroUy").value.includes("Seleccione rubro")) {
-    let rubroSeleccionado = document.getElementById("inputRubroUy").value;
+    let inputRubroUy = document.getElementById("inputRubroUy");
+    let rubroSeleccionado = inputRubroUy.value;
+    let nombreRubro = inputRubroUy.selectedOptions[0].text;
     let tablaRubro = document.getElementById("tablaRubroStockSeguridadUy");
     let newRow = tablaRubro.insertRow(1);
     let newCell = newRow.insertCell(0);
     newCell.classList = "Rubro";
-    let newText = document.createTextNode(`${rubroSeleccionado}`);
+    newCell.dataset.path = rubroSeleccionado;
+    let newText = document.createTextNode(`${nombreRubro}`);
     newCell.appendChild(newText);
     newCell = newRow.insertCell(1);
     let newInput = document.createElement("input");
