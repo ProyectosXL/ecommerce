@@ -33,36 +33,19 @@ function retornarDatos(db = null) {
     cantidad.push(parseInt(cant.value));
   });
 
-  if (db == 'uy') {
-    let warehouse = document.getElementById("inputWarehouse2Uy").value;
-    let cuenta = document.getElementById("inputCuentaEditarUy").value;
-    let localCuenta = document.getElementById("localCuentaUy").value;
+  let warehouses = [];
+  let checkClass = db == 'uy' ? ".checkWarehouseUy2:checked" : ".checkWarehouse2:checked";
+  document.querySelectorAll(checkClass).forEach((chk) => {
+    warehouses.push({ warehouse: chk.value, cuenta: chk.dataset.cuenta });
+  });
 
-    cad =
-      "warehouse=" +
-      encodeURIComponent(warehouse) +
-      "&cuenta=" +
-      encodeURIComponent(cuenta) +
-      "&rubros=" +
-      JSON.stringify(rubros) +
-      "&cantidad=" +
-      JSON.stringify(cantidad)+
-      "&local=" +
-      JSON.stringify(localCuenta);
-  } else {
-    let warehouses = [];
-    document.querySelectorAll(".checkWarehouse2:checked").forEach((chk) => {
-      warehouses.push({ warehouse: chk.value, cuenta: chk.dataset.cuenta });
-    });
-
-    cad =
-      "warehouses=" +
-      encodeURIComponent(JSON.stringify(warehouses)) +
-      "&rubros=" +
-      JSON.stringify(rubros) +
-      "&cantidad=" +
-      JSON.stringify(cantidad);
-  }
+  cad =
+    "warehouses=" +
+    encodeURIComponent(JSON.stringify(warehouses)) +
+    "&rubros=" +
+    JSON.stringify(rubros) +
+    "&cantidad=" +
+    JSON.stringify(cantidad);
 
   console.log("cadena: " + cad);
   return cad;
@@ -125,29 +108,7 @@ btnAgregarRubroUy.addEventListener("click", () => {
     let newInput = document.createElement("input");
     newInput.type = "number";
     newInput.classList = "cantidad";
-    /****************************** */
-    let warehouse = document.getElementById('inputWarehouse2Uy').value;
-    conexion1 = new XMLHttpRequest();
-
-    conexion1.onreadystatechange = () => {
-   
-      if (conexion1.readyState == 4 && conexion1.status == 200) {
-        
-        newCell.appendChild(newInput);
-       
-      }
-    };
-  
-    conexion1.open(
-      "GET",
-      "Class/matriz.php?warehouse="+warehouse+"&rubro=" + rubroSeleccionado,
-      true
-    );
-    conexion1.send();
-    /****************************** */
-
-   
-    
+    newCell.appendChild(newInput);
   }
 });
 
@@ -159,6 +120,14 @@ document
   .getElementById("checkTodosWarehouse")
   .addEventListener("change", (e) => {
     document.querySelectorAll(".checkWarehouse2").forEach((chk) => {
+      chk.checked = e.target.checked;
+    });
+  });
+
+document
+  .getElementById("checkTodosWarehouseUy")
+  .addEventListener("change", (e) => {
+    document.querySelectorAll(".checkWarehouseUy2").forEach((chk) => {
       chk.checked = e.target.checked;
     });
   });
@@ -244,6 +213,16 @@ function limpiarForm() {
     .getElementsByTagName("tr");
   for (let i = filas.length - 1; i > 0; i--) {
     filas[i].remove();
+  }
+
+  document.querySelectorAll(".checkWarehouseUy2").forEach((chk) => (chk.checked = false));
+  document.getElementById("checkTodosWarehouseUy").checked = false;
+  document.getElementById("inputRubroUy").options.selectedIndex = 0;
+  let filasUy = document
+    .getElementById("tablaRubroStockSeguridadUy")
+    .getElementsByTagName("tr");
+  for (let i = filasUy.length - 1; i > 0; i--) {
+    filasUy[i].remove();
   }
 }
 
@@ -363,6 +342,7 @@ const cambiarEntorno = (t) =>{
   }else{
 
     document.querySelector("#btn_active").setAttribute("data-target","#modalActive")
+    document.querySelector("#btn_edit").setAttribute("data-target","#modalParameters")
 
     $.ajax({
       url: "Controller/stockDeSeguridadController.php?accion=cambiarEntornoArg",
@@ -409,16 +389,9 @@ const cambiarEntorno = (t) =>{
 }
 
 const completarModalUY = (e) => {
-  
+
   let valor  = e.querySelectorAll("option")[e.selectedIndex].getAttribute("valor-cuenta")
   document.querySelector("#inputCuentaUy").value = valor;
-
-}
-
-const completarModalEditUY = (e) => {
-  
-  let valor  = e.querySelectorAll("option")[e.selectedIndex].getAttribute("valor-cuenta")
-  document.querySelector("#inputCuentaEditarUy").value = valor;
 
 }
 

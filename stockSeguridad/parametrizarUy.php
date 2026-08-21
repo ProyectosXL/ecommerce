@@ -23,22 +23,24 @@ $todasLasCuentas = json_decode($todasLasCuentas);
                 <form>
                     <div class="form-group">
                         <label for="recipient-name" class="col-form-label">Warehouse:</label>
-                        <select id="inputWarehouse2Uy"  onchange="completarModalEditUY(this)"  class="form-control form-control-sm selected" name="warehouse">
-                            <option selected disabled>Seleccione el ID</option>
-                            <?php
-
-                            foreach ($todasLasCuentas as $valor => $value) {
-                                /* $cuenta=$value-> */
-                            ?>
-                                <option id="WAREHOUSE_ID2" value="<?= $value->WAREHOUSE_ID; ?>" valor-cuenta="<?= $value->VTEX_CUENTA ?>"><?= $value->WAREHOUSE_ID.' - '.$value->DESCRIPCION?></option>
-                            <?php
-                            }
-                            ?>
-                        </select>
-
-                        <label for="recipient-name" class="col-form-label">Cuenta:</label>
-                        <input value="" type="text" class="form-control cuentaVtex" id="inputCuentaEditarUy" name="cuenta" disabled>
-                        <input value="" type="text" id="localCuentaUy" disabled hidden>
+                        <div class="contWarehouses">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="checkTodosWarehouseUy">
+                                <label class="form-check-label" for="checkTodosWarehouseUy"><b>Seleccionar todos</b></label>
+                            </div>
+                            <div class="listaWarehouse">
+                                <?php
+                                foreach ($todasLasCuentas as $valor => $value) {
+                                ?>
+                                    <div class="form-check">
+                                        <input class="form-check-input checkWarehouseUy2" type="checkbox" id="wh2uy_<?= $value->WAREHOUSE_ID; ?>" value="<?= $value->WAREHOUSE_ID; ?>" data-cuenta="<?= $value->VTEX_CUENTA; ?>">
+                                        <label class="form-check-label" for="wh2uy_<?= $value->WAREHOUSE_ID; ?>"><?= $value->WAREHOUSE_ID . ' - ' . $value->DESCRIPCION . ' (' . $value->VTEX_CUENTA . ')'; ?></label>
+                                    </div>
+                                <?php
+                                }
+                                ?>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
