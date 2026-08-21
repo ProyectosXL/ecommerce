@@ -99,7 +99,7 @@ $matrizStockSeguridad = new Matriz();
     ?>
         <div class="table-responsive mt-4">
             <table class="table table-hover table-condensed table-striped text-center">
-                <thead class="thead-dark">
+                <thead class="thead-dark" id="tableHead">
                     <th scope="col" style="width: 1%; display:none;">ID</th>
                     <th scope="col" style="width: 1%; display:none;">WAREHOUSE</th>
                     <th scope="col" style="width: 10%">CUENTA VTEX</th>

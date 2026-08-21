@@ -60,8 +60,7 @@ function procesarEventos() {
         title: "La matriz de stock de seguridad fue actualizada exitosamente!",
         showConfirmButton: true,
       }).then(function () {
-        window.location.reload();
-        // console.log('ok')
+        cambiarEntorno(document.getElementById("checkEntorno"));
       });
     } else {
       if (conexion1.responseText.includes("Error")) {
@@ -286,6 +285,28 @@ function activarWarehouse(db = 'central') {
   }
 }
 
+function actualizarEncabezado(data) {
+  let head = document.getElementById('tableHead');
+  if (!head || !data.length) return;
+
+  let html = `
+    <th scope="col" style="width: 1%; display:none;">ID</th>
+    <th scope="col" style="width: 1%; display:none;">WAREHOUSE</th>
+    <th scope="col" style="width: 10%">CUENTA VTEX</th>
+    <th scope="col" style="width: 10%">SUCURSAL</th>
+  `;
+
+  Object.keys(data[0]).forEach((element) => {
+    if (isNaN(element)) {
+      if (element.trim() != 'ID' && element != 'WAREHOUSE_ID' && element != 'VTEX_CUENTA' && element != 'DESC_SUCURSAL') {
+        html += `<th scope="col" style="width: 1%">${element.replace(/_/g, ' ')}</th>`;
+      }
+    }
+  });
+
+  head.innerHTML = html;
+}
+
 const cambiarEntorno = (t) =>{
   let spinner = document.querySelector("#boxLoading");
 
@@ -305,8 +326,7 @@ const cambiarEntorno = (t) =>{
         let tabla = document.getElementById('table');
 
         tabla.innerHTML = '';
-
-       
+        actualizarEncabezado(data);
 
         data.forEach((row,x) => {
           const keys = Object.keys(row);
@@ -351,6 +371,7 @@ const cambiarEntorno = (t) =>{
         data = JSON.parse(data);
         let tabla = document.getElementById('table');
         tabla.innerHTML = '';
+        actualizarEncabezado(data);
 
         data.forEach((row) => {
   

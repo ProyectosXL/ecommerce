@@ -36,7 +36,16 @@
       "Bash(tail -n 400 \"/c/xampp/apache/logs/error.log\" | grep -v \"Constructor Conexion\\\\|Propiedades asignadas\\\\|host_central\\\\|database_central\\\\|user: sa\\\\|pass:\\\\|Variables de entorno\\\\|HOST_CENTRAL\\\\|DATABASE_CENTRAL\\\\|HOST_LOCALES\\\\|DATABASE_LOCALES\\\\|HOST_MONGO\\\\|DATABASE_MONGO\\\\|CHARACTER\\\\|USER:\\\\|PASS:\\\\|ENV:\" )",
       "Bash(php -l \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\stockSeguridad\\\\parametrizarUy.php\")",
       "Bash(php -l \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\assets\\\\js\\\\stockSeguridad.js\")",
-      "Bash(\"/c/xampp/php/php.exe\" -l \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\stockSeguridad\\\\parametrizarUy.php\")"
+      "Bash(\"/c/xampp/php/php.exe\" -l \"c:\\\\xampp\\\\htdocs\\\\ecommerce\\\\stockSeguridad\\\\parametrizarUy.php\")",
+      "Bash(node --check \"c:/xampp/htdocs/ecommerce/assets/js/stockSeguridad.js\")",
+      "Bash(\"/c/xampp/php/php.exe\" -m)",
+      "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/diag.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/diag2.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/diag3.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/fix_uy.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/fix_uy2.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/check_ar_cols.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" -l \"c:/xampp/htdocs/ecommerce/stockSeguridad/stockSeguridad.php\")"
     ]
   }
 }
