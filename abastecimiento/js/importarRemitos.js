@@ -106,14 +106,16 @@ class RemitoManager {
             this.ejecutarAltaPartida();
         });
 
-        // Al cambiar artículo o depósito (Select2) o escribir en partida, invalidar la verificación
-        $('#inputCodArticu, #inputCodDepo').on('change', () => {
+        // Al cambiar artículo, depósito o partida, invalidar la verificación
+        $('#inputCodArticu, #inputCodDepo, #inputNPartida').on('change', () => {
             document.getElementById('btnEjecutarAltaPartida').disabled = true;
             document.getElementById('infoPartida').classList.add('d-none');
             document.getElementById('alertaPartida').classList.add('d-none');
         });
-        document.getElementById('inputNPartida').addEventListener('input', () => {
-            document.getElementById('btnEjecutarAltaPartida').disabled = true;
+
+        // Al cambiar artículo o depósito, recargar las partidas asociadas a esa combinación
+        $('#inputCodArticu, #inputCodDepo').on('change', () => {
+            this.cargarPartidasNPartida();
         });
 
         // Inicializar Select2 la primera vez que se abre el modal
@@ -970,6 +972,70 @@ inicializarSelect2AltaPartida() {
             processResults: (data) => ({ results: data.results || [] })
         }
     });
+
+    // Número de Partida: se puebla dinámicamente según artículo + depósito
+    $('#inputNPartida').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $modal,
+        placeholder: 'Seleccioná artículo y depósito primero'
+    });
+}
+
+async cargarPartidasNPartida() {
+    const codArticu = ($('#inputCodArticu').val() || '').trim();
+    const codDepo   = ($('#inputCodDepo').val()   || '').trim();
+    const $select   = $('#inputNPartida');
+
+    $select.empty();
+
+    if (!codArticu || !codDepo) {
+        $select.append(new Option('Seleccioná artículo y depósito primero', '', true, true));
+        $select.prop('disabled', true).trigger('change');
+        return;
+    }
+
+    $select.append(new Option('Buscando partidas...', '', true, true));
+    $select.prop('disabled', true).trigger('change');
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'buscarPartidas');
+        formData.append('codArticu', codArticu);
+        formData.append('codDepo', codDepo);
+
+        const response = await fetch('/ecommerce/Abastecimiento/Controller/importarRemitos.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const results = data.results || [];
+
+        $select.empty();
+
+        if (results.length === 0) {
+            $select.append(new Option('Sin partidas asociadas a este artículo/depósito', '', true, true));
+            $select.prop('disabled', true).trigger('change');
+            this.mostrarAlertaPartida('No se encontró ninguna partida asociada a este artículo y depósito. Esta herramienta solo puede usarse cuando existe una partida de importación pendiente de registrar.', 'warning');
+            document.getElementById('alertaPartida').classList.remove('d-none');
+        } else {
+            $select.append(new Option('', '', true, true));
+            results.forEach(r => {
+                $select.append(new Option(r.text, r.id, false, false));
+            });
+            $select.prop('disabled', false).trigger('change');
+        }
+
+    } catch (error) {
+        console.error('Error al cargar partidas:', error);
+        $select.empty();
+        $select.append(new Option('Error al cargar partidas', '', true, true));
+        $select.prop('disabled', true).trigger('change');
+    }
 }
 
 abrirModalAltaPartida() {
@@ -984,7 +1050,6 @@ limpiarModalAltaPartida() {
     // Limpiar Select2 (requiere la API de jQuery)
     $('#inputCodArticu').val(null).trigger('change');
     $('#inputCodDepo').val(null).trigger('change');
-    document.getElementById('inputNPartida').value = '';
     document.getElementById('inputCantidad').value = '';
     document.getElementById('inputCantidad').placeholder = 'Automático';
     document.getElementById('infoPartida').classList.add('d-none');
@@ -1068,6 +1133,9 @@ async verificarPartida() {
         } else if ((data.stockSta19 === null || data.stockSta19 === undefined) && !inputCantidad.value) {
             this.mostrarAlertaPartida('No hay stock disponible registrado para este artículo y depósito. Ingresá una cantidad manualmente.', 'warning');
             btnEjecutar.disabled = true;
+        } else if (!data.tienePartidasCandidatas) {
+            this.mostrarAlertaPartida('No se encontró ninguna partida asociada a este artículo y depósito. Esta herramienta solo puede usarse cuando existe una partida de importación pendiente de registrar.', 'warning');
+            btnEjecutar.disabled = true;
         } else {
             this.mostrarAlertaPartida('Verificación correcta. Podés proceder con el alta.', 'success');
             btnEjecutar.disabled = false;
@@ -1117,8 +1185,13 @@ async ejecutarAltaPartida() {
     const btnEjecutar = document.getElementById('btnEjecutarAltaPartida');
     const originalText = btnEjecutar.innerHTML;
 
-    if (!codArticu || !codDepo || !nPartida) {
-        this.mostrarToast('Artículo, depósito y número de partida son requeridos', 'error');
+    if (!codArticu || !codDepo) {
+        this.mostrarToast('Seleccioná artículo y depósito antes de continuar', 'error');
+        return;
+    }
+
+    if (!nPartida) {
+        this.mostrarToast('Seleccioná un número de partida antes de continuar', 'error');
         return;
     }
 

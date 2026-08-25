@@ -302,7 +302,10 @@
                             <label for="inputNPartida" class="form-label">
                                 <i class="bi bi-hash me-1"></i> Número de Partida:
                             </label>
-                            <input type="text" class="form-control" id="inputNPartida" placeholder="N_PARTIDA" maxlength="50">
+                            <select class="form-select" id="inputNPartida" style="width:100%" disabled>
+                                <option value="">Seleccioná artículo y depósito primero</option>
+                            </select>
+                            <div class="form-text">Se completa con las partidas asociadas al artículo y depósito seleccionados.</div>
                         </div>
                         <div class="col-md-6">
                             <label for="inputCantidad" class="form-label">

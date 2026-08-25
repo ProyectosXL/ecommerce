@@ -400,6 +400,42 @@ public function buscarDepositos() {
 }
 
 /**
+ * Devuelve las partidas asociadas a un artículo y depósito (SJ_ARTICULOS_MAX_PARTIDAS),
+ * para poblar el select de N_PARTIDA en el alta de partidas (Select2 AJAX).
+ */
+public function buscarPartidas($codArticu, $codDepo) {
+    $cid = new Conexion();
+    $cid_central = $cid->conectarSql('central');
+
+    try {
+        $sql = "SELECT DISTINCT N_PARTIDA
+                FROM SJ_ARTICULOS_MAX_PARTIDAS
+                WHERE COD_ARTICU = ? AND COD_DEPOSI = ?
+                ORDER BY N_PARTIDA";
+        $result = sqlsrv_query($cid_central, $sql, array($codArticu, $codDepo));
+
+        if ($result === false) {
+            throw new Exception($this->primerErrorSql());
+        }
+
+        $results = [];
+        while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
+            $results[] = [
+                'id'   => $row['N_PARTIDA'],
+                'text' => $row['N_PARTIDA']
+            ];
+        }
+
+        sqlsrv_close($cid_central);
+        return ['results' => $results];
+
+    } catch (Exception $e) {
+        sqlsrv_close($cid_central);
+        return ['results' => [], 'error' => $e->getMessage()];
+    }
+}
+
+/**
  * Verifica el estado previo para el alta de una partida (herramienta RO_SP_ALTA_PARTIDAS).
  * Devuelve si el artículo/depósito ya tiene partida en STA10, el stock disponible en STA19
  * y si el artículo (STA11) y el depósito (STA22) existen en las tablas que requiere el SP.
@@ -447,14 +483,24 @@ public function verificarPartida($codArticu, $codDepo) {
         $rowSta22 = sqlsrv_fetch_array($rSta22, SQLSRV_FETCH_ASSOC);
         $existeEnSta22 = ($rowSta22['total'] ?? 0) > 0;
 
+        // ¿Hay alguna partida pendiente de registrar para este artículo/depósito?
+        $sqlPartidas = "SELECT COUNT(*) AS total FROM SJ_ARTICULOS_MAX_PARTIDAS WHERE COD_ARTICU = ? AND COD_DEPOSI = ?";
+        $rPartidas = sqlsrv_query($cid_central, $sqlPartidas, $params);
+        if ($rPartidas === false) {
+            throw new Exception('Error al consultar SJ_ARTICULOS_MAX_PARTIDAS: ' . $this->primerErrorSql());
+        }
+        $rowPartidas = sqlsrv_fetch_array($rPartidas, SQLSRV_FETCH_ASSOC);
+        $tienePartidasCandidatas = ($rowPartidas['total'] ?? 0) > 0;
+
         sqlsrv_close($cid_central);
 
         return [
-            'success'        => true,
-            'existeEnSta10'  => $existeEnSta10,
-            'stockSta19'     => $stockSta19 !== null ? (float)$stockSta19 : null,
-            'existeEnSta11'  => $existeEnSta11,
-            'existeEnSta22'  => $existeEnSta22
+            'success'                 => true,
+            'existeEnSta10'           => $existeEnSta10,
+            'stockSta19'              => $stockSta19 !== null ? (float)$stockSta19 : null,
+            'existeEnSta11'           => $existeEnSta11,
+            'existeEnSta22'           => $existeEnSta22,
+            'tienePartidasCandidatas' => $tienePartidasCandidatas
         ];
 
     } catch (Exception $e) {

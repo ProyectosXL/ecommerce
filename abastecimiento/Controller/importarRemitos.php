@@ -114,6 +114,19 @@ try {
                 echo json_encode($remito->buscarDepositos());
                 break;
 
+            case 'buscarPartidas':
+                $codArticu = trim($_POST['codArticu'] ?? '');
+                $codDepo   = trim($_POST['codDepo'] ?? '');
+
+                if (empty($codArticu) || empty($codDepo)) {
+                    echo json_encode(['results' => []]);
+                    break;
+                }
+
+                $remito = new Remito();
+                echo json_encode($remito->buscarPartidas($codArticu, $codDepo));
+                break;
+
             case 'verificarPartida':
                 $codArticu = trim($_POST['codArticu'] ?? '');
                 $codDepo   = trim($_POST['codDepo'] ?? '');
@@ -138,10 +151,18 @@ try {
                 $nPartida  = trim($_POST['nPartida'] ?? '');
                 $cantidad  = isset($_POST['cantidad']) ? trim($_POST['cantidad']) : '';
 
-                if (empty($codArticu) || empty($codDepo) || empty($nPartida)) {
+                if (empty($codArticu) || empty($codDepo)) {
                     echo json_encode([
                         'success' => false,
-                        'message' => 'Código de artículo, depósito y número de partida son requeridos'
+                        'message' => 'Código de artículo y depósito son requeridos'
+                    ]);
+                    break;
+                }
+
+                if (empty($nPartida)) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Número de partida es requerido'
                     ]);
                     break;
                 }
