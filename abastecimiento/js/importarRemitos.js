@@ -106,8 +106,9 @@ class RemitoManager {
             this.ejecutarAltaPartida();
         });
 
-        // Al cambiar artículo, depósito o partida, invalidar la verificación
-        $('#inputCodArticu, #inputCodDepo, #inputNPartida').on('change', () => {
+        // Al cambiar artículo o depósito, invalidar la verificación
+        // (la partida no se valida en verificarPartida, así que elegirla no debe deshabilitar el botón)
+        $('#inputCodArticu, #inputCodDepo').on('change', () => {
             document.getElementById('btnEjecutarAltaPartida').disabled = true;
             document.getElementById('infoPartida').classList.add('d-none');
             document.getElementById('alertaPartida').classList.add('d-none');
