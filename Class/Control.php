@@ -185,14 +185,20 @@ class Control extends Conexion {
     }
 
     public function traerNcPendDevoluciones() {
-        $sql = "SELECT MIN(CAST(FECHA_PEDI AS DATE)) FECHA, COUNT(*) CANT_NC_DEV, SUM(IMPORTE) IMPORTE_PEND FROM 
+        $sql = "SELECT MIN(CAST(FECHA_PEDI AS DATE)) FECHA, COUNT(*) CANT_NC_DEV, SUM(IMPORTE) IMPORTE_PEND FROM
                 (
                 SELECT A.FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, C.N_COMP, D.IMPORTE FROM GVA21 A
-                LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-60 AND (B.CANCELADO = 1 OR REINTEGRADO = 1)
-                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-60 AND C.N_COMP IS NOT NULL
+                AND EXISTS (
+                    SELECT 1 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE B
+                    WHERE B.ORDER_ID = A.ORDER_ID_TIENDA AND (B.CANCELADO = 1 OR B.REINTEGRADO = 1)
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE B2
+                    WHERE B2.ORDER_ID = A.ORDER_ID_TIENDA AND B2.NCR IS NOT NULL
+                )
                 ) A";
         return $this->getDatos($sql);
     }
@@ -200,13 +206,19 @@ class Control extends Conexion {
     public function traerDetalleNcPendDevoluciones() {
         $sql = "SELECT CAST(A.FECHA_PEDI AS DATE) FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, UPPER(E.RAZON_SOCI) CLIENTE,
                 D.COD_SUCURS, F.SUCURSAL, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
-                LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
                 LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
 				LEFT JOIN RO_T_DEPOSITOS_ECOMMERCE_TIENDAS F ON D.COD_SUCURS = F.COD_DEPOSI_ECOMM
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-60 AND (B.CANCELADO = 1 OR REINTEGRADO = 1)
-                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-60 AND C.N_COMP IS NOT NULL
+                AND EXISTS (
+                    SELECT 1 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE B
+                    WHERE B.ORDER_ID = A.ORDER_ID_TIENDA AND (B.CANCELADO = 1 OR B.REINTEGRADO = 1)
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE B2
+                    WHERE B2.ORDER_ID = A.ORDER_ID_TIENDA AND B2.NCR IS NOT NULL
+                )
                 ORDER BY A.FECHA_PEDI ASC";
         return $this->getDatosMultiples($sql);
     }
@@ -219,7 +231,7 @@ class Control extends Conexion {
                 INNER JOIN GVA53 B ON A.T_COMP = B.T_COMP AND A.N_COMP = B.N_COMP
                 WHERE COD_CLIENT = '000000' 
                 AND FECHA_EMIS >= DATEADD(DAY, -7, CAST(GETDATE() AS DATE))
-                AND A.T_COMP = 'NCR' 
+                AND A.T_COMP IN ('NCR', 'NCP')
                 AND B.COD_ARTICU LIKE '[XO]%'
                 GROUP BY CAST(A.FECHA_EMIS AS DATE)
                 ORDER BY CAST(A.FECHA_EMIS AS DATE)";
@@ -442,14 +454,20 @@ class Control extends Conexion {
     }
 
     public function traerNcPendDevolucionesUruguay() {
-        $sql = "SELECT MIN(CAST(FECHA_PEDI AS DATE)) FECHA, COUNT(*) CANT_NC_DEV, SUM(IMPORTE) IMPORTE_PEND FROM 
+        $sql = "SELECT MIN(CAST(FECHA_PEDI AS DATE)) FECHA, COUNT(*) CANT_NC_DEV, SUM(IMPORTE) IMPORTE_PEND FROM
                 (
                 SELECT A.FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, C.N_COMP, D.IMPORTE FROM GVA21 A
-                LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1
-                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND A.COD_SUCURS LIKE 'U%'
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND C.N_COMP IS NOT NULL AND A.COD_SUCURS LIKE 'U%'
+                AND EXISTS (
+                    SELECT 1 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE B
+                    WHERE B.ORDER_ID = A.ORDER_ID_TIENDA AND B.CANCELADO = 1
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE B2
+                    WHERE B2.ORDER_ID = A.ORDER_ID_TIENDA AND B2.NCR IS NOT NULL
+                )
                 ) A";
         
         try {
@@ -491,12 +509,18 @@ class Control extends Conexion {
     public function traerDetalleNcPendDevolucionesUruguay() {
         $sql = "SELECT CAST(A.FECHA_PEDI AS DATE) FECHA_PEDI, A.NRO_PEDIDO, A.ORDER_ID_TIENDA, UPPER(E.RAZON_SOCI) CLIENTE,
                 D.COD_SUCURS, A.COD_SUCURS AS SUCURSAL, C.N_COMP, CAST(D.IMPORTE AS FLOAT) IMPORTE FROM GVA21 A
-                LEFT JOIN RO_T_ESTADO_PEDIDOS_ECOMMERCE B ON A.ORDER_ID_TIENDA = B.ORDER_ID
                 LEFT JOIN GVA55 C ON A.TALON_PED = C.TALON_PED AND A.NRO_PEDIDO = C.NRO_PEDIDO
                 LEFT JOIN GVA12 D ON C.N_COMP = D.N_COMP AND C.T_COMP = D.T_COMP
                 LEFT JOIN GVA38 E ON A.TALON_PED = E.TALONARIO AND A.NRO_PEDIDO = E.N_COMP
-                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND B.CANCELADO = 1
-                AND B.NCR IS NULL AND C.N_COMP IS NOT NULL AND A.COD_SUCURS LIKE 'U%'
+                WHERE A.COD_CLIENT = '000000' AND A.FECHA_PEDI >= GETDATE()-150 AND C.N_COMP IS NOT NULL AND A.COD_SUCURS LIKE 'U%'
+                AND EXISTS (
+                    SELECT 1 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE B
+                    WHERE B.ORDER_ID = A.ORDER_ID_TIENDA AND B.CANCELADO = 1
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM RO_T_ESTADO_PEDIDOS_ECOMMERCE B2
+                    WHERE B2.ORDER_ID = A.ORDER_ID_TIENDA AND B2.NCR IS NOT NULL
+                )
                 ORDER BY A.FECHA_PEDI ASC";
         
         try {
