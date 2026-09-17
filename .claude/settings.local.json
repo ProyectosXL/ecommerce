@@ -45,7 +45,8 @@
       "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/fix_uy.php\")",
       "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/fix_uy2.php\")",
       "Bash(\"/c/xampp/php/php.exe\" \"C:/Users/SANTOS~1.GAR/AppData/Local/Temp/claude/c--xampp-htdocs-ecommerce/823e0a5d-d5d4-49f7-8cc7-8c2eccc3ba12/scratchpad/check_ar_cols.php\")",
-      "Bash(\"/c/xampp/php/php.exe\" -l \"c:/xampp/htdocs/ecommerce/stockSeguridad/stockSeguridad.php\")"
+      "Bash(\"/c/xampp/php/php.exe\" -l \"c:/xampp/htdocs/ecommerce/stockSeguridad/stockSeguridad.php\")",
+      "Bash(/c/xampp/php/php.exe -r ' *)"
     ]
   }
 }

@@ -28,7 +28,8 @@ include "dataSegmentacionDeClientes.php";
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
                 <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Segmentacion de Clientes</h6></div>
                     <div class="card card-1">
-                        <div class="row" style = "height:845px;width:100%;margin-left:10px;margin-top:5px;margin-bottom:5px">
+                        <!-- min-height y no height: con 8 filtros la columna izquierda supera los 845px -->
+                        <div class="row" style = "min-height:845px;width:100%;margin-left:10px;margin-top:5px;margin-bottom:5px">
                         <div id="boxLoading"></div>
                             <div class="col-3" style="border:solid 1px;">
                                 <form action="">
@@ -166,6 +167,58 @@ include "dataSegmentacionDeClientes.php";
 
                                         </select>
                                     </div>
+
+                                    <div class="row" style="margin-top:5px">
+
+                                        <label style="margin-left:20px"><i class="bi bi-map"></i> Provincia</label>
+
+                                        <select id="selectProvincia" name="selectProvincia[]" style="width:100%;margin-left:20px" class="js-states form-control select2-hidden-accessible" multiple="" onchange="filtrarPorProvincia()" data-select2-id="selectProvincia" tabindex="-1" aria-hidden="true">
+
+                                            <?php
+                                                foreach ($provincias as $prov) {
+                                                    $sel = in_array($prov, $selectProvincia) ? ' selected="selected"' : '';
+                                                    echo '<option value="'.htmlspecialchars($prov, ENT_QUOTES).'"'.$sel.'>'
+                                                         .htmlspecialchars($prov).'</option>';
+                                                }
+                                            ?>
+
+                                        </select>
+                                    </div>
+
+                                    <div class="row" style="margin-top:5px">
+
+                                        <label style="margin-left:20px"><i class="bi bi-geo-alt"></i> Localidad</label>
+
+                                        <select id="selectLocalidad" name="selectLocalidad[]" style="width:100%;margin-left:20px" class="js-states form-control select2-hidden-accessible" multiple="" onchange="filtrarPorLocalidad()" data-select2-id="selectLocalidad" tabindex="-1" aria-hidden="true">
+
+                                            <?php
+                                                foreach ($localidades as $loc) {
+                                                    $sel = in_array($loc['LOCALIDAD'], $selectLocalidad) ? ' selected="selected"' : '';
+                                                    echo '<option value="'.htmlspecialchars($loc['LOCALIDAD'], ENT_QUOTES).'"'.$sel.'>'
+                                                         .htmlspecialchars($loc['LOCALIDAD']).'</option>';
+                                                }
+                                            ?>
+
+                                        </select>
+                                    </div>
+
+                                    <div class="row" style="margin-top:5px">
+
+                                        <label style="margin-left:20px"><i class="bi bi-shop"></i> Tienda</label>
+
+                                        <select id="selectTienda" name="selectTienda[]" style="width:100%;margin-left:20px" class="js-states form-control select2-hidden-accessible" multiple="" data-select2-id="selectTienda" tabindex="-1" aria-hidden="true">
+
+                                            <?php
+                                                // El value es el NRO_SUCURSAL: es lo que despues va al $match de Mongo.
+                                                foreach ($sucursales as $suc) {
+                                                    $sel = in_array($suc['NRO_SUCURSAL'], $selectTienda) ? ' selected="selected"' : '';
+                                                    echo '<option value="'.htmlspecialchars($suc['NRO_SUCURSAL'], ENT_QUOTES).'"'.$sel.'>'
+                                                         .htmlspecialchars($suc['DESC_SUCURSAL']).'</option>';
+                                                }
+                                            ?>
+
+                                        </select>
+                                    </div>
                                 </form>
 
                             </div>
@@ -183,33 +236,42 @@ include "dataSegmentacionDeClientes.php";
                                                 <table class="table table-hover table-condensed table-striped text-center" id="tablaClientes" style="width: 100%;" cellspacing="0" data-page-length="100">
                                                     
                                                     <thead class="thead-dark" style="font-size: small;">
-                                                        <th scope="col" style="width: 6%">NOMBRE Y APELLIDO</th>
-                                                        <th scope="col" style="width: 15%">DNI</th>
-                                                        <th scope="col" style="width: 8%">RANGO ETARIO</th>
-                                                        <th scope="col" style="width: 8%">EMAIL</th>
-                                                        <th scope="col" style="width: 8%">CANT.COMPRAS</th>
-
+                                                        <tr>
+                                                            <th scope="col" style="width: 16%">NOMBRE Y APELLIDO</th>
+                                                            <th scope="col" style="width: 8%">DNI</th>
+                                                            <th scope="col" style="width: 7%">RANGO ETARIO</th>
+                                                            <th scope="col" style="width: 17%">EMAIL</th>
+                                                            <th scope="col" style="width: 20%">TIENDA</th>
+                                                            <th scope="col" style="width: 12%">PROVINCIA</th>
+                                                            <th scope="col" style="width: 13%">LOCALIDAD</th>
+                                                            <th scope="col" style="width: 7%">CANT.COMPRAS</th>
+                                                        </tr>
                                                     </thead>
 
                                                     <tbody id="tableVb" style="font-size: small;">
-                                                        <?php 
+                                                        <?php
                                                             foreach ($clientes as $key => $value) {
-                                           
+
                                                                 $dataArray = (array) $value;
                                                                 $cantidad = 0;
-                                                                if(!isset($dataArray['ARTICULOS'])){
-                                                                    break;
-                                                                }
-                                                                foreach ($dataArray['ARTICULOS'] as $v) {
-                                                                    $cantidad += $v['CANTIDAD'];
-                                                                } 
 
-                                                            
+                                                                // Antes habia un break aca: el primer cliente sin ARTICULOS
+                                                                // cortaba el foreach entero y truncaba toda la tabla.
+                                                                if(isset($dataArray['ARTICULOS'])){
+                                                                    foreach ($dataArray['ARTICULOS'] as $v) {
+                                                                        $cantidad += $v['CANTIDAD'];
+                                                                    }
+                                                                }
+
+
                                                                 echo '<tr>';
-                                                                    echo '<td>'.$value['NOMBRE_CLI'].'</td>';
-                                                                    echo '<td>'.$value['DNI'].'</td>';
-                                                                    echo '<td>'.$value['RANGO_ETARIO'].'</td>';
-                                                                    echo '<td>'.$value['E_MAIL'].'</td>';
+                                                                    echo '<td>'.htmlspecialchars($value['NOMBRE_CLI']   ?? '').'</td>';
+                                                                    echo '<td>'.htmlspecialchars($value['DNI']          ?? '').'</td>';
+                                                                    echo '<td>'.htmlspecialchars($value['RANGO_ETARIO'] ?? '').'</td>';
+                                                                    echo '<td>'.htmlspecialchars($value['E_MAIL']       ?? '').'</td>';
+                                                                    echo '<td>'.htmlspecialchars($value['TIENDAS']      ?? '').'</td>';
+                                                                    echo '<td>'.htmlspecialchars($value['PROVINCIAS']   ?? '').'</td>';
+                                                                    echo '<td>'.htmlspecialchars($value['LOCALIDADES']  ?? '').'</td>';
                                                                     echo '<td>'.$cantidad.'</td>';
                                                                 echo '</tr>';
                                                             }
@@ -245,44 +307,12 @@ include "dataSegmentacionDeClientes.php";
     </body>
 
     </html>
-    <script>    
-mostrarSpiner()
+    <script>
+        // La config de DataTables vive en js/segmentacionDeClientes.js (initTablaClientes),
+        // compartida con exportTable() para que no se dupliquen.
+        mostrarSpiner()
+
         $(document).ready( function () {
-
-        $('#tablaClientes').DataTable({
-            "bLengthChange": false,
-            "bInfo": false,
-            "aaSorting": false,
-            'columnDefs': [
-                {
-                    "targets": "_all", 
-                    "className": "text-center",
-                    "sortable": false,
-             
-                },
-            ],
-            "oLanguage": {
-  
-                "sSearch": "Busqueda rapida:",
-                "sSearchPlaceholder" : "Sobre cualquier campo"
-                
-
-            },
-        });
-        $("#tablaClientes_filter").append('<button class="btn btn-success btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="exportTable()"> Exportar<i class="bi bi-file-earmark-excel"></i></button>');
-        $('.dataTables_filter input[type="search"]').css(
-            {'height':'40px'}
-        );
-
-
-        let newdiv2 = document.createElement( "strong" );
-        let newdiv1 =  "<?= $total ?> Registros Encontrado" ;
-        newdiv2.append(newdiv1)
-
-        $("#tablaClientes_filter").parent().parent().children()[0].appendChild(newdiv2);
-        document.querySelector("#boxLoading").classList.remove("loading")
-    
-    } );
-
-    // document.querySelector("#selectBanco").selectedOptions[0].value
+            initTablaClientes();
+        } );
     </script>
