@@ -4,10 +4,11 @@ class Cliente{
 
     /**
      * Campo de sucursal en los documentos de la coleccion Ventas.
-     * Confirmar el nombre real con segmentacion/diagnosticoVentas.php y ajustar aca:
-     * es el unico lugar donde esta escrito el nombre del campo.
+     * Verificado con segmentacion/diagnosticoVentas.php: se llama NRO_SUCURS (no
+     * NRO_SUCURSAL, que es el nombre en DIRECCIONARIO) y viene como entero.
+     * Es el unico lugar donde esta escrito el nombre del campo.
      */
-    const CAMPO_SUCURSAL = 'NRO_SUCURSAL';
+    const CAMPO_SUCURSAL = 'NRO_SUCURS';
 
     /** Cache por request del mapa NRO_SUCURSAL => datos de DIRECCIONARIO. */
     private $mapaSucursales = null;
@@ -282,14 +283,14 @@ class Cliente{
         }
         
         if ($desde != null && $hasta != null) {
-            $desdeDate = new MongoDB\BSON\UTCDateTime(strtotime($desde) * 1000);
-            $hastaDate = new MongoDB\BSON\UTCDateTime(strtotime($hasta) * 1000);
-
+            // El $lte tiene que ir al final del dia "hasta", no a su medianoche: las FECHA
+            // de Ventas estan guardadas a medianoche de UTC+1 y el PHP corre en UTC+2, asi
+            // que un $lte a medianoche cae una hora ANTES que los documentos de ese dia y
+            // se perdia siempre la ultima jornada del rango (con desde = hasta daba 0).
+            $desdeDate = new MongoDB\BSON\UTCDateTime(strtotime($desde.' 00:00:00') * 1000);
+            $hastaDate = new MongoDB\BSON\UTCDateTime(strtotime($hasta.' 23:59:59') * 1000);
 
             $filter["FECHA"] = ['$gte' => $desdeDate, '$lte' => $hastaDate];
-
-
-
         }
 
         // --- TIENDA / PROVINCIA / LOCALIDAD ---------------------------------
